@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Has trobat una balisa! · Rutes Planenques</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1A2E1D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Medalles">
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Fraunces:ital,wght@0,300;0,700;1,300&display=swap');
+
+:root {
+  --fons: #1A2E1D;
+  --bosc: #2D4A32;
+  --bosc-clar: #3D6B45;
+  --crema: #F5F0E8;
+  --pedra: #A89880;
+  --or: #D4A843;
+  --cel: #7BB5C8;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Space Grotesk', sans-serif;
+  background: var(--fons);
+  color: var(--crema);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1.5rem;
+  text-align: center;
+}
+
+/* Fons animat */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 20% 20%, rgba(61,107,69,0.15) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 80%, rgba(212,168,67,0.08) 0%, transparent 60%);
+  pointer-events: none;
+}
+
+.contenidor {
+  max-width: 400px;
+  width: 100%;
+  position: relative;
+}
+
+/* Estat de càrrega */
+#estat-carregant {
+  opacity: 0.6;
+  font-size: 0.9rem;
+  color: var(--pedra);
+}
+.spinner {
+  width: 40px; height: 40px;
+  border: 3px solid rgba(255,255,255,0.1);
+  border-top-color: var(--bosc-clar);
+  border-radius: 50%;
+  animation: girar 0.8s linear infinite;
+  margin: 0 auto 1rem;
+}
+@keyframes girar { to { transform: rotate(360deg); } }
+
+/* Tarjeta balisa */
+#estat-balisa { display: none; }
+
+.balisa-icon-wrap {
+  position: relative;
+  display: inline-block;
+  margin-bottom: 1.5rem;
+}
+.balisa-icon {
+  font-size: 5rem;
+  display: block;
+  animation: apareixer 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+  filter: drop-shadow(0 0 20px rgba(212,168,67,0.4));
+}
+@keyframes apareixer {
+  from { transform: scale(0.3) rotate(-10deg); opacity: 0; }
+  to { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.balisa-badge {
+  position: absolute;
+  top: -4px; right: -4px;
+  background: var(--or);
+  color: #1A1000;
+  font-size: 0.6rem;
+  font-weight: 900;
+  padding: 0.2rem 0.4rem;
+  border-radius: 20px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.titular {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--or);
+  margin-bottom: 0.5rem;
+}
+.balisa-nom {
+  font-family: 'Fraunces', serif;
+  font-size: clamp(1.8rem, 7vw, 2.4rem);
+  font-weight: 700;
+  line-height: 1.1;
+  margin-bottom: 0.5rem;
+}
+.balisa-desc {
+  color: var(--pedra);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin-bottom: 0.5rem;
+}
+.balisa-punts {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  background: rgba(212,168,67,0.12);
+  border: 1px solid rgba(212,168,67,0.3);
+  border-radius: 20px;
+  padding: 0.3rem 0.8rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--or);
+  margin-bottom: 2rem;
+}
+
+/* Separador */
+.separador {
+  height: 1px;
+  background: rgba(255,255,255,0.08);
+  margin: 1.5rem 0;
+  position: relative;
+}
+.separador::before {
+  content: '🧭';
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--fons);
+  padding: 0 0.5rem;
+  font-size: 0.9rem;
+}
+
+/* Explicació joc */
+.joc-explicacio {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 1.2rem;
+  margin-bottom: 1.5rem;
+  text-align: left;
+}
+.joc-explicacio h3 {
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--cel);
+  margin-bottom: 0.8rem;
+}
+.pas {
+  display: flex;
+  gap: 0.7rem;
+  margin-bottom: 0.6rem;
+  font-size: 0.85rem;
+  color: var(--pedra);
+  line-height: 1.4;
+}
+.pas:last-child { margin-bottom: 0; }
+.pas-icon { flex-shrink: 0; font-size: 1rem; }
+.pas strong { color: var(--crema); }
+
+/* Botons */
+.btn-principal {
+  width: 100%;
+  background: var(--bosc-clar);
+  color: var(--crema);
+  border: none;
+  border-radius: 14px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 1rem 1.5rem;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+  margin-bottom: 0.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+}
+.btn-principal:hover { background: #4E8A57; }
+.btn-principal:active { transform: scale(0.98); }
+
+/* Botó instal·lar (destacat) */
+.btn-instal·lar {
+  width: 100%;
+  background: linear-gradient(135deg, #2A1F00, #3D2E00);
+  color: var(--or);
+  border: 2px solid rgba(212,168,67,0.4);
+  border-radius: 14px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 1rem 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 0.8rem;
+  display: none; /* Es mostra només si la PWA és instal·lable */
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+}
+.btn-instal·lar:hover { border-color: var(--or); background: rgba(212,168,67,0.1); }
+.btn-instal·lar.visible { display: flex; }
+
+.btn-secundari {
+  width: 100%;
+  background: transparent;
+  color: var(--pedra);
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 14px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.9rem;
+  padding: 0.8rem 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  margin-bottom: 0.6rem;
+}
+.btn-secundari:hover { color: var(--crema); border-color: rgba(255,255,255,0.25); }
+
+/* iOS install hint */
+#ios-hint {
+  display: none;
+  background: rgba(123,181,200,0.1);
+  border: 1px solid rgba(123,181,200,0.2);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.82rem;
+  color: var(--cel);
+  line-height: 1.5;
+  text-align: left;
+}
+#ios-hint .arrow {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  font-weight: 700;
+  color: var(--crema);
+}
+
+/* Error */
+#estat-error { display: none; }
+.error-icon { font-size: 3rem; margin-bottom: 1rem; }
+.error-text { color: var(--pedra); font-size: 0.9rem; line-height: 1.5; }
+
+/* Nota peu */
+.nota-peu {
+  margin-top: 1.5rem;
+  font-size: 0.72rem;
+  color: rgba(168,152,128,0.5);
+  line-height: 1.5;
+}
+</style>
+</head>
+<body>
+
+<div class="contenidor">
+
+  <!-- Carregant -->
+  <div id="estat-carregant">
+    <div class="spinner"></div>
+    Identificant la balisa...
+  </div>
+
+  <!-- Balisa trobada -->
+  <div id="estat-balisa">
+    <div class="balisa-icon-wrap">
+      <span class="balisa-icon" id="b-icon">🏅</span>
+      <span class="balisa-badge">Nova!</span>
+    </div>
+    <p class="titular">Has trobat una balisa</p>
+    <h1 class="balisa-nom" id="b-nom">—</h1>
+    <p class="balisa-desc" id="b-desc">—</p>
+    <span class="balisa-punts">⭐ <span id="b-punts">0</span> punts</span>
+
+    <div class="separador"></div>
+
+    <!-- Explicació del joc per a usuaris nous -->
+    <div class="joc-explicacio">
+      <h3>Rutes Planenques — com funciona?</h3>
+      <div class="pas">
+        <span class="pas-icon">📍</span>
+        <span>Hi ha <strong>balises repartides pel territori</strong>. Cada QR que trobes és una balisa diferent.</span>
+      </div>
+      <div class="pas">
+        <span class="pas-icon">🏅</span>
+        <span>Cada balisa dona una <strong>medalla única i punts</strong> que s'acumulen al teu perfil.</span>
+      </div>
+      <div class="pas">
+        <span class="pas-icon">🏆</span>
+        <span>Quan les completes totes, <strong>guanyes un premi</strong>. Hi ha un ranking públic entre tots els participants.</span>
+      </div>
+    </div>
+
+    <!-- Botó instal·lar PWA (Android) -->
+    <button class="btn-instal·lar" id="btn-instal·lar" onclick="instal·larPWA()">
+      📲 Instal·la l'app i guanya la medalla
+    </button>
+
+    <!-- iOS hint -->
+    <div id="ios-hint">
+      📲 Per instal·lar l'app al teu iPhone:
+      <div class="arrow">
+        <span>Prem</span>
+        <span style="font-size:1.2rem">⎙</span>
+        <span>i després "Afegir a la pantalla d'inici"</span>
+      </div>
+    </div>
+
+    <!-- Botó validar directament (ja té l'app o no vol instal·lar) -->
+    <button class="btn-principal" id="btn-validar" onclick="anarAlJoc()">
+      ✅ Validar medalla ara
+    </button>
+
+    <button class="btn-secundari" onclick="anarAlJocSenseMedialla()">
+      Veure el joc sense validar
+    </button>
+
+    <p class="nota-peu">
+      📡 La medalla es validarà quan facis login.<br>
+      El GPS verificarà que ets realment aquí.
+    </p>
+  </div>
+
+  <!-- Error -->
+  <div id="estat-error">
+    <p class="error-icon">🗺️</p>
+    <p class="balisa-nom" style="font-size:1.4rem;margin-bottom:0.5rem">Balisa no trobada</p>
+    <p class="error-text">Aquest QR no correspon a cap balisa del sistema.<br>Potser és un QR antic o hi ha hagut un error.</p>
+    <div class="separador"></div>
+    <button class="btn-principal" onclick="window.location='/'">Anar al joc</button>
+  </div>
+
+</div>
+
+<script>
+// ════════════════════════════════════════════════════════
+//  CONFIGURACIÓ — ha de coincidir amb index.html
+//  (en el projecte final, aquest array s'importa com a mòdul compartit)
+// ════════════════════════════════════════════════════════
+const BALISES = [
+  { id: "B01", nom: "Cova del Moro", icon: "🌙", punts: 100,
+    descripcio: "Amagada a recer d'un cingle, sota el Replà de Sant Ramon",
+    url_forms: "https://docs.google.com/forms/d/SUBSTITUEIX_ID_FORMS_COVA_MORO", token: "" },
+  { id: "B02", nom: "Sender Pinya Seka", icon: "🌲", punts: 120,
+    descripcio: "Al mig del sender, penjat d'un arbre entre la Serra de Jordà",
+    url_forms: "https://docs.google.com/forms/d/SUBSTITUEIX_ID_FORMS_PINYA_SEKA", token: "" },
+  { id: "B03", nom: "Cova dels Miquelets", icon: "⚔️", punts: 150,
+    descripcio: "Dins la cova on els Miquelets van resistir durant la Guerra de Successió",
+    url_forms: "", token: "mqlts26fr" },
+  { id: "B04", nom: "El Barretet", icon: "🏔️", punts: 200,
+    descripcio: "Just al cim del Barretet, amb vistes sobre tot el Pla de Santa Maria",
+    url_forms: "", token: "brrtt94xk" }
+];
+
+// ════════════════════════════════════════════════════════
+//  DETECTAR BALISA DES DE LA URL
+// ════════════════════════════════════════════════════════
+let balisaActual = null;
+let promptInstal·lacio = null;
+
+window.addEventListener('DOMContentLoaded', () => {
+  registrarSW();
+  detectarInstal·lacio();
+
+  const params = new URLSearchParams(location.search);
+  const payload = params.get('b');
+  const formsUrl = params.get('f'); // per QRs vells redirectits
+
+  if (payload) {
+    // QR nou — payload base64
+    try {
+      const data = JSON.parse(atob(payload));
+      balisaActual = BALISES.find(b => b.id === data.id && b.token === data.token);
+    } catch {}
+  } else if (formsUrl) {
+    // QR vell — URL del forms codificada
+    const url = atob(formsUrl);
+    balisaActual = BALISES.find(b => b.url_forms && url.startsWith(b.url_forms));
+  } else {
+    // Intenta detectar si la URL conté un forms conegut (compatibilitat directa)
+    const urlActual = location.href;
+    balisaActual = BALISES.find(b => b.url_forms && urlActual.includes(b.url_forms.split('/d/')[1]?.split('/')[0] || '__'));
+  }
+
+  mostrarEstat();
+});
+
+function mostrarEstat() {
+  document.getElementById('estat-carregant').style.display = 'none';
+
+  if (!balisaActual) {
+    document.getElementById('estat-error').style.display = 'block';
+    return;
+  }
+
+  // Omple la tarjeta
+  document.getElementById('b-icon').textContent = balisaActual.icon;
+  document.getElementById('b-nom').textContent = balisaActual.nom;
+  document.getElementById('b-desc').textContent = balisaActual.descripcio;
+  document.getElementById('b-punts').textContent = balisaActual.punts;
+  document.getElementById('estat-balisa').style.display = 'block';
+
+  // Guarda la balisa pendent a sessionStorage
+  sessionStorage.setItem('qr_pendent', balisaActual.token
+    ? btoa(JSON.stringify({ id: balisaActual.id, token: balisaActual.token }))
+    : btoa(JSON.stringify({ id: balisaActual.id, forms: true }))
+  );
+}
+
+// ════════════════════════════════════════════════════════
+//  NAVEGACIÓ
+// ════════════════════════════════════════════════════════
+function anarAlJoc() {
+  // La medalla ja és a sessionStorage, el joc la recollirà
+  window.location.href = '/';
+}
+
+function anarAlJocSenseMedialla() {
+  sessionStorage.removeItem('qr_pendent');
+  window.location.href = '/';
+}
+
+// ════════════════════════════════════════════════════════
+//  PWA — INSTAL·LACIÓ
+// ════════════════════════════════════════════════════════
+function registrarSW() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  }
+}
+
+function detectarInstal·lacio() {
+  const esIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const esSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+  const jaInstal·lada = window.matchMedia('(display-mode: standalone)').matches;
+
+  if (jaInstal·lada) {
+    // Ja té l'app instal·lada — amaga els botons d'instal·lació
+    return;
+  }
+
+  if (esIOS && esSafari) {
+    // iOS — mostra instruccions manuals (no hi ha API d'instal·lació)
+    document.getElementById('ios-hint').style.display = 'block';
+    document.getElementById('btn-validar').textContent = '✅ Validar medalla (sense instal·lar)';
+  }
+
+  // Android / Chrome — espera l'event beforeinstallprompt
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    promptInstal·lacio = e;
+    document.getElementById('btn-instal·lar').classList.add('visible');
+  });
+
+  // Detecta si s'ha instal·lat
+  window.addEventListener('appinstalled', () => {
+    document.getElementById('btn-instal·lar').classList.remove('visible');
+    document.getElementById('ios-hint').style.display = 'none';
+  });
+}
+
+async function instal·larPWA() {
+  if (!promptInstal·lacio) return;
+  promptInstal·lacio.prompt();
+  const { outcome } = await promptInstal·lacio.userChoice;
+  if (outcome === 'accepted') {
+    setTimeout(() => anarAlJoc(), 1000);
+  }
+  promptInstal·lacio = null;
+}
+</script>
+</body>
+</html>

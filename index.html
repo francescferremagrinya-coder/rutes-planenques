@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Medalles · Rutes del Pla</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#1A2E1D">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Medalles">
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, doc, getDoc, setDoc, updateDoc, collection,
+  getDocs, onSnapshot, serverTimestamp, arrayUnion, query, orderBy }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+// ════════════════════════════════════════════════════════
+//  ⚙️ CONFIGURACIÓ FIREBASE
+//  Substitueix aquests valors pels del teu projecte Firebase
+//  (Firebase Console → Project Settings → Your apps → Config)
+// ════════════════════════════════════════════════════════
+const firebaseConfig = {
+  apiKey: "AIzaSyC1jtpfx9csBNkvXjrXe5gUnMI0Y3F_U5Y",
+  authDomain: "rutes-planenques.firebaseapp.com",
+  projectId: "rutes-planenques",
+  storageBucket: "rutes-planenques.firebasestorage.app",
+  messagingSenderId: "843557916096",
+  appId: "1:843557916096:web:3d6911bdd7ad6bec0bcc25"
+};
+
+// ════════════════════════════════════════════════════════
+//  📍 BALISES — edita aquí
+//  Per als QRs VELLS (Forms): posa la URL del forms a "url_forms"
+//  Per als QRs NOUS: deixa url_forms buit, posa lat/lng i token
+// ════════════════════════════════════════════════════════
+const BALISES = [
+  {
+    id: "B01",
+    nom: "Cova del Moro",
+    icon: "🌙",
+    color: "#A0714F",
+    punts: 100,
+    categoria: "Natura · Ruta 1",
+    descripcio: "Amagada a recer d'un cingle, sota el Replà de Sant Ramon",
+    // QR vell — URL del Google Forms existent
+    url_forms: "https://docs.google.com/forms/d/SUBSTITUEIX_ID_FORMS_COVA_MORO",
+    imatge: "medalles/cova-moro.jpg", // puja la imatge a Firebase Storage
+    lat: 41.3825203, lng: 1.2719173,
+    radi: 150 // permissiu per QR vell
+  },
+  {
+    id: "B02",
+    nom: "Sender Pinya Seka",
+    icon: "🌲",
+    color: "#8B4513",
+    punts: 120,
+    categoria: "Senderisme · Ruta 2",
+    descripcio: "Al mig del sender, penjat d'un arbre entre la Serra de Jordà",
+    // QR vell — URL del Google Forms existent
+    url_forms: "https://docs.google.com/forms/d/SUBSTITUEIX_ID_FORMS_PINYA_SEKA",
+    imatge: "medalles/pinya-seka.jpg",
+    lat: 41.3838820, lng: 1.2623492,
+    radi: 150
+  },
+  {
+    id: "B03",
+    nom: "Cova dels Miquelets",
+    icon: "⚔️",
+    color: "#8B6914",
+    punts: 150,
+    categoria: "Patrimoni · Ruta 3",
+    descripcio: "Dins la cova on els Miquelets van resistir durant la Guerra de Successió",
+    url_forms: "",
+    token: "mqlts26fr", // token secret — no compartir
+    imatge: "medalles/cova-miquelets.jpg",
+    lat: 41.3880119, lng: 1.2799082,
+    radi: 80
+  },
+  {
+    id: "B04",
+    nom: "El Barretet",
+    icon: "🏔️",
+    color: "#5C7A3E",
+    punts: 200,
+    categoria: "Cims · Ruta 3",
+    descripcio: "Just al cim del Barretet, amb vistes sobre tot el Pla de Santa Maria",
+    url_forms: "",
+    token: "brrtt94xk", // token secret — no compartir
+    imatge: "medalles/barretet.jpg",
+    lat: 41.3895322, lng: 1.2774020,
+    radi: 60
+  }
+];
+
+// ════════════════════════════════════════════════════════
+//  🏆 PREMI FINAL
+// ════════════════════════════════════════════════════════
+const PREMI = {
+  text: "Heu completat totes les balises! Presenteu aquest codi a l'organitzador.",
+  codi: "RUTA2025",
+  icon: "🏆"
+};
+
+// ════════════════════════════════════════════════════════
+//  🔐 ADMIN — UIDs de Google dels administradors
+//  El teu UID el trobes a Firebase Console → Authentication
+// ════════════════════════════════════════════════════════
+const ADMINS = [
+  "oTzgpttsZOajy2zk6EXphqUKtA02"
+];
+
+// ════════════════════════════════════════════════════════
+//  INIT FIREBASE
+// ════════════════════════════════════════════════════════
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const provider = new GoogleAuthProvider();
+
+let usuariActual = null;
+let esAdmin = false;
+let escaner = null;
+
+// ════════════════════════════════════════════════════════
+//  AUTH
+// ════════════════════════════════════════════════════════
+onAuthStateChanged(auth, async (user) => {
+  usuariActual = user;
+  if (user) {
+    esAdmin = ADMINS.includes(user.uid);
+    await assegurarPerfil(user);
+    mostrarPantalla('joc');
+    carregarPerfil();
+    escoltarRanking();
+  } else {
+    mostrarPantalla('login');
+  }
+});
+
+async function loginGoogle() {
+  try {
+    await signInWithPopup(auth, provider);
+  } catch (e) {
+    mostrarToast('Error al iniciar sessió: ' + e.message, true);
+  }
+}
+
+async function logout() {
+  if (escaner) { escaner.stop(); escaner = null; }
+  await signOut(auth);
+}
+
+async function assegurarPerfil(user) {
+  const ref = doc(db, 'usuaris', user.uid);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) {
+    await setDoc(ref, {
+      nom: user.displayName,
+      foto: user.photoURL,
+      email: user.email,
+      medalles: [],
+      punts: 0,
+      creat: serverTimestamp()
+    });
+  }
+}
+
+// ════════════════════════════════════════════════════════
+//  PERFIL I MEDALLES
+// ════════════════════════════════════════════════════════
+async function carregarPerfil() {
+  const ref = doc(db, 'usuaris', usuariActual.uid);
+  onSnapshot(ref, (snap) => {
+    if (!snap.exists()) return;
+    const dades = snap.data();
+    renderPerfil(dades);
+  });
+}
+
+function renderPerfil(dades) {
+  const medalles = dades.medalles || [];
+  const punts = dades.punts || 0;
+  const total = BALISES.length;
+  const obtingudes = medalles.length;
+
+  // Header usuari
+  document.getElementById('usuari-nom').textContent = dades.nom;
+  document.getElementById('usuari-foto').src = dades.foto || '';
+  document.getElementById('usuari-punts').textContent = punts + ' pts';
+
+  // Progress
+  document.getElementById('prog-text').textContent = `${obtingudes}/${total} balises`;
+  document.getElementById('prog-barra').style.width = `${(obtingudes/total)*100}%`;
+
+  // Medalles grid
+  const grid = document.getElementById('medalles-grid');
+  grid.innerHTML = '';
+  BALISES.forEach(b => {
+    const ob = medalles.find(m => m.id === b.id);
+    const div = document.createElement('div');
+    div.className = 'medalla' + (ob ? ' obtinguda' : ' bloquejada');
+    div.style.setProperty('--color', b.color);
+
+    if (ob) {
+      // Medalla obtinguda — mostra imatge real o emoji de fallback
+      div.innerHTML = `
+        <div class="medalla-img-wrap">
+          ${b.imatge
+            ? `<img class="medalla-img" src="${b.imatge}" alt="${b.nom}"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+               <span class="medalla-icon-fb" style="display:none">${b.icon}</span>`
+            : `<span class="medalla-icon">${b.icon}</span>`
+          }
+        </div>
+        <span class="medalla-nom">${b.nom}</span>
+        <span class="medalla-cat">${b.categoria}</span>
+        <span class="medalla-pts">+${b.punts} pts</span>
+        <span class="medalla-data">${formatData(ob.data?.toDate?.() || new Date(ob.data))}</span>
+      `;
+    } else {
+      // Medalla bloquejada — icona desenfocada amb cadenat al damunt
+      div.innerHTML = `
+        <div class="medalla-img-wrap bloq">
+          <span class="medalla-icon">${b.icon}</span>
+          <span class="medalla-bloq-overlay">🔒</span>
+        </div>
+        <span class="medalla-nom" style="color:var(--pedra)">Per descobrir</span>
+        <span class="medalla-cat">${b.categoria}</span>
+        <span class="medalla-pts" style="color:var(--pedra)">?? pts</span>
+      `;
+    }
+    grid.appendChild(div);
+  });
+
+  // Premi final
+  if (obtingudes === total) {
+    document.getElementById('premi-bloc').style.display = 'block';
+    document.getElementById('premi-codi').textContent = PREMI.codi;
+    document.getElementById('premi-text').textContent = PREMI.text;
+  }
+
+  // Admin panel
+  document.getElementById('admin-btn').style.display = esAdmin ? 'block' : 'none';
+}
+
+// ════════════════════════════════════════════════════════
+//  RANKING
+// ════════════════════════════════════════════════════════
+function escoltarRanking() {
+  const q = query(collection(db, 'usuaris'), orderBy('punts', 'desc'));
+  onSnapshot(q, (snap) => {
+    const llista = document.getElementById('ranking-llista');
+    llista.innerHTML = '';
+    let pos = 1;
+    snap.forEach(d => {
+      const u = d.data();
+      const medalles = (u.medalles || []).length;
+      if (medalles === 0) return; // no mostris usuaris sense cap medalla
+      const div = document.createElement('div');
+      div.className = 'ranking-item' + (d.id === usuariActual?.uid ? ' jo' : '');
+      const emoji = pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : `${pos}.`;
+      div.innerHTML = `
+        <span class="ranking-pos">${emoji}</span>
+        <img class="ranking-foto" src="${u.foto || ''}" alt="" onerror="this.style.display='none'">
+        <span class="ranking-nom">${u.nom}</span>
+        <span class="ranking-medalles">${medalles} 🏅</span>
+        <span class="ranking-punts">${u.punts} pts</span>
+      `;
+      llista.appendChild(div);
+      pos++;
+    });
+  });
+}
+
+// ════════════════════════════════════════════════════════
+//  ESCÀNER QR
+// ════════════════════════════════════════════════════════
+async function iniciarEscaner() {
+  mostrarPantalla('escaner');
+  const { Html5Qrcode } = await import('https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.esm.min.js');
+  escaner = new Html5Qrcode("qr-reader");
+
+  try {
+    await escaner.start(
+      { facingMode: "environment" },
+      { fps: 10, qrbox: { width: 250, height: 250 } },
+      async (text) => {
+        await escaner.stop();
+        escaner = null;
+        mostrarPantalla('joc');
+        await processarQR(text);
+      },
+      () => {}
+    );
+  } catch (e) {
+    mostrarToast('No s\'ha pogut accedir a la càmera.', true);
+    mostrarPantalla('joc');
+  }
+}
+
+function tancarEscaner() {
+  if (escaner) { escaner.stop(); escaner = null; }
+  mostrarPantalla('joc');
+}
+
+// ════════════════════════════════════════════════════════
+//  PROCESSAR QR — lògica principal
+// ════════════════════════════════════════════════════════
+async function processarQR(text) {
+  mostrarToast('🔍 Processant QR...');
+
+  // 1. Detectar si és QR VELL (URL del forms)
+  const balisaVella = BALISES.find(b => b.url_forms && text.startsWith(b.url_forms));
+  if (balisaVella) {
+    await validarIAtorgarMedalla(balisaVella, false);
+    return;
+  }
+
+  // 2. Detectar si és QR NOU (payload base64 del nostre sistema)
+  try {
+    const url = new URL(text);
+    const payload = url.searchParams.get('b');
+    if (payload) {
+      const data = JSON.parse(atob(payload));
+      const balisa = BALISES.find(b => b.id === data.id && b.token === data.token);
+      if (balisa) {
+        await validarIAtorgarMedalla(balisa, true);
+        return;
+      }
+    }
+  } catch {}
+
+  // 3. QR no reconegut
+  mostrarToast('QR no reconegut al sistema.', true);
+}
+
+async function validarIAtorgarMedalla(balisa, verificarGPS) {
+  // Comprovar si ja té la medalla
+  const ref = doc(db, 'usuaris', usuariActual.uid);
+  const snap = await getDoc(ref);
+  const dades = snap.data();
+  const jaObtinguda = (dades.medalles || []).find(m => m.id === balisa.id);
+  if (jaObtinguda) {
+    mostrarToast(`Ja tens la medalla de ${balisa.nom}! 🏅`);
+    return;
+  }
+
+  // Verificació GPS (per QRs nous)
+  if (verificarGPS) {
+    mostrarToast('📡 Verificant ubicació GPS...');
+    try {
+      const pos = await obtenirGPS();
+      const dist = calcularDistancia(
+        pos.coords.latitude, pos.coords.longitude,
+        balisa.lat, balisa.lng
+      );
+      if (dist > balisa.radi) {
+        mostrarToast(`⚠️ Ets massa lluny (${Math.round(dist)}m). Has d'estar a ${balisa.radi}m.`, true);
+        return;
+      }
+    } catch (e) {
+      mostrarToast('Cal permetre l\'accés al GPS per validar.', true);
+      return;
+    }
+  }
+
+  // ✅ Atorgar medalla
+  await updateDoc(ref, {
+    medalles: arrayUnion({
+      id: balisa.id,
+      nom: balisa.nom,
+      data: new Date(),
+      punts: balisa.punts
+    }),
+    punts: (dades.punts || 0) + balisa.punts
+  });
+
+  mostrarToast(`🏅 ${balisa.icon} Medalla obtinguda: ${balisa.nom}! +${balisa.punts} pts`);
+}
+
+// ════════════════════════════════════════════════════════
+//  ADMIN — panell per gestionar balises
+// ════════════════════════════════════════════════════════
+function mostrarAdmin() {
+  if (!esAdmin) return;
+  document.getElementById('admin-panel').style.display =
+    document.getElementById('admin-panel').style.display === 'none' ? 'block' : 'none';
+
+  // Genera QRs per les balises noves
+  const container = document.getElementById('admin-qrs');
+  container.innerHTML = '';
+  const base = window.location.origin + window.location.pathname;
+  BALISES.filter(b => b.token).forEach(b => {
+    const payload = btoa(JSON.stringify({ id: b.id, token: b.token }));
+    const url = `${base}?b=${payload}`;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(url)}&margin=10`;
+    const div = document.createElement('div');
+    div.className = 'admin-qr-item';
+    div.innerHTML = `
+      <p class="admin-qr-nom">${b.icon} ${b.nom}</p>
+      <img src="${qrUrl}" alt="QR ${b.nom}">
+      <p class="admin-qr-info">${b.radi}m · ${b.punts}pts</p>
+    `;
+    container.appendChild(div);
+  });
+}
+
+// ════════════════════════════════════════════════════════
+//  UTILS
+// ════════════════════════════════════════════════════════
+function obtenirGPS() {
+  return new Promise((res, rej) => {
+    if (!navigator.geolocation) { rej(new Error('GPS no disponible')); return; }
+    navigator.geolocation.getCurrentPosition(res, rej, {
+      enableHighAccuracy: true, timeout: 10000, maximumAge: 0
+    });
+  });
+}
+
+function calcularDistancia(lat1, lng1, lat2, lng2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180) * Math.cos(lat2*Math.PI/180) * Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function formatData(d) {
+  if (!d) return '';
+  return d.toLocaleDateString('ca', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+let toastTimer;
+function mostrarToast(msg, error = false) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = 'visible' + (error ? ' error' : '');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.className = '', 4000);
+}
+
+function mostrarPantalla(id) {
+  ['login', 'joc', 'escaner'].forEach(p =>
+    document.getElementById('pantalla-' + p).style.display = p === id ? 'block' : 'none'
+  );
+}
+
+function mostrarTab(tab) {
+  ['perfil', 'rutes', 'ranking'].forEach(t => {
+    document.getElementById('tab-' + t).style.display = t === tab ? 'block' : 'none';
+    document.getElementById('tabbtn-' + t).classList.toggle('actiu', t === tab);
+  });
+}
+
+// Exposa funcions al HTML
+window.loginGoogle = loginGoogle;
+window.logout = logout;
+window.iniciarEscaner = iniciarEscaner;
+window.tancarEscaner = tancarEscaner;
+window.mostrarAdmin = mostrarAdmin;
+window.mostrarTab = mostrarTab;
+
+// Registre Service Worker (PWA)
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(() => {});
+}
+
+// Comprova QR a la URL (per si ve d'escanejar directament)
+window.addEventListener('DOMContentLoaded', () => {
+  const params = new URLSearchParams(location.search);
+  const payload = params.get('b');
+  if (payload) {
+    history.replaceState({}, '', location.pathname);
+    sessionStorage.setItem('qr_pendent', payload);
+  }
+});
+
+// Quan l'usuari fa login i hi havia un QR pendent (ve de balisa.html)
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    const pendent = sessionStorage.getItem('qr_pendent');
+    if (pendent) {
+      sessionStorage.removeItem('qr_pendent');
+      try {
+        const data = JSON.parse(atob(pendent));
+        if (data.forms) {
+          // QR vell — cerca la balisa per ID directament
+          const balisa = BALISES.find(b => b.id === data.id);
+          if (balisa) await validarIAtorgarMedalla(balisa, false);
+        } else {
+          // QR nou — processa normalment
+          const fakeUrl = `${location.origin}${location.pathname}?b=${pendent}`;
+          await processarQR(fakeUrl);
+        }
+      } catch {}
+    }
+  }
+});
+
+</script>
+
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Fraunces:ital,wght@0,300;0,700;1,300&display=swap');
+
+:root {
+  --fons: #1A2E1D;
+  --bosc: #2D4A32;
+  --bosc-clar: #3D6B45;
+  --crema: #F5F0E8;
+  --pedra: #A89880;
+  --or: #D4A843;
+  --cel: #7BB5C8;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Space Grotesk', sans-serif;
+  background: var(--fons);
+  color: var(--crema);
+  min-height: 100vh;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* ── HEADER ── */
+header {
+  background: linear-gradient(180deg, #0E1A10 0%, transparent 100%);
+  padding: 1.5rem 1.2rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+  position: sticky; top: 0; z-index: 10;
+  backdrop-filter: blur(8px);
+}
+.header-logo { font-size: 1.8rem; }
+.header-titol { font-family: 'Fraunces', serif; font-size: 1.2rem; font-weight: 700; flex: 1; }
+.header-titol span { display: block; font-size: 0.7rem; font-weight: 400; color: var(--pedra); font-style: italic; font-family: 'Space Grotesk', sans-serif; }
+#usuari-foto { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--bosc-clar); cursor: pointer; }
+.btn-logout { background: none; border: none; color: var(--pedra); font-size: 0.75rem; cursor: pointer; padding: 0.3rem 0.6rem; border-radius: 6px; }
+.btn-logout:hover { color: var(--crema); }
+
+/* ── PANTALLA LOGIN ── */
+#pantalla-login {
+  display: flex; flex-direction: column; align-items: center;
+  justify-content: center; min-height: 80vh; padding: 2rem;
+  text-align: center;
+}
+.login-logo { font-size: 5rem; margin-bottom: 1rem; }
+.login-titol { font-family: 'Fraunces', serif; font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
+.login-sub { color: var(--pedra); font-size: 0.9rem; margin-bottom: 2.5rem; line-height: 1.6; }
+.btn-google {
+  display: flex; align-items: center; gap: 0.8rem;
+  background: white; color: #333;
+  border: none; border-radius: 12px;
+  padding: 0.9rem 1.8rem;
+  font-family: 'Space Grotesk', sans-serif; font-size: 1rem; font-weight: 700;
+  cursor: pointer; transition: transform 0.1s, box-shadow 0.2s;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+}
+.btn-google:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.4); }
+.btn-google svg { width: 20px; height: 20px; }
+
+/* ── PANTALLA JOC ── */
+#pantalla-joc { display: none; padding-bottom: 6rem; }
+
+/* Tabs */
+.tabs {
+  display: flex; border-bottom: 1px solid rgba(255,255,255,0.08);
+  padding: 0 1.2rem; gap: 0.5rem; margin-bottom: 1rem;
+}
+.tab-btn {
+  background: none; border: none; color: var(--pedra);
+  font-family: 'Space Grotesk', sans-serif; font-size: 0.85rem;
+  padding: 0.7rem 1rem; cursor: pointer; border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+}
+.tab-btn.actiu { color: var(--crema); border-bottom-color: var(--bosc-clar); }
+
+/* Perfil */
+.perfil-header {
+  padding: 1rem 1.2rem;
+  display: flex; align-items: center; gap: 1rem;
+}
+.perfil-info { flex: 1; }
+#usuari-nom { font-weight: 700; font-size: 1rem; }
+#usuari-punts { font-size: 0.8rem; color: var(--or); font-weight: 700; }
+
+/* Progress */
+.prog-wrap { padding: 0 1.2rem 1rem; }
+.prog-header { display: flex; justify-content: space-between; margin-bottom: 0.4rem; font-size: 0.78rem; color: var(--pedra); }
+.prog-fons { height: 6px; background: rgba(255,255,255,0.08); border-radius: 3px; overflow: hidden; }
+.prog-barra { height: 100%; background: linear-gradient(90deg, var(--bosc-clar), var(--or)); border-radius: 3px; transition: width 0.6s; }
+
+/* Medalles */
+.seccio-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--pedra); padding: 0 1.2rem; margin-bottom: 0.6rem; }
+.medalles-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 0.6rem; padding: 0 1.2rem;
+}
+.medalla {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px; padding: 0.8rem 0.4rem;
+  text-align: center; transition: all 0.3s;
+}
+.medalla.obtinguda {
+  background: rgba(61,107,69,0.2);
+  border-color: rgba(61,107,69,0.5);
+}
+.medalla-img-wrap {
+  width: 72px; height: 72px; margin: 0 auto 0.4rem;
+  border-radius: 8px; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.medalla-img-wrap.bloq { position: relative; }
+.medalla-img-wrap.bloq .medalla-icon {
+  filter: blur(3px) brightness(0.3);
+  transform: scale(1.05);
+}
+.medalla-bloq-overlay {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1rem;
+}
+.medalla-img { width: 100%; height: 100%; object-fit: contain; }
+.medalla-icon { font-size: 2rem; }
+.medalla-icon-fb { font-size: 2rem; }
+.medalla-nom { display: block; font-size: 0.62rem; font-weight: 700; color: var(--crema); line-height: 1.2; }
+.medalla-cat { display: block; font-size: 0.55rem; color: var(--pedra); opacity: 0.7; margin-top: 0.1rem; }
+.medalla-pts { display: block; font-size: 0.6rem; color: var(--or); font-weight: 700; margin-top: 0.2rem; }
+.medalla-data { display: block; font-size: 0.55rem; color: var(--pedra); margin-top: 0.1rem; }
+
+/* Rutes Wikiloc */
+#tab-rutes { padding: 0 1.2rem; }
+.ruta-card {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px; padding: 1rem;
+  margin-bottom: 0.8rem;
+}
+.ruta-header { display: flex; align-items: flex-start; gap: 0.8rem; margin-bottom: 0.8rem; }
+.ruta-num {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: var(--bosc-clar); color: var(--crema);
+  font-size: 0.72rem; font-weight: 900;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; margin-top: 2px;
+}
+.ruta-nom { font-weight: 700; font-size: 0.9rem; line-height: 1.3; }
+.ruta-stats {
+  display: flex; flex-wrap: wrap; gap: 0.4rem;
+  margin-bottom: 0.8rem;
+}
+.ruta-stat {
+  background: rgba(255,255,255,0.06);
+  border-radius: 20px; padding: 0.2rem 0.6rem;
+  font-size: 0.7rem; color: var(--pedra);
+  display: flex; align-items: center; gap: 0.3rem;
+}
+.ruta-medalles {
+  display: flex; gap: 0.4rem; align-items: center;
+  margin-bottom: 0.8rem; flex-wrap: wrap;
+}
+.ruta-medalla-chip {
+  font-size: 0.68rem; padding: 0.2rem 0.5rem;
+  border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
+  color: var(--pedra);
+}
+.btn-wikiloc {
+  width: 100%; background: #FF6B00;
+  color: white; border: none; border-radius: 10px;
+  padding: 0.65rem; font-size: 0.85rem; font-weight: 700;
+  font-family: 'Space Grotesk', sans-serif;
+  cursor: pointer; display: flex; align-items: center;
+  justify-content: center; gap: 0.5rem;
+  text-decoration: none;
+}
+
+/* Premi */
+#premi-bloc {
+  display: none; margin: 1.5rem 1.2rem;
+  background: rgba(212,168,67,0.1); border: 1px solid rgba(212,168,67,0.3);
+  border-radius: 16px; padding: 1.5rem; text-align: center;
+}
+.premi-icon { font-size: 3rem; display: block; margin-bottom: 0.5rem; }
+.premi-titol { font-family: 'Fraunces', serif; font-size: 1.4rem; color: var(--or); margin-bottom: 0.5rem; }
+#premi-text { font-size: 0.85rem; color: var(--pedra); margin-bottom: 1rem; }
+#premi-codi { display: inline-block; background: rgba(212,168,67,0.2); border: 2px solid var(--or); border-radius: 8px; padding: 0.5rem 1.5rem; font-size: 1.5rem; font-weight: 700; color: var(--or); letter-spacing: 0.15em; }
+
+/* Ranking */
+#tab-ranking { padding: 0 1.2rem; }
+.ranking-item {
+  display: flex; align-items: center; gap: 0.7rem;
+  padding: 0.7rem 0.8rem; border-radius: 10px;
+  margin-bottom: 0.4rem; background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.ranking-item.jo { background: rgba(61,107,69,0.2); border-color: rgba(61,107,69,0.4); }
+.ranking-pos { font-size: 1.1rem; width: 28px; text-align: center; flex-shrink: 0; }
+.ranking-foto { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; }
+.ranking-nom { flex: 1; font-size: 0.88rem; font-weight: 500; }
+.ranking-medalles { font-size: 0.78rem; color: var(--pedra); }
+.ranking-punts { font-size: 0.8rem; color: var(--or); font-weight: 700; }
+
+/* Botó escàner flotant */
+.btn-scan {
+  position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%);
+  background: var(--bosc-clar); color: var(--crema);
+  border: none; border-radius: 40px;
+  padding: 0.9rem 2.2rem; font-size: 1rem; font-weight: 700;
+  font-family: 'Space Grotesk', sans-serif;
+  cursor: pointer; z-index: 20;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+  display: flex; align-items: center; gap: 0.6rem;
+  transition: transform 0.1s, background 0.2s;
+}
+.btn-scan:hover { background: #4E8A57; }
+.btn-scan:active { transform: translateX(-50%) scale(0.97); }
+
+/* Escàner */
+#pantalla-escaner { display: none; padding: 1.5rem; }
+#qr-reader { border-radius: 16px; overflow: hidden; }
+.btn-tancar-scan {
+  width: 100%; margin-top: 1rem;
+  background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+  color: var(--crema); border-radius: 10px; padding: 0.8rem;
+  font-family: 'Space Grotesk', sans-serif; font-size: 0.9rem; cursor: pointer;
+}
+
+/* Admin */
+#admin-btn {
+  display: none; width: calc(100% - 2.4rem); margin: 0.5rem 1.2rem 0;
+  background: rgba(212,168,67,0.1); border: 1px solid rgba(212,168,67,0.2);
+  color: var(--or); border-radius: 8px; padding: 0.5rem;
+  font-size: 0.75rem; cursor: pointer; font-family: 'Space Grotesk', sans-serif;
+}
+#admin-panel {
+  display: none; margin: 0.5rem 1.2rem;
+  background: rgba(92,74,42,0.15); border: 1px solid rgba(212,168,67,0.15);
+  border-radius: 12px; padding: 1rem;
+}
+#admin-panel h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--or); margin-bottom: 0.8rem; }
+.admin-qrs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+.admin-qr-item { text-align: center; }
+.admin-qr-item img { width: 100%; max-width: 140px; border-radius: 8px; }
+.admin-qr-nom { font-size: 0.72rem; font-weight: 700; margin-bottom: 0.3rem; }
+.admin-qr-info { font-size: 0.62rem; color: var(--pedra); margin-top: 0.2rem; }
+
+/* Toast */
+#toast {
+  position: fixed; bottom: 5.5rem; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--bosc); border: 1px solid var(--bosc-clar);
+  color: var(--crema); padding: 0.7rem 1.2rem;
+  border-radius: 40px; font-size: 0.85rem; font-weight: 500;
+  opacity: 0; transition: all 0.3s; z-index: 100;
+  white-space: nowrap; max-width: 90vw; text-align: center;
+  pointer-events: none;
+}
+#toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
+#toast.error { background: #5C2A2A; border-color: #8B4A4A; }
+</style>
+</head>
+<body>
+
+<!-- ══ PANTALLA LOGIN ══ -->
+<div id="pantalla-login">
+  <span class="login-logo">🧭</span>
+  <h1 class="login-titol">Rutes Planenques</h1>
+  <p class="login-sub">Col·lecciona medalles explorant els racons del territori.<br>Escaneig QRs, guanya punts, puja al ranking.</p>
+  <button class="btn-google" onclick="loginGoogle()">
+    <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+    Continua amb Google
+  </button>
+</div>
+
+<!-- ══ PANTALLA JOC ══ -->
+<div id="pantalla-joc">
+  <header>
+    <span class="header-logo">🧭</span>
+    <div class="header-titol">
+      Rutes Planenques
+      <span>Rutes · Col·lecció · Ranking</span>
+    </div>
+    <img id="usuari-foto" src="" alt="Foto perfil" title="El teu perfil">
+    <button class="btn-logout" onclick="logout()">Sortir</button>
+  </header>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab-btn actiu" id="tabbtn-perfil" onclick="mostrarTab('perfil')">🏅 Medalles</button>
+    <button class="tab-btn" id="tabbtn-rutes" onclick="mostrarTab('rutes')">🗺️ Rutes</button>
+    <button class="tab-btn" id="tabbtn-ranking" onclick="mostrarTab('ranking')">🏆 Ranking</button>
+  </div>
+
+  <!-- TAB PERFIL -->
+  <div id="tab-perfil">
+    <div class="perfil-header">
+      <div class="perfil-info">
+        <div id="usuari-nom">—</div>
+        <div id="usuari-punts">0 pts</div>
+      </div>
+    </div>
+
+    <div class="prog-wrap">
+      <div class="prog-header">
+        <span id="prog-text">0/0 medalles</span>
+        <span style="color:var(--or);font-weight:700" id="prog-pct"></span>
+      </div>
+      <div class="prog-fons"><div class="prog-barra" id="prog-barra" style="width:0%"></div></div>
+    </div>
+
+    <p class="seccio-label">Les teves medalles</p>
+    <div class="medalles-grid" id="medalles-grid"></div>
+
+    <div id="premi-bloc">
+      <span class="premi-icon">🏆</span>
+      <p class="premi-titol">Col·lecció completa!</p>
+      <p id="premi-text"></p>
+      <span id="premi-codi"></span>
+    </div>
+
+    <!-- Admin -->
+    <button id="admin-btn" onclick="mostrarAdmin()">⚙ Panell d'admin — QRs i gestió</button>
+    <div id="admin-panel">
+      <h3>QRs del sistema nou</h3>
+      <div class="admin-qrs-grid" id="admin-qrs"></div>
+    </div>
+  </div>
+
+  <!-- TAB RUTES -->
+  <div id="tab-rutes" style="display:none">
+    <div style="padding:0.8rem 1.2rem 0.2rem">
+      <p style="font-size:0.78rem;color:var(--pedra);line-height:1.5">
+        Cada ruta porta a una o més balises on pots aconseguir medalles. Segueix la ruta a Wikiloc i escaneja els QRs que trobaràs al camí.
+      </p>
+    </div>
+
+    <!-- Ruta 1 -->
+    <div class="ruta-card">
+      <div class="ruta-header">
+        <div class="ruta-num">1</div>
+        <div>
+          <div class="ruta-nom">Cova del Moro des de Fàtima</div>
+        </div>
+      </div>
+      <div class="ruta-stats">
+        <span class="ruta-stat">📏 3,34 km</span>
+        <span class="ruta-stat">⬆️ 392 m</span>
+        <span class="ruta-stat">⏱️ 49 min</span>
+        <span class="ruta-stat">🔵 Moderada</span>
+        <span class="ruta-stat">➡️ Només anada</span>
+      </div>
+      <div class="ruta-medalles">
+        <span style="font-size:0.7rem;color:var(--pedra)">Medalles:</span>
+        <span class="ruta-medalla-chip">🌙 Cova del Moro</span>
+      </div>
+      <a class="btn-wikiloc" href="https://loc.wiki/t/241386671" target="_blank" rel="noopener">
+        <span>▶</span> Obrir a Wikiloc
+      </a>
+    </div>
+
+    <!-- Ruta 2 -->
+    <div class="ruta-card">
+      <div class="ruta-header">
+        <div class="ruta-num">2</div>
+        <div>
+          <div class="ruta-nom">Sender Pinya Seka des del Replà de Sant Ramon</div>
+        </div>
+      </div>
+      <div class="ruta-stats">
+        <span class="ruta-stat">📏 10,00 km</span>
+        <span class="ruta-stat">⬆️ 418 m</span>
+        <span class="ruta-stat">⏱️ 3h 18min</span>
+        <span class="ruta-stat">🔵 Moderada</span>
+        <span class="ruta-stat">🔄 Circular</span>
+      </div>
+      <div class="ruta-medalles">
+        <span style="font-size:0.7rem;color:var(--pedra)">Medalles:</span>
+        <span class="ruta-medalla-chip">🌲 Sender Pinya Seka</span>
+      </div>
+      <a class="btn-wikiloc" href="https://loc.wiki/t/251784397" target="_blank" rel="noopener">
+        <span>▶</span> Obrir a Wikiloc
+      </a>
+    </div>
+
+    <!-- Ruta 3 -->
+    <div class="ruta-card">
+      <div class="ruta-header">
+        <div class="ruta-num">3</div>
+        <div>
+          <div class="ruta-nom">Cova dels Miquelets + Cresta del Barretet</div>
+        </div>
+      </div>
+      <div class="ruta-stats">
+        <span class="ruta-stat">📏 7,22 km</span>
+        <span class="ruta-stat">⬆️ 481 m</span>
+        <span class="ruta-stat">⏱️ 2h 18min</span>
+        <span class="ruta-stat">🔵 Moderada</span>
+        <span class="ruta-stat">🔄 Circular</span>
+      </div>
+      <div class="ruta-medalles">
+        <span style="font-size:0.7rem;color:var(--pedra)">Medalles:</span>
+        <span class="ruta-medalla-chip">⚔️ Cova dels Miquelets</span>
+        <span class="ruta-medalla-chip">🏔️ El Barretet</span>
+      </div>
+      <a class="btn-wikiloc" href="https://loc.wiki/t/268673465" target="_blank" rel="noopener">
+        <span>▶</span> Obrir a Wikiloc
+      </a>
+    </div>
+
+    <p style="font-size:0.68rem;color:rgba(168,152,128,0.4);text-align:center;padding:0.5rem 0 1rem">
+      Rutes publicades a Wikiloc per Francesc
+    </p>
+  </div>
+
+  <!-- TAB RANKING -->
+  <div id="tab-ranking" style="display:none">
+    <div id="ranking-llista"></div>
+  </div>
+
+  <!-- Botó escàner flotant -->
+  <button class="btn-scan" onclick="iniciarEscaner()">
+    <span>📷</span> Escanejar QR
+  </button>
+</div>
+
+<!-- ══ PANTALLA ESCÀNER ══ -->
+<div id="pantalla-escaner">
+  <div id="qr-reader"></div>
+  <button class="btn-tancar-scan" onclick="tancarEscaner()">✕ Cancel·lar</button>
+</div>
+
+<div id="toast"></div>
+
+</body>
+</html>

@@ -136,8 +136,8 @@ onAuthStateChanged(auth, async (user) => {
   usuariActual = user;
   if (user) {
     esAdmin = ADMINS.includes(user.uid);
-    await assegurarPerfil(user);
-    mostrarPantalla('joc');
+    const introVista = await assegurarPerfil(user);
+    mostrarPantalla(introVista ? 'joc' : 'intro');
     carregarPerfil();
     escoltarRanking();
   } else {
@@ -168,9 +168,24 @@ async function assegurarPerfil(user) {
       email: user.email,
       medalles: [],
       punts: 0,
+      introVista: false,
       creat: serverTimestamp()
     });
+    return false;
   }
+  return !!snap.data().introVista;
+}
+
+async function tancarIntro() {
+  mostrarPantalla('joc');
+  if (usuariActual) {
+    const ref = doc(db, 'usuaris', usuariActual.uid);
+    updateDoc(ref, { introVista: true }).catch(() => {});
+  }
+}
+
+function obrirIntro() {
+  mostrarPantalla('intro');
 }
 
 // ════════════════════════════════════════════════════════
@@ -473,7 +488,7 @@ function mostrarToast(msg, error = false) {
 }
 
 function mostrarPantalla(id) {
-  ['login', 'joc', 'escaner'].forEach(p =>
+  ['login', 'joc', 'escaner', 'intro'].forEach(p =>
     document.getElementById('pantalla-' + p).style.display = p === id ? 'block' : 'none'
   );
 }
@@ -488,6 +503,8 @@ function mostrarTab(tab) {
 // Exposa funcions al HTML
 window.loginGoogle = loginGoogle;
 window.logout = logout;
+window.tancarIntro = tancarIntro;
+window.obrirIntro = obrirIntro;
 window.iniciarEscaner = iniciarEscaner;
 window.tancarEscaner = tancarEscaner;
 window.mostrarAdmin = mostrarAdmin;
@@ -573,6 +590,12 @@ header {
 #usuari-foto { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--bosc-clar); cursor: pointer; }
 .btn-logout { background: none; border: none; color: var(--pedra); font-size: 0.75rem; cursor: pointer; padding: 0.3rem 0.6rem; border-radius: 6px; }
 .btn-logout:hover { color: var(--crema); }
+.btn-info {
+  background: none; border: 1px solid rgba(255,255,255,0.15); color: var(--pedra);
+  font-size: 0.75rem; cursor: pointer; width: 26px; height: 26px;
+  border-radius: 50%; flex-shrink: 0; margin-right: 0.3rem;
+}
+.btn-info:hover { color: var(--crema); border-color: rgba(255,255,255,0.3); }
 
 /* ── PANTALLA LOGIN ── */
 #pantalla-login {
@@ -583,6 +606,50 @@ header {
 .login-logo { font-size: 5rem; margin-bottom: 1rem; }
 .login-titol { font-family: 'Fraunces', serif; font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
 .login-sub { color: var(--pedra); font-size: 0.9rem; margin-bottom: 2.5rem; line-height: 1.6; }
+/* ── PANTALLA INTRO ── */
+#pantalla-intro {
+  min-height: 100vh;
+  padding: 3rem 1.5rem 2rem;
+  text-align: center;
+}
+.intro-card { max-width: 440px; margin: 0 auto; }
+.intro-logo { font-size: 4rem; margin-bottom: 1rem; display: block; }
+.intro-titol { font-family: 'Fraunces', serif; font-size: 1.7rem; font-weight: 700; margin-bottom: 1.8rem; }
+.joc-explicacio {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px;
+  padding: 1.2rem;
+  margin-bottom: 1.8rem;
+  text-align: left;
+}
+.pas {
+  display: flex;
+  gap: 0.7rem;
+  margin-bottom: 0.9rem;
+  font-size: 0.9rem;
+  color: var(--pedra);
+  line-height: 1.4;
+}
+.pas:last-child { margin-bottom: 0; }
+.pas-icon { flex-shrink: 0; font-size: 1.1rem; }
+.pas strong { color: var(--crema); }
+.btn-principal {
+  width: 100%;
+  background: var(--bosc-clar);
+  color: var(--crema);
+  border: none;
+  border-radius: 14px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 1rem 1.5rem;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.1s;
+}
+.btn-principal:hover { background: #4E8A57; }
+.btn-principal:active { transform: scale(0.98); }
+
 .btn-google {
   display: flex; align-items: center; gap: 0.8rem;
   background: white; color: #333;
@@ -809,6 +876,29 @@ header {
   </button>
 </div>
 
+<!-- ══ PANTALLA INTRO ══ -->
+<div id="pantalla-intro" style="display:none">
+  <div class="intro-card">
+    <span class="intro-logo">🧭</span>
+    <h1 class="intro-titol">Rutes Planenques — com funciona?</h1>
+    <div class="joc-explicacio">
+      <div class="pas">
+        <span class="pas-icon">📍</span>
+        <span>Hi ha <strong>balises repartides pel territori</strong>. Cada QR que trobes és una balisa diferent.</span>
+      </div>
+      <div class="pas">
+        <span class="pas-icon">🏅</span>
+        <span>Cada balisa dona una <strong>medalla única i punts</strong> que s'acumulen al teu perfil.</span>
+      </div>
+      <div class="pas">
+        <span class="pas-icon">🏆</span>
+        <span>Quan les completes totes, <strong>guanyes un premi</strong>. Hi ha un ranking públic entre tots els participants.</span>
+      </div>
+    </div>
+    <button class="btn-principal" onclick="tancarIntro()">Entesos, anem-hi!</button>
+  </div>
+</div>
+
 <!-- ══ PANTALLA JOC ══ -->
 <div id="pantalla-joc">
   <header>
@@ -818,6 +908,7 @@ header {
       <span>Rutes · Col·lecció · Ranking</span>
     </div>
     <img id="usuari-foto" src="" alt="Foto perfil" title="El teu perfil">
+    <button class="btn-info" onclick="obrirIntro()" title="Com funciona?">❔</button>
     <button class="btn-logout" onclick="logout()">Sortir</button>
   </header>
 

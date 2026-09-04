@@ -379,7 +379,8 @@ async function processarQR(text) {
   } catch {}
 
   // 3. QR no reconegut
-  mostrarToast('QR no reconegut al sistema.', true);
+  console.error('QR no reconegut. Text llegit:', text);
+  mostrarToast('QR no reconegut: ' + text.slice(0, 70), true);
 }
 
 async function validarIAtorgarMedalla(balisa, verificarGPS) {

@@ -123,6 +123,7 @@ const RUTES_INFO = {
     subtitol: "Un racó llegendari sota el Replà",
     imatge: "rutes/cova-del-moro.jpg.jpg",
     wikiloc: "https://loc.wiki/t/241386671",
+    foto360: "https://photos.google.com/direct/AF1QipPRY6kTJtQt0kCstaaSuMnqO7t5DAgPtHcSPLt5N2vByZvBQdpWQgHLNzmxiG197A/photos",
     paragrafs: [
       `Com a la majoria de planencs als que ens agrada el senderisme, pujar a Sant Ramon és una de les activitats recurrents quan vols fer esport, tenir bones vistes o simplement estar en contacte amb la natura.`,
       `Particularment, des de ben petit que hi he anat pujant, ja sigui amb la família o els amics, i ja sempre n'havia sentit parlar, de la Cova del Moro. Era gent del poble que hi havien estat de joves però que ja en tenien un record desdibuixat. Les indicacions per trobar-la eren senzilles i sempre les mateixes: que estava just sota del Replà i que l'entrada estava bastant amagada entre roques i matolls.`,
@@ -162,6 +163,14 @@ function obrirRutaDetall(clau) {
   document.getElementById('ruta-detall-titol').textContent = r.titol;
   document.getElementById('ruta-detall-subtitol').textContent = r.subtitol;
   document.getElementById('ruta-detall-wikiloc').href = r.wikiloc;
+
+  const btnFoto360 = document.getElementById('ruta-detall-foto360');
+  if (r.foto360) {
+    btnFoto360.href = r.foto360;
+    btnFoto360.style.display = 'flex';
+  } else {
+    btnFoto360.style.display = 'none';
+  }
 
   let html = r.paragrafs.map(p => `<p>${p}</p>`).join('');
   if (r.llegenda?.length) {
@@ -837,7 +846,7 @@ header {
 /* ── PANTALLA LOGIN ── */
 #pantalla-login {
   display: flex; flex-direction: column; align-items: center;
-  justify-content: flex-end; min-height: 100vh; padding: 2rem 2rem 3.5rem;
+  justify-content: center; min-height: 100vh; padding: 2rem;
   text-align: center;
   background-image: url('25AC0713-CCD6-4CF5-9F73-BBC6A50CCC6A.png');
   background-size: cover;
@@ -1107,6 +1116,16 @@ header {
 .ruta-detall-titol { font-family: 'Fraunces', serif; font-size: 1.7rem; font-weight: 700; margin-bottom: 0.2rem; }
 .ruta-detall-subtitol { color: var(--pedra); font-style: italic; font-size: 0.9rem; margin-bottom: 1.3rem; }
 .ruta-detall-botons { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.8rem; }
+.btn-foto360 {
+  width: 100%; background: rgba(123,181,200,0.12);
+  border: 1px solid rgba(123,181,200,0.35);
+  color: var(--cel); border-radius: 10px;
+  padding: 0.65rem; font-size: 0.85rem; font-weight: 700;
+  font-family: 'Space Grotesk', sans-serif;
+  cursor: pointer; display: flex; align-items: center;
+  justify-content: center; gap: 0.5rem;
+  text-decoration: none;
+}
 .ruta-detall-article p {
   font-size: 0.9rem; line-height: 1.7; color: var(--crema);
   margin-bottom: 1rem;
@@ -1411,6 +1430,9 @@ header {
     <div class="ruta-detall-botons">
       <a class="btn-wikiloc" id="ruta-detall-wikiloc" href="#" target="_blank" rel="noopener">
         <span>▶</span> Obrir a Wikiloc
+      </a>
+      <a class="btn-foto360" id="ruta-detall-foto360" href="#" target="_blank" rel="noopener" style="display:none">
+        <span>🔭</span> Veure foto 360°
       </a>
       <button class="btn-principal" onclick="iniciarEscaner()">📷 Escanejar QR</button>
     </div>

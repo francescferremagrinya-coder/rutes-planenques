@@ -282,13 +282,21 @@ function escoltarRanking() {
 // ════════════════════════════════════════════════════════
 async function iniciarEscaner() {
   mostrarPantalla('escaner');
-  const { Html5Qrcode } = await import('https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.esm.min.js');
-  escaner = new Html5Qrcode("qr-reader");
 
   try {
+    const { Html5Qrcode } = await import('https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.esm.min.js');
+    escaner = new Html5Qrcode("qr-reader");
+
     await escaner.start(
       { facingMode: "environment" },
-      { fps: 10, qrbox: { width: 250, height: 250 } },
+      {
+        fps: 10,
+        qrbox: (viewfinderWidth, viewfinderHeight) => {
+          const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+          const mida = Math.floor(minEdge * 0.7);
+          return { width: mida, height: mida };
+        }
+      },
       async (text) => {
         await escaner.stop();
         escaner = null;
@@ -298,6 +306,7 @@ async function iniciarEscaner() {
       () => {}
     );
   } catch (e) {
+    console.error('Error escàner QR:', e);
     mostrarToast('No s\'ha pogut accedir a la càmera.', true);
     mostrarPantalla('joc');
   }

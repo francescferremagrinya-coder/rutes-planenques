@@ -3,7 +3,7 @@
 //  Gestiona cache offline i instal·lació PWA
 // ════════════════════════════════════════════════════════
 
-const CACHE_NOM = 'medalles-v1';
+const CACHE_NOM = 'medalles-v2';
 const CACHE_FITXERS = [
   '/',
   '/index.html',
@@ -46,7 +46,7 @@ self.addEventListener('fetch', (e) => {
   }
 
   e.respondWith(
-    fetch(e.request)
+    fetch(e.request, { cache: 'no-store' })
       .then(res => {
         // Desa una còpia al cache si és una resposta vàlida
         if (res && res.status === 200 && e.request.method === 'GET') {

@@ -49,8 +49,9 @@ const BALISES = [
     categoria: "Natura · Ruta 1",
     descripcio: "Amagada a recer d'un cingle, sota el Replà de Sant Ramon",
     // QR vell — URL del Google Forms existent
-    url_forms: "https://docs.google.com/forms/d/e/1FAIpQLSe4O9QkQoyZDrrpCAVmdT64uSn7QtgK9Sa6TwmF-t3ccwWYVg/viewform",
-    imatge: "medalles/cova-moro.jpg", // puja la imatge a Firebase Storage
+    url_forms: "https://forms.gle/UZW21uXbtgjtQKfd6",
+    imatge: "medalles/cova-moro.png",
+    nomCaixa: { xPct: 0.5, yPct: 0.925, mida: 0.05, color: '#5C4A2A' },
     lat: 41.3825203, lng: 1.2719173,
     radi: 150 // permissiu per QR vell
   },
@@ -63,8 +64,10 @@ const BALISES = [
     categoria: "Senderisme · Ruta 2",
     descripcio: "Al mig del sender, penjat d'un arbre entre la Serra de Jordà",
     // QR vell — URL del Google Forms existent
-    url_forms: "https://docs.google.com/forms/d/e/1FAIpQLSesMApQaXxAWiFkqbxcs8P1tOqz3TcItep1c1XrI0V119ynfQ/viewform",
-    imatge: "medalles/pinya-seka.jpg",
+    url_forms: "https://forms.gle/KTevBUxyK8y8zmng9",
+    imatge: "medalles/pinya-seka.png",
+    // Aquest disseny no té requadre buit — el nom es posa sobre la pinya, en clar
+    nomCaixa: { xPct: 0.5, yPct: 0.93, mida: 0.04, color: '#F5F0E8' },
     lat: 41.3838820, lng: 1.2623492,
     radi: 150
   },
@@ -77,9 +80,10 @@ const BALISES = [
     categoria: "Patrimoni · Ruta 3",
     descripcio: "Dins la cova on els Miquelets van resistir durant la Guerra de Successió",
     // QR vell — URL del Google Forms existent
-    url_forms: "https://docs.google.com/forms/d/e/1FAIpQLSeDc9sVAOUKUJ6jzNsQdIxsh0K3M_cTP-J8KKuTc2gmYb4tMQ/viewform",
+    url_forms: "https://forms.gle/nsBHwvk3EHx3n9fi7",
     token: "mqlts26fr", // token secret — no compartir
-    imatge: "medalles/cova-miquelets.jpg",
+    imatge: "medalles/cova-miquelets.png",
+    nomCaixa: { xPct: 0.5, yPct: 0.925, mida: 0.045, color: '#5C4A2A' },
     lat: 41.3880119, lng: 1.2799082,
     radi: 80
   },
@@ -92,9 +96,10 @@ const BALISES = [
     categoria: "Cims · Ruta 3",
     descripcio: "Just al cim del Barretet, amb vistes sobre tot el Pla de Santa Maria",
     // QR vell — URL del Google Forms existent
-    url_forms: "https://docs.google.com/forms/d/e/1FAIpQLScREcEds_WiN9gdwkPJYtoj_ojLN_iYYG65hdUu7ThqdhVIMw/viewform",
+    url_forms: "https://forms.gle/2nGFKJ16v6TBzEFK7",
     token: "brrtt94xk", // token secret — no compartir
-    imatge: "medalles/barretet.jpg",
+    imatge: "medalles/barretet.png",
+    nomCaixa: { xPct: 0.5, yPct: 0.895, mida: 0.06, color: '#5C4A2A' },
     lat: 41.3895322, lng: 1.2774020,
     radi: 60
   }
@@ -184,6 +189,10 @@ async function tancarIntro() {
   }
 }
 
+function obrirIntro() {
+  mostrarPantalla('intro');
+}
+
 // ════════════════════════════════════════════════════════
 //  PERFIL I MEDALLES
 // ════════════════════════════════════════════════════════
@@ -221,11 +230,11 @@ function renderPerfil(dades) {
     div.style.setProperty('--color', b.color);
 
     if (ob) {
-      // Medalla obtinguda — mostra imatge real o emoji de fallback
+      // Medalla obtinguda — mostra imatge real (personalitzada amb el nom) o emoji de fallback
       div.innerHTML = `
         <div class="medalla-img-wrap">
           ${b.imatge
-            ? `<img class="medalla-img" src="${b.imatge}" alt="${b.nom}"
+            ? `<img class="medalla-img" id="medalla-img-${b.id}" src="${b.imatge}" alt="${b.nom}"
                onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
                <span class="medalla-icon-fb" style="display:none">${b.icon}</span>`
             : `<span class="medalla-icon">${b.icon}</span>`
@@ -235,13 +244,14 @@ function renderPerfil(dades) {
         <span class="medalla-cat">${b.categoria}</span>
         <span class="medalla-pts">+${b.punts} pts</span>
         <span class="medalla-data">${formatData(ob.data?.toDate?.() || new Date(ob.data))}</span>
+        <br><button class="btn-compartir" onclick="compartirMedalla('${b.id}')">📤 Compartir</button>
       `;
     } else {
-      // Medalla bloquejada — icona desenfocada amb cadenat al damunt
+      // Medalla bloquejada — silueta negra amb interrogant per crear intriga
       div.innerHTML = `
         <div class="medalla-img-wrap bloq">
           <span class="medalla-icon">${b.icon}</span>
-          <span class="medalla-bloq-overlay">🔒</span>
+          <span class="medalla-bloq-overlay">?</span>
         </div>
         <span class="medalla-nom" style="color:var(--pedra)">Per descobrir</span>
         <span class="medalla-cat">${b.categoria}</span>
@@ -260,6 +270,63 @@ function renderPerfil(dades) {
 
   // Admin panel
   document.getElementById('admin-btn').style.display = esAdmin ? 'block' : 'none';
+
+  // Personalitza les imatges de les medalles amb el nom de l'usuari
+  personalitzarMedalles(dades.nom, medalles);
+}
+
+// ════════════════════════════════════════════════════════
+//  MEDALLES PERSONALITZADES (Canvas)
+//  Dibuixa el nom de l'usuari sobre la imatge de cada medalla
+// ════════════════════════════════════════════════════════
+
+// Posició per defecte del requadre del nom (com a % de la imatge).
+// Es pot ajustar per balisa amb la propietat "nomCaixa" a BALISES.
+const NOM_CAIXA_DEFECTE = { xPct: 0.5, yPct: 0.90, mida: 0.045, color: '#3D2E1A' };
+
+async function crearImatgePersonalitzada(balisa, nom) {
+  if (!balisa.imatge) throw new Error('Sense imatge');
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  const carregada = new Promise((resolve, reject) => {
+    img.onload = resolve;
+    img.onerror = () => reject(new Error('No s\'ha pogut carregar la imatge'));
+  });
+  img.src = balisa.imatge;
+  await carregada;
+  if (document.fonts?.ready) { try { await document.fonts.ready; } catch {} }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = img.naturalWidth;
+  canvas.height = img.naturalHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+
+  const caixa = balisa.nomCaixa || NOM_CAIXA_DEFECTE;
+  const midaFont = Math.round(canvas.height * caixa.mida);
+  ctx.font = `700 ${midaFont}px 'Fraunces', serif`;
+  ctx.fillStyle = caixa.color;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(nom, canvas.width * caixa.xPct, canvas.height * caixa.yPct);
+
+  return canvas;
+}
+
+async function personalitzarMedalles(nom, medallesObtingudes) {
+  if (!nom) return;
+  for (const m of medallesObtingudes) {
+    const balisa = BALISES.find(b => b.id === m.id);
+    if (!balisa || !balisa.imatge) continue;
+    const imgEl = document.getElementById('medalla-img-' + balisa.id);
+    if (!imgEl) continue;
+    try {
+      const canvas = await crearImatgePersonalitzada(balisa, nom);
+      imgEl.src = canvas.toDataURL('image/png');
+    } catch (e) {
+      console.error('No s\'ha pogut personalitzar la medalla', balisa.id, e);
+    }
+  }
 }
 
 // ════════════════════════════════════════════════════════
@@ -375,6 +442,7 @@ async function processarQR(text) {
   } catch {}
 
   // 3. QR no reconegut
+  console.error('QR no reconegut. Text llegit:', text);
   mostrarToast('QR no reconegut al sistema.', true);
 }
 
@@ -474,6 +542,44 @@ function formatData(d) {
   return d.toLocaleDateString('ca', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+async function compartirMedalla(id) {
+  const balisa = BALISES.find(b => b.id === id);
+  if (!balisa) return;
+  const nom = usuariActual?.displayName || '';
+  const text = `He aconseguit la medalla "${balisa.nom}" a Rutes Planenques! 🏅`;
+  const url = location.origin + location.pathname;
+
+  try {
+    let blob = null;
+    if (balisa.imatge) {
+      try {
+        const canvas = await crearImatgePersonalitzada(balisa, nom);
+        blob = await new Promise(res => canvas.toBlob(res, 'image/png'));
+      } catch {
+        const resp = await fetch(balisa.imatge);
+        if (resp.ok) blob = await resp.blob();
+      }
+    }
+    if (blob && navigator.canShare) {
+      const file = new File([blob], balisa.id + '.png', { type: blob.type || 'image/png' });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: balisa.nom, text });
+        return;
+      }
+    }
+    if (navigator.share) {
+      await navigator.share({ title: balisa.nom, text, url });
+      return;
+    }
+  } catch (e) {
+    if (e.name === 'AbortError') return;
+  }
+
+  // Fallback (navegadors sense Web Share API): obre la imatge perquè es pugui desar manualment
+  if (balisa.imatge) window.open(balisa.imatge, '_blank');
+  else mostrarToast('El teu navegador no permet compartir directament.', true);
+}
+
 let toastTimer;
 function mostrarToast(msg, error = false) {
   const el = document.getElementById('toast');
@@ -500,10 +606,12 @@ function mostrarTab(tab) {
 window.loginGoogle = loginGoogle;
 window.logout = logout;
 window.tancarIntro = tancarIntro;
+window.obrirIntro = obrirIntro;
 window.iniciarEscaner = iniciarEscaner;
 window.tancarEscaner = tancarEscaner;
 window.mostrarAdmin = mostrarAdmin;
 window.mostrarTab = mostrarTab;
+window.compartirMedalla = compartirMedalla;
 
 // Registre Service Worker (PWA)
 if ('serviceWorker' in navigator) {
@@ -585,6 +693,12 @@ header {
 #usuari-foto { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--bosc-clar); cursor: pointer; }
 .btn-logout { background: none; border: none; color: var(--pedra); font-size: 0.75rem; cursor: pointer; padding: 0.3rem 0.6rem; border-radius: 6px; }
 .btn-logout:hover { color: var(--crema); }
+.btn-info {
+  background: none; border: 1px solid rgba(255,255,255,0.15); color: var(--pedra);
+  font-size: 0.75rem; cursor: pointer; width: 26px; height: 26px;
+  border-radius: 50%; flex-shrink: 0; margin-right: 0.3rem;
+}
+.btn-info:hover { color: var(--crema); border-color: rgba(255,255,255,0.3); }
 
 /* ── PANTALLA LOGIN ── */
 #pantalla-login {
@@ -685,41 +799,67 @@ header {
 /* Medalles */
 .seccio-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--pedra); padding: 0 1.2rem; margin-bottom: 0.6rem; }
 .medalles-grid {
-  display: grid; grid-template-columns: repeat(3, 1fr);
-  gap: 0.6rem; padding: 0 1.2rem;
+  display: flex;
+  gap: 0.9rem;
+  padding: 0.2rem 1.2rem 1rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
+.medalles-grid::-webkit-scrollbar { display: none; }
 .medalla {
+  flex: 0 0 auto;
+  width: 190px;
+  scroll-snap-align: start;
   background: rgba(255,255,255,0.04);
   border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 12px; padding: 0.8rem 0.4rem;
+  border-radius: 16px; padding: 1.2rem 0.8rem;
   text-align: center; transition: all 0.3s;
 }
 .medalla.obtinguda {
   background: rgba(61,107,69,0.2);
   border-color: rgba(61,107,69,0.5);
+  box-shadow: 0 6px 24px rgba(212,168,67,0.12);
 }
 .medalla-img-wrap {
-  width: 72px; height: 72px; margin: 0 auto 0.4rem;
-  border-radius: 8px; overflow: hidden;
+  width: 128px; height: 128px; margin: 0 auto 0.7rem;
+  border-radius: 12px; overflow: hidden;
   display: flex; align-items: center; justify-content: center;
 }
-.medalla-img-wrap.bloq { position: relative; }
+.medalla-img-wrap.bloq { position: relative; background: rgba(0,0,0,0.15); }
 .medalla-img-wrap.bloq .medalla-icon {
-  filter: blur(3px) brightness(0.3);
-  transform: scale(1.05);
+  filter: brightness(0);
+  opacity: 0.8;
 }
 .medalla-bloq-overlay {
   position: absolute; inset: 0;
   display: flex; align-items: center; justify-content: center;
-  font-size: 1rem;
+  font-size: 2.6rem;
+  font-weight: 900;
+  font-family: 'Fraunces', serif;
+  color: var(--or);
+  text-shadow: 0 2px 10px rgba(0,0,0,0.6);
 }
 .medalla-img { width: 100%; height: 100%; object-fit: contain; }
-.medalla-icon { font-size: 2rem; }
-.medalla-icon-fb { font-size: 2rem; }
-.medalla-nom { display: block; font-size: 0.62rem; font-weight: 700; color: var(--crema); line-height: 1.2; }
-.medalla-cat { display: block; font-size: 0.55rem; color: var(--pedra); opacity: 0.7; margin-top: 0.1rem; }
-.medalla-pts { display: block; font-size: 0.6rem; color: var(--or); font-weight: 700; margin-top: 0.2rem; }
-.medalla-data { display: block; font-size: 0.55rem; color: var(--pedra); margin-top: 0.1rem; }
+.medalla-icon { font-size: 3.4rem; }
+.medalla-icon-fb { font-size: 3.4rem; }
+.medalla-nom { display: block; font-size: 0.85rem; font-weight: 700; color: var(--crema); line-height: 1.25; }
+.medalla-cat { display: block; font-size: 0.68rem; color: var(--pedra); opacity: 0.7; margin-top: 0.15rem; }
+.medalla-pts { display: block; font-size: 0.75rem; color: var(--or); font-weight: 700; margin-top: 0.3rem; }
+.medalla-data { display: block; font-size: 0.66rem; color: var(--pedra); margin-top: 0.15rem; }
+.btn-compartir {
+  margin-top: 0.7rem;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: var(--crema);
+  border-radius: 20px;
+  padding: 0.4rem 0.9rem;
+  font-size: 0.7rem;
+  font-family: 'Space Grotesk', sans-serif;
+  cursor: pointer;
+}
+.btn-compartir:hover { border-color: rgba(255,255,255,0.25); }
 
 /* Rutes Wikiloc */
 #tab-rutes { padding: 0 1.2rem; }
@@ -897,6 +1037,7 @@ header {
       <span>Rutes · Col·lecció · Ranking</span>
     </div>
     <img id="usuari-foto" src="" alt="Foto perfil" title="El teu perfil">
+    <button class="btn-info" onclick="obrirIntro()" title="Com funciona?">❔</button>
     <button class="btn-logout" onclick="logout()">Sortir</button>
   </header>
 

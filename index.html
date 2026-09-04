@@ -6,6 +6,7 @@
 <title>Medalles · Rutes del Pla</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#1A2E1D">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Medalles">
@@ -280,11 +281,22 @@ function escoltarRanking() {
 // ════════════════════════════════════════════════════════
 //  ESCÀNER QR
 // ════════════════════════════════════════════════════════
+function carregarHtml5Qrcode() {
+  return new Promise((resolve, reject) => {
+    if (window.Html5Qrcode) { resolve(window.Html5Qrcode); return; }
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js';
+    script.onload = () => resolve(window.Html5Qrcode);
+    script.onerror = () => reject(new Error('No s\'ha pogut carregar la llibreria de l\'escàner (comprova la connexió).'));
+    document.head.appendChild(script);
+  });
+}
+
 async function iniciarEscaner() {
   mostrarPantalla('escaner');
 
   try {
-    const { Html5Qrcode } = await import('https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.esm.min.js');
+    const Html5Qrcode = await carregarHtml5Qrcode();
     escaner = new Html5Qrcode("qr-reader");
 
     await escaner.start(
@@ -307,7 +319,12 @@ async function iniciarEscaner() {
     );
   } catch (e) {
     console.error('Error escàner QR:', e);
-    mostrarToast('No s\'ha pogut accedir a la càmera.', true);
+    const nom = e?.name || '';
+    let missatge = 'No s\'ha pogut accedir a la càmera.';
+    if (nom === 'NotAllowedError') missatge = 'Cal donar permís a la càmera per escanejar.';
+    else if (nom === 'NotFoundError') missatge = 'No s\'ha trobat cap càmera al dispositiu.';
+    else if (e?.message?.includes('llibreria')) missatge = e.message;
+    mostrarToast(missatge, true);
     mostrarPantalla('joc');
   }
 }

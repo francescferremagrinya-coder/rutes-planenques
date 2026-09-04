@@ -247,10 +247,15 @@ function renderPerfil(dades) {
         <br><button class="btn-compartir" onclick="compartirMedalla('${b.id}')">📤 Compartir</button>
       `;
     } else {
-      // Medalla bloquejada — silueta negra amb interrogant per crear intriga
+      // Medalla bloquejada — silueta negra de la imatge real amb interrogant per crear intriga
       div.innerHTML = `
         <div class="medalla-img-wrap bloq">
-          <span class="medalla-icon">${b.icon}</span>
+          ${b.imatge
+            ? `<img class="medalla-img medalla-silueta" src="${b.imatge}" alt=""
+               onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+               <span class="medalla-icon-fb medalla-silueta" style="display:none">${b.icon}</span>`
+            : `<span class="medalla-icon medalla-silueta">${b.icon}</span>`
+          }
           <span class="medalla-bloq-overlay">?</span>
         </div>
         <span class="medalla-nom" style="color:var(--pedra)">Per descobrir</span>
@@ -705,6 +710,9 @@ header {
   display: flex; flex-direction: column; align-items: center;
   justify-content: center; min-height: 80vh; padding: 2rem;
   text-align: center;
+  background-image: linear-gradient(rgba(26,46,29,0.72), rgba(26,46,29,0.92)), url('25AC0713-CCD6-4CF5-9F73-BBC6A50CCC6A.png');
+  background-size: cover;
+  background-position: center;
 }
 .login-logo { font-size: 5rem; margin-bottom: 1rem; }
 .login-titol { font-family: 'Fraunces', serif; font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
@@ -766,7 +774,13 @@ header {
 .btn-google svg { width: 20px; height: 20px; }
 
 /* ── PANTALLA JOC ── */
-#pantalla-joc { display: none; padding-bottom: 6rem; }
+#pantalla-joc {
+  display: none; padding-bottom: 6rem;
+  background-image: linear-gradient(rgba(26,46,29,0.88), rgba(26,46,29,0.95)), url('FB1E0EEA-2535-4D04-B3EE-1D3E0A718CCD.png');
+  background-size: cover;
+  background-position: top center;
+  background-repeat: no-repeat;
+}
 
 /* Tabs */
 .tabs {
@@ -828,9 +842,9 @@ header {
   display: flex; align-items: center; justify-content: center;
 }
 .medalla-img-wrap.bloq { position: relative; background: rgba(0,0,0,0.15); }
-.medalla-img-wrap.bloq .medalla-icon {
+.medalla-img-wrap.bloq .medalla-silueta {
   filter: brightness(0);
-  opacity: 0.8;
+  opacity: 0.85;
 }
 .medalla-bloq-overlay {
   position: absolute; inset: 0;

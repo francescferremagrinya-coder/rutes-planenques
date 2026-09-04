@@ -115,6 +115,72 @@ const PREMI = {
 };
 
 // ════════════════════════════════════════════════════════
+//  📖 RUTES — article i portada de cada nivell
+// ════════════════════════════════════════════════════════
+const RUTES_INFO = {
+  moro: {
+    titol: "La Cova del Moro",
+    subtitol: "Un racó llegendari sota el Replà",
+    imatge: "rutes/cova-del-moro.jpg",
+    wikiloc: "https://loc.wiki/t/241386671",
+    paragrafs: [
+      `Com a la majoria de planencs als que ens agrada el senderisme, pujar a Sant Ramon és una de les activitats recurrents quan vols fer esport, tenir bones vistes o simplement estar en contacte amb la natura.`,
+      `Particularment, des de ben petit que hi he anat pujant, ja sigui amb la família o els amics, i ja sempre n'havia sentit parlar, de la Cova del Moro. Era gent del poble que hi havien estat de joves però que ja en tenien un record desdibuixat. Les indicacions per trobar-la eren senzilles i sempre les mateixes: que estava just sota del Replà i que l'entrada estava bastant amagada entre roques i matolls.`,
+      `Amb aquestes indicacions, ens passàvem hores buscant-la sense èxit, acabant esgarrinxats per les argelagues, coscolls i esbarzers. Sempre havíem pensat que l'entrada a la cova devia estar tapada, perquè no hi havia manera de trobar-la, i mentrestant el misteri i la intriga anaven augmentant.`,
+      `Fa relativament poc, amb la colla d'amics i durant l'època post-covid, aprofitant que erem bastants, vam anar rastrejant la zona de les cingleres que hi ha just sota del Replà de Sant Ramon, una zona per on ja havíem estat, però on no ens havíem centrat tant en la roca. Justament en una escletxa que s'obre a la paret d'un dels cingles que hi ha sota del Replà, al costat d'una agulla, on l'accés és bastant complicat degut a la vegetació i a la verticalitat del lloc, la vam localitzar.`,
+      `Un cop la vam trobar, es va obrir un sender d'uns 200 metres que va des de la bandera del Replà fins a l'inici de la cova. El sender perd alçada salvant el màxim possible la pendent i un cop a l'alçada de la part baixa de la cinglera, es dirigeix horitzontalment direcció a l'entrada de la cavitat. Tota aquesta travessa ofereix unes vistes panoràmiques espectaculars del Pla, Figuerola i dels propis penys de roca del Replà a la que no estem acostumats a veure des d'aquella perspectiva.`,
+      `Un cop sota la cova, s'ha de fer una petita grimpada i passar per un pas estret entre una agulla i la paret de roca. Tot el camí és assequible per a la majoria de gent acostumada a caminar en entorns de muntanya.`,
+      `Com he dit abans, l'entrada a la cova té forma d'escletxa a la roca, d'uns 40 cm d'ample per 1,5 metres d'alt. Un cop dins, la cova fa una forma d'L, com si es tractés d'un avenc o galeria: la primera part fa uns 5 o 6 metres de llarg i després gira a la dreta uns 90 graus i s'allarga uns 10 o 15 metres més, on segueix sent estreta però es fa més alta.`,
+      `Però més enllà de la seva geologia, la Cova del Moro és plena de llegendes. Algunes d'elles, recollides al llibre "Llegendari de l'Alt Camp" de Ruben Palomar Clua, ens parlen d'un espai ple de misteri i fantasia:`
+    ],
+    llegenda: [
+      `«A prop de Figuerola del Camp, als peus d'un lloc dit lo Replà, hi trobem, amagada i a recer d'un petit cingle, la cova del Moro. La cova és plena de llegendes i rondalles. Contem-ne algunes.`,
+      `Es diu que aquesta cova era la llar d'un gegant sarraí que voltava pel món. El gegant traginava la cova amunt i avall. Al damunt del cap hi portava una gran llosa plana i, a sota dels immensos braços, n'hi portava dues més.`,
+      `Quan es feia fosc, s'ajupia i les pedres formaven la cova que li feia de casa. A trenc d'alba, el gegant s'aixecava i reprenia de nou el seu viatge interminable.`,
+      `Fins que un bon dia va arribar al Replà.`,
+      `—A dalt d'aqueixa preciosa muntanya hi faré nit. No hai vist mai un lloc a tot lo món més bonic que aquet —es va dir el gegant a si mateix.`,
+      `Però vet aquí que al de matí el nostre gegant no es va despertar: havia mort mentre dormia. Amb els anys es va desfer el seu cos i la seva casa va quedar encastada a la muntanya. I la gent, en record del gegant, li va posar el seu nom.`,
+      `La tradició oral també ens explica que, en les profunditats d'aquesta cova, hi naixia un riu molt i molt profund que n'hi deien Jordà. Per això de la nostra serra també en diem així.`,
+      `I encara hi ha una altra llegenda que diu que la cova es diu del Moro pels moriscos que havien viscut a la nostra comarca. En feien servir les galeries per amagar-hi els magnífics tresors que aconseguien amb els saquejos i els robatoris.`,
+      `Quan la cova era plena a vessar, se n'enduien les riqueses cap a terres de la Mitja Lluna. Un dia els moros van descobrir que una sortida de la cova quedava a prop de la torre de la Mixarda. Des d'aleshores, també la van utilitzar com a passadís secret perquè ningú no pogués veure els moviments que feien per reconquerir el territori i també per atacar l'enemic per sorpresa.`,
+      `És en aquest lloc justament on van construir el pont dels Moros, a tocar de l'antiga torre de guaita. Així podien traspassar el barranc quan portava aigua»`
+    ],
+    paragrafsFinal: [
+      `Avui, la Cova del Moro ja no és només una llegenda. És un racó real, viu i ple d'història, un lloc que, tot i les esgarrinxades i la dificultat d'arribar-hi, recompensa amb escreix qualsevol explorador que s'hi endinsi. Un lloc més per sumar a la llista de raconets bonics del nostre terme.`,
+      `Aquesta proposta forma part del projecte de rutes del Pla, un recorregut per descobrir els racons més singulars del nostre entorn.`,
+      `Cada ruta té la seva insígnia digital col·leccionable, que només pots aconseguir si hi arribes in situ. Escaneja el QR que trobaràs al lloc mateix i podràs descarregar la teva insígnia personal de la Cova del Moro.`,
+      `Una manera d'explorar, aprendre i deixar empremta al territori.`
+    ]
+  }
+};
+
+function obrirRutaDetall(clau) {
+  const r = RUTES_INFO[clau];
+  if (!r) return;
+
+  document.getElementById('ruta-detall-hero').style.backgroundImage = `url('${r.imatge}')`;
+  document.getElementById('ruta-detall-titol').textContent = r.titol;
+  document.getElementById('ruta-detall-subtitol').textContent = r.subtitol;
+  document.getElementById('ruta-detall-wikiloc').href = r.wikiloc;
+
+  let html = r.paragrafs.map(p => `<p>${p}</p>`).join('');
+  if (r.llegenda?.length) {
+    html += '<blockquote>' + r.llegenda.map(p => `<p>${p}</p>`).join('') + '</blockquote>';
+  }
+  if (r.paragrafsFinal?.length) {
+    html += r.paragrafsFinal.map(p => `<p>${p}</p>`).join('');
+  }
+  document.getElementById('ruta-detall-article').innerHTML = html;
+
+  document.getElementById('pantalla-ruta-detall').style.display = 'block';
+  document.getElementById('pantalla-ruta-detall').scrollTop = 0;
+}
+
+function tancarRutaDetall() {
+  document.getElementById('pantalla-ruta-detall').style.display = 'none';
+}
+
+// ════════════════════════════════════════════════════════
 //  🔐 ADMIN — UIDs de Google dels administradors
 //  El teu UID el trobes a Firebase Console → Authentication
 // ════════════════════════════════════════════════════════
@@ -276,8 +342,23 @@ function renderPerfil(dades) {
   // Admin panel
   document.getElementById('admin-btn').style.display = esAdmin ? 'block' : 'none';
 
+  // Punts de posició del carrusel
+  const puntsWrap = document.getElementById('carrusel-punts');
+  puntsWrap.innerHTML = BALISES.map((_, i) => `<span class="${i === 0 ? 'actiu' : ''}"></span>`).join('');
+
   // Personalitza les imatges de les medalles amb el nom de l'usuari
   personalitzarMedalles(dades.nom, medalles);
+}
+
+function actualitzarPunts() {
+  const grid = document.getElementById('medalles-grid');
+  const targetes = grid.children;
+  if (!targetes.length) return;
+  const amplada = targetes[0].offsetWidth + 14.4; // amplada targeta + gap (0.9rem ≈ 14.4px)
+  const index = Math.round(grid.scrollLeft / amplada);
+  document.querySelectorAll('#carrusel-punts span').forEach((p, i) =>
+    p.classList.toggle('actiu', i === index)
+  );
 }
 
 // ════════════════════════════════════════════════════════
@@ -492,7 +573,32 @@ async function validarIAtorgarMedalla(balisa, verificarGPS) {
     punts: (dades.punts || 0) + balisa.punts
   });
 
-  mostrarToast(`🏅 ${balisa.icon} Medalla obtinguda: ${balisa.nom}! +${balisa.punts} pts`);
+  mostrarCelebracio(balisa);
+}
+
+// ════════════════════════════════════════════════════════
+//  CELEBRACIÓ — pantalla d'enhorabona en obtenir una medalla
+// ════════════════════════════════════════════════════════
+async function mostrarCelebracio(balisa) {
+  document.getElementById('celebracio-nom').textContent = balisa.nom;
+  document.getElementById('celebracio-punts').textContent = `+${balisa.punts} pts`;
+
+  const imgEl = document.getElementById('celebracio-img');
+  imgEl.src = balisa.imatge || '';
+  if (balisa.imatge) {
+    try {
+      const canvas = await crearImatgePersonalitzada(balisa, usuariActual?.displayName || '');
+      imgEl.src = canvas.toDataURL('image/png');
+    } catch (e) {
+      console.error('No s\'ha pogut personalitzar la imatge de celebració', e);
+    }
+  }
+
+  document.getElementById('modal-celebracio').classList.add('visible');
+}
+
+function tancarCelebracio() {
+  document.getElementById('modal-celebracio').classList.remove('visible');
 }
 
 // ════════════════════════════════════════════════════════
@@ -612,6 +718,10 @@ window.loginGoogle = loginGoogle;
 window.logout = logout;
 window.tancarIntro = tancarIntro;
 window.obrirIntro = obrirIntro;
+window.tancarCelebracio = tancarCelebracio;
+window.actualitzarPunts = actualitzarPunts;
+window.obrirRutaDetall = obrirRutaDetall;
+window.tancarRutaDetall = tancarRutaDetall;
 window.iniciarEscaner = iniciarEscaner;
 window.tancarEscaner = tancarEscaner;
 window.mostrarAdmin = mostrarAdmin;
@@ -812,6 +922,25 @@ header {
 
 /* Medalles */
 .seccio-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--pedra); padding: 0 1.2rem; margin-bottom: 0.6rem; }
+.carrusel-hint {
+  font-size: 0.72rem; color: var(--or); opacity: 0.75;
+  padding: 0 1.2rem; margin-bottom: 0.5rem;
+  animation: hint-balanceig 1.8s ease-in-out infinite;
+}
+@keyframes hint-balanceig {
+  0%, 100% { transform: translateX(0); opacity: 0.5; }
+  50% { transform: translateX(4px); opacity: 0.9; }
+}
+.carrusel-punts {
+  display: flex; justify-content: center; gap: 0.4rem;
+  margin-top: 0.6rem;
+}
+.carrusel-punts span {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  transition: background 0.2s, transform 0.2s;
+}
+.carrusel-punts span.actiu { background: var(--or); transform: scale(1.3); }
 .medalles-grid {
   display: flex;
   gap: 0.9rem;
@@ -920,6 +1049,56 @@ header {
   justify-content: center; gap: 0.5rem;
   text-decoration: none;
 }
+.btn-historia {
+  width: 100%; margin-top: 0.6rem;
+  background: rgba(212,168,67,0.1); border: 1px solid rgba(212,168,67,0.3);
+  color: var(--or); border-radius: 10px;
+  padding: 0.6rem; font-size: 0.82rem; font-weight: 700;
+  font-family: 'Space Grotesk', sans-serif;
+  cursor: pointer;
+}
+.btn-historia:hover { background: rgba(212,168,67,0.18); }
+
+/* ── PANTALLA DETALL DE RUTA (nivell) ── */
+#pantalla-ruta-detall {
+  display: none;
+  position: fixed; inset: 0; z-index: 150;
+  background: var(--fons);
+  overflow-y: auto;
+}
+.btn-tornar-ruta {
+  position: absolute; top: 1rem; left: 1rem; z-index: 5;
+  background: rgba(10,16,10,0.55); backdrop-filter: blur(6px);
+  border: 1px solid rgba(255,255,255,0.2); color: var(--crema);
+  border-radius: 20px; padding: 0.5rem 1rem;
+  font-family: 'Space Grotesk', sans-serif; font-size: 0.85rem;
+  cursor: pointer;
+}
+.ruta-detall-hero {
+  height: 42vh; min-height: 260px;
+  background-size: cover; background-position: center;
+  position: relative;
+}
+.ruta-detall-hero::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(26,46,29,0) 40%, var(--fons) 100%);
+}
+.ruta-detall-cos { padding: 1.5rem 1.3rem 3rem; margin-top: -2.5rem; position: relative; }
+.ruta-detall-titol { font-family: 'Fraunces', serif; font-size: 1.7rem; font-weight: 700; margin-bottom: 0.2rem; }
+.ruta-detall-subtitol { color: var(--pedra); font-style: italic; font-size: 0.9rem; margin-bottom: 1.3rem; }
+.ruta-detall-botons { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.8rem; }
+.ruta-detall-article p {
+  font-size: 0.9rem; line-height: 1.7; color: var(--crema);
+  margin-bottom: 1rem;
+}
+.ruta-detall-article blockquote {
+  border-left: 3px solid var(--or);
+  padding: 0.2rem 0 0.2rem 1rem;
+  margin: 1.3rem 0;
+}
+.ruta-detall-article blockquote p {
+  font-style: italic; color: var(--pedra); font-size: 0.85rem;
+}
 
 /* Premi */
 #premi-bloc {
@@ -1004,6 +1183,47 @@ header {
 }
 #toast.visible { opacity: 1; transform: translateX(-50%) translateY(0); }
 #toast.error { background: #5C2A2A; border-color: #8B4A4A; }
+
+/* Celebració de medalla nova */
+#modal-celebracio {
+  display: none;
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(10,16,10,0.88);
+  align-items: center; justify-content: center;
+  padding: 1.5rem;
+}
+#modal-celebracio.visible { display: flex; }
+.celebracio-card {
+  max-width: 340px; width: 100%;
+  background: linear-gradient(180deg, #24391f 0%, #16240f 100%);
+  border: 1px solid rgba(212,168,67,0.35);
+  border-radius: 24px;
+  padding: 2rem 1.5rem 1.8rem;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  animation: celebracio-entra 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes celebracio-entra {
+  from { transform: scale(0.7); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+.celebracio-titol {
+  font-family: 'Fraunces', serif; font-size: 1.6rem; font-weight: 700;
+  color: var(--or); margin-bottom: 0.3rem;
+}
+.celebracio-sub { color: var(--pedra); font-size: 0.85rem; margin-bottom: 1.3rem; }
+.celebracio-img {
+  width: 180px; height: 180px; object-fit: contain;
+  margin: 0 auto 1.2rem; display: block;
+  filter: drop-shadow(0 8px 24px rgba(212,168,67,0.35));
+  animation: celebracio-rebot 0.7s 0.15s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+@keyframes celebracio-rebot {
+  0% { transform: scale(0) rotate(-15deg); opacity: 0; }
+  100% { transform: scale(1) rotate(0deg); opacity: 1; }
+}
+.celebracio-nom { font-family: 'Fraunces', serif; font-size: 1.2rem; font-weight: 700; margin-bottom: 0.3rem; }
+.celebracio-punts { color: var(--or); font-weight: 700; font-size: 0.95rem; margin-bottom: 1.6rem; }
 </style>
 </head>
 <body>
@@ -1080,7 +1300,9 @@ header {
     </div>
 
     <p class="seccio-label">Les teves medalles</p>
-    <div class="medalles-grid" id="medalles-grid"></div>
+    <p class="carrusel-hint">‹ Llisca per veure-les totes ›</p>
+    <div class="medalles-grid" id="medalles-grid" onscroll="actualitzarPunts()"></div>
+    <div class="carrusel-punts" id="carrusel-punts"></div>
 
     <div id="premi-bloc">
       <span class="premi-icon">🏆</span>
@@ -1127,6 +1349,7 @@ header {
       <a class="btn-wikiloc" href="https://loc.wiki/t/241386671" target="_blank" rel="noopener">
         <span>▶</span> Obrir a Wikiloc
       </a>
+      <button class="btn-historia" onclick="obrirRutaDetall('moro')">📖 Descobreix la història</button>
     </div>
 
     <!-- Ruta 2 -->
@@ -1200,7 +1423,36 @@ header {
   <button class="btn-tancar-scan" onclick="tancarEscaner()">✕ Cancel·lar</button>
 </div>
 
+<!-- ══ PANTALLA DETALL DE RUTA (nivell) ══ -->
+<div id="pantalla-ruta-detall">
+  <button class="btn-tornar-ruta" onclick="tancarRutaDetall()">‹ Tornar</button>
+  <div class="ruta-detall-hero" id="ruta-detall-hero"></div>
+  <div class="ruta-detall-cos">
+    <h1 class="ruta-detall-titol" id="ruta-detall-titol">—</h1>
+    <p class="ruta-detall-subtitol" id="ruta-detall-subtitol"></p>
+    <div class="ruta-detall-botons">
+      <a class="btn-wikiloc" id="ruta-detall-wikiloc" href="#" target="_blank" rel="noopener">
+        <span>▶</span> Obrir a Wikiloc
+      </a>
+      <button class="btn-principal" onclick="iniciarEscaner()">📷 Escanejar QR</button>
+    </div>
+    <div class="ruta-detall-article" id="ruta-detall-article"></div>
+  </div>
+</div>
+
 <div id="toast"></div>
+
+<!-- ══ CELEBRACIÓ MEDALLA NOVA ══ -->
+<div id="modal-celebracio" onclick="tancarCelebracio()">
+  <div class="celebracio-card" onclick="event.stopPropagation()">
+    <p class="celebracio-titol">🎉 Enhorabona!</p>
+    <p class="celebracio-sub">Has aconseguit una medalla</p>
+    <img id="celebracio-img" class="celebracio-img" src="" alt="">
+    <p class="celebracio-nom" id="celebracio-nom">—</p>
+    <p class="celebracio-punts" id="celebracio-punts">+0 pts</p>
+    <button class="btn-principal" onclick="tancarCelebracio()">Genial!</button>
+  </div>
+</div>
 
 </body>
 </html>

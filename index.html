@@ -49,7 +49,7 @@ const BALISES = [
     categoria: "Natura · Ruta 1",
     descripcio: "Amagada a recer d'un cingle, sota el Replà de Sant Ramon",
     // QR vell — URL del Google Forms existent
-    url_forms: "https://docs.google.com/forms/d/e/1FAIpQLSe4O9QkQoyZDrrpCAVmdT64uSn7QtgK9Sa6TwmF-t3ccwWYVg/viewform",
+    url_forms: "https://forms.gle/aQy5dpwVEnVWPwPK6",
     imatge: "medalles/cova-moro.png",
     lat: 41.3825203, lng: 1.2719173,
     radi: 150 // permissiu per QR vell
@@ -63,7 +63,7 @@ const BALISES = [
     categoria: "Senderisme · Ruta 2",
     descripcio: "Al mig del sender, penjat d'un arbre entre la Serra de Jordà",
     // QR vell — URL del Google Forms existent
-    url_forms: "https://docs.google.com/forms/d/e/1FAIpQLSesMApQaXxAWiFkqbxcs8P1tOqz3TcItep1c1XrI0V119ynfQ/viewform",
+    url_forms: "https://forms.gle/Ng4r7yjSikCxwTiP7",
     imatge: "medalles/pinya-seka.png",
     lat: 41.3838820, lng: 1.2623492,
     radi: 150
@@ -77,7 +77,7 @@ const BALISES = [
     categoria: "Patrimoni · Ruta 3",
     descripcio: "Dins la cova on els Miquelets van resistir durant la Guerra de Successió",
     // QR vell — URL del Google Forms existent
-    url_forms: "https://docs.google.com/forms/d/e/1FAIpQLSeDc9sVAOUKUJ6jzNsQdIxsh0K3M_cTP-J8KKuTc2gmYb4tMQ/viewform",
+    url_forms: "https://forms.gle/1drS1xPVAXLnA3Wb9",
     token: "mqlts26fr", // token secret — no compartir
     imatge: "medalles/cova-miquelets.png",
     lat: 41.3880119, lng: 1.2799082,
@@ -92,7 +92,7 @@ const BALISES = [
     categoria: "Cims · Ruta 3",
     descripcio: "Just al cim del Barretet, amb vistes sobre tot el Pla de Santa Maria",
     // QR vell — URL del Google Forms existent
-    url_forms: "https://docs.google.com/forms/d/e/1FAIpQLScREcEds_WiN9gdwkPJYtoj_ojLN_iYYG65hdUu7ThqdhVIMw/viewform",
+    url_forms: "https://forms.gle/gkSvadumcYVdMsQZ7",
     token: "brrtt94xk", // token secret — no compartir
     imatge: "medalles/barretet.png",
     lat: 41.3895322, lng: 1.2774020,
@@ -380,7 +380,7 @@ async function processarQR(text) {
 
   // 3. QR no reconegut
   console.error('QR no reconegut. Text llegit:', text);
-  mostrarToast('QR no reconegut: ' + text.slice(0, 70), true);
+  mostrarToast('QR no reconegut al sistema.', true);
 }
 
 async function validarIAtorgarMedalla(balisa, verificarGPS) {

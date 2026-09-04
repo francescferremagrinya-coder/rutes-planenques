@@ -49,8 +49,8 @@ const BALISES = [
     categoria: "Natura · Ruta 1",
     descripcio: "Amagada a recer d'un cingle, sota el Replà de Sant Ramon",
     // QR vell — URL del Google Forms existent
-    url_forms: "https://forms.gle/UZW21uXbtgjtQKfd6",
-    imatge: "medalles/cova-moro.png",
+    url_forms: "https://docs.google.com/forms/d/e/1FAIpQLSe4O9QkQoyZDrrpCAVmdT64uSn7QtgK9Sa6TwmF-t3ccwWYVg/viewform",
+    imatge: "medalles/cova-moro.jpg", // puja la imatge a Firebase Storage
     lat: 41.3825203, lng: 1.2719173,
     radi: 150 // permissiu per QR vell
   },
@@ -63,8 +63,8 @@ const BALISES = [
     categoria: "Senderisme · Ruta 2",
     descripcio: "Al mig del sender, penjat d'un arbre entre la Serra de Jordà",
     // QR vell — URL del Google Forms existent
-    url_forms: "https://forms.gle/KTevBUxyK8y8zmng9",
-    imatge: "medalles/pinya-seka.png",
+    url_forms: "https://docs.google.com/forms/d/e/1FAIpQLSesMApQaXxAWiFkqbxcs8P1tOqz3TcItep1c1XrI0V119ynfQ/viewform",
+    imatge: "medalles/pinya-seka.jpg",
     lat: 41.3838820, lng: 1.2623492,
     radi: 150
   },
@@ -77,9 +77,9 @@ const BALISES = [
     categoria: "Patrimoni · Ruta 3",
     descripcio: "Dins la cova on els Miquelets van resistir durant la Guerra de Successió",
     // QR vell — URL del Google Forms existent
-    url_forms: "https://forms.gle/nsBHwvk3EHx3n9fi7",
+    url_forms: "https://docs.google.com/forms/d/e/1FAIpQLSeDc9sVAOUKUJ6jzNsQdIxsh0K3M_cTP-J8KKuTc2gmYb4tMQ/viewform",
     token: "mqlts26fr", // token secret — no compartir
-    imatge: "medalles/cova-miquelets.png",
+    imatge: "medalles/cova-miquelets.jpg",
     lat: 41.3880119, lng: 1.2799082,
     radi: 80
   },
@@ -92,9 +92,9 @@ const BALISES = [
     categoria: "Cims · Ruta 3",
     descripcio: "Just al cim del Barretet, amb vistes sobre tot el Pla de Santa Maria",
     // QR vell — URL del Google Forms existent
-    url_forms: "https://forms.gle/2nGFKJ16v6TBzEFK7",
+    url_forms: "https://docs.google.com/forms/d/e/1FAIpQLScREcEds_WiN9gdwkPJYtoj_ojLN_iYYG65hdUu7ThqdhVIMw/viewform",
     token: "brrtt94xk", // token secret — no compartir
-    imatge: "medalles/barretet.png",
+    imatge: "medalles/barretet.jpg",
     lat: 41.3895322, lng: 1.2774020,
     radi: 60
   }
@@ -182,10 +182,6 @@ async function tancarIntro() {
     const ref = doc(db, 'usuaris', usuariActual.uid);
     updateDoc(ref, { introVista: true }).catch(() => {});
   }
-}
-
-function obrirIntro() {
-  mostrarPantalla('intro');
 }
 
 // ════════════════════════════════════════════════════════
@@ -379,7 +375,6 @@ async function processarQR(text) {
   } catch {}
 
   // 3. QR no reconegut
-  console.error('QR no reconegut. Text llegit:', text);
   mostrarToast('QR no reconegut al sistema.', true);
 }
 
@@ -505,7 +500,6 @@ function mostrarTab(tab) {
 window.loginGoogle = loginGoogle;
 window.logout = logout;
 window.tancarIntro = tancarIntro;
-window.obrirIntro = obrirIntro;
 window.iniciarEscaner = iniciarEscaner;
 window.tancarEscaner = tancarEscaner;
 window.mostrarAdmin = mostrarAdmin;
@@ -591,12 +585,6 @@ header {
 #usuari-foto { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--bosc-clar); cursor: pointer; }
 .btn-logout { background: none; border: none; color: var(--pedra); font-size: 0.75rem; cursor: pointer; padding: 0.3rem 0.6rem; border-radius: 6px; }
 .btn-logout:hover { color: var(--crema); }
-.btn-info {
-  background: none; border: 1px solid rgba(255,255,255,0.15); color: var(--pedra);
-  font-size: 0.75rem; cursor: pointer; width: 26px; height: 26px;
-  border-radius: 50%; flex-shrink: 0; margin-right: 0.3rem;
-}
-.btn-info:hover { color: var(--crema); border-color: rgba(255,255,255,0.3); }
 
 /* ── PANTALLA LOGIN ── */
 #pantalla-login {
@@ -909,7 +897,6 @@ header {
       <span>Rutes · Col·lecció · Ranking</span>
     </div>
     <img id="usuari-foto" src="" alt="Foto perfil" title="El teu perfil">
-    <button class="btn-info" onclick="obrirIntro()" title="Com funciona?">❔</button>
     <button class="btn-logout" onclick="logout()">Sortir</button>
   </header>
 

@@ -209,6 +209,7 @@ onAuthStateChanged(auth, async (user) => {
     esAdmin = ADMINS.includes(user.uid);
     const introVista = await assegurarPerfil(user);
     mostrarPantalla(introVista ? 'joc' : 'intro');
+    inicialitzarPuntsNivells();
     carregarPerfil();
     escoltarRanking();
   } else {
@@ -357,6 +358,23 @@ function actualitzarPunts() {
   const amplada = targetes[0].offsetWidth + 14.4; // amplada targeta + gap (0.9rem ≈ 14.4px)
   const index = Math.round(grid.scrollLeft / amplada);
   document.querySelectorAll('#carrusel-punts span').forEach((p, i) =>
+    p.classList.toggle('actiu', i === index)
+  );
+}
+
+function inicialitzarPuntsNivells() {
+  const wrap = document.getElementById('nivells-punts');
+  const cards = document.getElementById('nivells-carrusel').children;
+  wrap.innerHTML = Array.from(cards).map((_, i) => `<span class="${i === 0 ? 'actiu' : ''}"></span>`).join('');
+}
+
+function actualitzarPuntsNivells() {
+  const grid = document.getElementById('nivells-carrusel');
+  const targetes = grid.children;
+  if (!targetes.length) return;
+  const amplada = targetes[0].offsetWidth + 16; // amplada targeta + gap (1rem ≈ 16px)
+  const index = Math.round(grid.scrollLeft / amplada);
+  document.querySelectorAll('#nivells-punts span').forEach((p, i) =>
     p.classList.toggle('actiu', i === index)
   );
 }
@@ -720,6 +738,7 @@ window.tancarIntro = tancarIntro;
 window.obrirIntro = obrirIntro;
 window.tancarCelebracio = tancarCelebracio;
 window.actualitzarPunts = actualitzarPunts;
+window.actualitzarPuntsNivells = actualitzarPuntsNivells;
 window.obrirRutaDetall = obrirRutaDetall;
 window.tancarRutaDetall = tancarRutaDetall;
 window.iniciarEscaner = iniciarEscaner;
@@ -818,15 +837,12 @@ header {
 /* ── PANTALLA LOGIN ── */
 #pantalla-login {
   display: flex; flex-direction: column; align-items: center;
-  justify-content: center; min-height: 80vh; padding: 2rem;
+  justify-content: flex-end; min-height: 100vh; padding: 2rem 2rem 3.5rem;
   text-align: center;
   background-image: url('25AC0713-CCD6-4CF5-9F73-BBC6A50CCC6A.png');
   background-size: cover;
   background-position: center;
 }
-.login-logo { font-size: 5rem; margin-bottom: 1rem; }
-.login-titol { font-family: 'Fraunces', serif; font-size: 2rem; font-weight: 700; margin-bottom: 0.5rem; }
-.login-sub { color: var(--pedra); font-size: 0.9rem; margin-bottom: 2.5rem; line-height: 1.6; }
 /* ── PANTALLA INTRO ── */
 #pantalla-intro {
   min-height: 100vh;
@@ -1004,42 +1020,46 @@ header {
 }
 .btn-compartir:hover { border-color: rgba(255,255,255,0.25); }
 
-/* Rutes Wikiloc */
-#tab-rutes { padding: 0 1.2rem; }
-.ruta-card {
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 14px; padding: 1rem;
-  margin-bottom: 0.8rem;
+/* Rutes — carrusel de nivells (pantalla completa, estil videojoc) */
+#tab-rutes { padding-top: 0.2rem; }
+.nivells-carrusel {
+  display: flex; gap: 1rem;
+  padding: 0.2rem 1.2rem 0.8rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
 }
-.ruta-header { display: flex; align-items: flex-start; gap: 0.8rem; margin-bottom: 0.8rem; }
-.ruta-num {
-  width: 28px; height: 28px; border-radius: 50%;
-  background: var(--bosc-clar); color: var(--crema);
-  font-size: 0.72rem; font-weight: 900;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; margin-top: 2px;
+.nivells-carrusel::-webkit-scrollbar { display: none; }
+.nivell-card {
+  flex: 0 0 auto;
+  width: 82%;
+  height: 66vh;
+  min-height: 420px;
+  border-radius: 22px;
+  scroll-snap-align: center;
+  background-size: cover;
+  background-position: center;
+  display: flex;
+  align-items: flex-end;
+  padding: 1.6rem;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.1);
 }
-.ruta-nom { font-weight: 700; font-size: 0.9rem; line-height: 1.3; }
-.ruta-stats {
-  display: flex; flex-wrap: wrap; gap: 0.4rem;
-  margin-bottom: 0.8rem;
+.nivell-placeholder { cursor: default; }
+.nivell-etiqueta {
+  position: absolute; top: 1.2rem; left: 1.2rem;
+  background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
+  padding: 0.3rem 0.8rem; border-radius: 20px;
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; color: var(--or);
 }
-.ruta-stat {
-  background: rgba(255,255,255,0.06);
-  border-radius: 20px; padding: 0.2rem 0.6rem;
-  font-size: 0.7rem; color: var(--pedra);
-  display: flex; align-items: center; gap: 0.3rem;
-}
-.ruta-medalles {
-  display: flex; gap: 0.4rem; align-items: center;
-  margin-bottom: 0.8rem; flex-wrap: wrap;
-}
-.ruta-medalla-chip {
-  font-size: 0.68rem; padding: 0.2rem 0.5rem;
-  border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
-  color: var(--pedra);
-}
+.nivell-info { width: 100%; }
+.nivell-nom { font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 700; line-height: 1.2; margin-bottom: 0.5rem; }
+.nivell-stats { font-size: 0.78rem; color: var(--pedra); margin-bottom: 1rem; }
+.nivell-cta { font-size: 0.85rem; font-weight: 700; color: var(--or); }
 .btn-wikiloc {
   width: 100%; background: #FF6B00;
   color: white; border: none; border-radius: 10px;
@@ -1230,9 +1250,6 @@ header {
 
 <!-- ══ PANTALLA LOGIN ══ -->
 <div id="pantalla-login">
-  <span class="login-logo">🧭</span>
-  <h1 class="login-titol">Rutes Planenques</h1>
-  <p class="login-sub">Col·lecciona medalles explorant els racons del territori.<br>Escaneig QRs, guanya punts, puja al ranking.</p>
   <button class="btn-google" onclick="loginGoogle()">
     <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
     Continua amb Google
@@ -1277,13 +1294,13 @@ header {
 
   <!-- Tabs -->
   <div class="tabs">
-    <button class="tab-btn actiu" id="tabbtn-perfil" onclick="mostrarTab('perfil')">🏅 Medalles</button>
-    <button class="tab-btn" id="tabbtn-rutes" onclick="mostrarTab('rutes')">🗺️ Rutes</button>
+    <button class="tab-btn actiu" id="tabbtn-rutes" onclick="mostrarTab('rutes')">🗺️ Rutes</button>
+    <button class="tab-btn" id="tabbtn-perfil" onclick="mostrarTab('perfil')">🏅 Medalles</button>
     <button class="tab-btn" id="tabbtn-ranking" onclick="mostrarTab('ranking')">🏆 Ranking</button>
   </div>
 
   <!-- TAB PERFIL -->
-  <div id="tab-perfil">
+  <div id="tab-perfil" style="display:none">
     <div class="perfil-header">
       <div class="perfil-info">
         <div id="usuari-nom">—</div>
@@ -1320,88 +1337,49 @@ header {
   </div>
 
   <!-- TAB RUTES -->
-  <div id="tab-rutes" style="display:none">
-    <div style="padding:0.8rem 1.2rem 0.2rem">
-      <p style="font-size:0.78rem;color:var(--pedra);line-height:1.5">
-        Cada ruta porta a una o més balises on pots aconseguir medalles. Segueix la ruta a Wikiloc i escaneja els QRs que trobaràs al camí.
-      </p>
-    </div>
+  <div id="tab-rutes">
+    <p class="carrusel-hint">‹ Llisca per veure les rutes ›</p>
+    <div class="nivells-carrusel" id="nivells-carrusel" onscroll="actualitzarPuntsNivells()">
 
-    <!-- Ruta 1 -->
-    <div class="ruta-card">
-      <div class="ruta-header">
-        <div class="ruta-num">1</div>
-        <div>
-          <div class="ruta-nom">Cova del Moro des de Fàtima</div>
+      <!-- Nivell 1: Cova del Moro (té pantalla pròpia) -->
+      <div class="nivell-card" onclick="obrirRutaDetall('moro')"
+           style="background-image: linear-gradient(180deg, rgba(26,46,29,0.05) 45%, rgba(10,16,10,0.92) 100%), url('rutes/cova-del-moro.jpg.jpg')">
+        <span class="nivell-etiqueta">Ruta 1</span>
+        <div class="nivell-info">
+          <h2 class="nivell-nom">Cova del Moro des de Fàtima</h2>
+          <div class="nivell-stats">📏 3,34 km · ⬆️ 392 m · ⏱️ 49 min</div>
+          <div class="nivell-cta">📖 Descobreix la història ›</div>
         </div>
       </div>
-      <div class="ruta-stats">
-        <span class="ruta-stat">📏 3,34 km</span>
-        <span class="ruta-stat">⬆️ 392 m</span>
-        <span class="ruta-stat">⏱️ 49 min</span>
-        <span class="ruta-stat">🔵 Moderada</span>
-        <span class="ruta-stat">➡️ Només anada</span>
-      </div>
-      <div class="ruta-medalles">
-        <span style="font-size:0.7rem;color:var(--pedra)">Medalles:</span>
-        <span class="ruta-medalla-chip">🌙 Cova del Moro</span>
-      </div>
-      <a class="btn-wikiloc" href="https://loc.wiki/t/241386671" target="_blank" rel="noopener">
-        <span>▶</span> Obrir a Wikiloc
-      </a>
-      <button class="btn-historia" onclick="obrirRutaDetall('moro')">📖 Descobreix la història</button>
-    </div>
 
-    <!-- Ruta 2 -->
-    <div class="ruta-card">
-      <div class="ruta-header">
-        <div class="ruta-num">2</div>
-        <div>
-          <div class="ruta-nom">Sender Pinya Seka des del Replà de Sant Ramon</div>
+      <!-- Nivell 2: Sender Pinya Seka (encara sense foto/article) -->
+      <div class="nivell-card nivell-placeholder" style="background: linear-gradient(180deg, rgba(139,69,19,0.15), rgba(10,16,10,0.92)), #2D2015;">
+        <span class="nivell-etiqueta">Ruta 2</span>
+        <div class="nivell-info">
+          <h2 class="nivell-nom">Sender Pinya Seka des del Replà de Sant Ramon</h2>
+          <div class="nivell-stats">📏 10,00 km · ⬆️ 418 m · ⏱️ 3h 18min</div>
+          <a class="btn-wikiloc" href="https://loc.wiki/t/251784397" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+            <span>▶</span> Obrir a Wikiloc
+          </a>
         </div>
       </div>
-      <div class="ruta-stats">
-        <span class="ruta-stat">📏 10,00 km</span>
-        <span class="ruta-stat">⬆️ 418 m</span>
-        <span class="ruta-stat">⏱️ 3h 18min</span>
-        <span class="ruta-stat">🔵 Moderada</span>
-        <span class="ruta-stat">🔄 Circular</span>
-      </div>
-      <div class="ruta-medalles">
-        <span style="font-size:0.7rem;color:var(--pedra)">Medalles:</span>
-        <span class="ruta-medalla-chip">🌲 Sender Pinya Seka</span>
-      </div>
-      <a class="btn-wikiloc" href="https://loc.wiki/t/251784397" target="_blank" rel="noopener">
-        <span>▶</span> Obrir a Wikiloc
-      </a>
-    </div>
 
-    <!-- Ruta 3 -->
-    <div class="ruta-card">
-      <div class="ruta-header">
-        <div class="ruta-num">3</div>
-        <div>
-          <div class="ruta-nom">Cova dels Miquelets + Cresta del Barretet</div>
+      <!-- Nivell 3: Miquelets + Barretet (encara sense foto/article) -->
+      <div class="nivell-card nivell-placeholder" style="background: linear-gradient(180deg, rgba(92,122,62,0.15), rgba(10,16,10,0.92)), #1E2417;">
+        <span class="nivell-etiqueta">Ruta 3</span>
+        <div class="nivell-info">
+          <h2 class="nivell-nom">Cova dels Miquelets + Cresta del Barretet</h2>
+          <div class="nivell-stats">📏 7,22 km · ⬆️ 481 m · ⏱️ 2h 18min</div>
+          <a class="btn-wikiloc" href="https://loc.wiki/t/268673465" target="_blank" rel="noopener" onclick="event.stopPropagation()">
+            <span>▶</span> Obrir a Wikiloc
+          </a>
         </div>
       </div>
-      <div class="ruta-stats">
-        <span class="ruta-stat">📏 7,22 km</span>
-        <span class="ruta-stat">⬆️ 481 m</span>
-        <span class="ruta-stat">⏱️ 2h 18min</span>
-        <span class="ruta-stat">🔵 Moderada</span>
-        <span class="ruta-stat">🔄 Circular</span>
-      </div>
-      <div class="ruta-medalles">
-        <span style="font-size:0.7rem;color:var(--pedra)">Medalles:</span>
-        <span class="ruta-medalla-chip">⚔️ Cova dels Miquelets</span>
-        <span class="ruta-medalla-chip">🏔️ El Barretet</span>
-      </div>
-      <a class="btn-wikiloc" href="https://loc.wiki/t/268673465" target="_blank" rel="noopener">
-        <span>▶</span> Obrir a Wikiloc
-      </a>
-    </div>
 
-    <p style="font-size:0.68rem;color:rgba(168,152,128,0.4);text-align:center;padding:0.5rem 0 1rem">
+    </div>
+    <div class="carrusel-punts" id="nivells-punts"></div>
+
+    <p style="font-size:0.68rem;color:rgba(168,152,128,0.4);text-align:center;padding:0.8rem 0 1rem">
       Rutes publicades a Wikiloc per Francesc
     </p>
   </div>

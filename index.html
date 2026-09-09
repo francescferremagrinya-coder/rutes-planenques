@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Medalles · Rutes del Pla</title>
-<link rel="manifest" href="/manifest.json">
+<link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1A2E1D">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -636,6 +636,10 @@ function escoltarRanking() {
       llista.appendChild(div);
       pos++;
     });
+
+    if (pos === 1) {
+      llista.innerHTML = `<p class="ranking-buit">Encara ningú ha aconseguit cap medalla.<br>Sigues el primer a escanejar un QR! 🏅</p>`;
+    }
   });
 }
 
@@ -927,10 +931,13 @@ window.tancarEscaner = tancarEscaner;
 window.mostrarAdmin = mostrarAdmin;
 window.mostrarTab = mostrarTab;
 window.compartirMedalla = compartirMedalla;
+window.mostrarInstallacio = mostrarInstallacio;
+window.instalarAraApp = instalarAraApp;
+window.tancarInstallacio = tancarInstallacio;
 
 // Registre Service Worker (PWA)
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').catch(() => {});
+  navigator.serviceWorker.register('sw.js').catch(() => {});
 }
 
 // Comprova QR a la URL (per si ve d'escanejar directament)
@@ -1083,11 +1090,19 @@ header {
 /* ── PANTALLA JOC ── */
 #pantalla-joc {
   display: none; padding-bottom: 6rem;
-  background-image: url('FB1E0EEA-2535-4D04-B3EE-1D3E0A718CCD.png');
+  position: relative;
+}
+#pantalla-joc::before {
+  content: '';
+  position: absolute; top: 0; left: 0; right: 0; height: 320px;
+  background-image: linear-gradient(180deg, rgba(10,16,10,0) 40%, var(--fons) 100%), url('FB1E0EEA-2535-4D04-B3EE-1D3E0A718CCD.png');
   background-size: cover;
   background-position: top center;
   background-repeat: no-repeat;
+  z-index: 0;
+  pointer-events: none;
 }
+#pantalla-joc > *:not(header) { position: relative; z-index: 1; }
 
 /* Tabs */
 .tabs {
@@ -1365,6 +1380,10 @@ header {
 
 /* Ranking */
 #tab-ranking { padding: 0 1.2rem; }
+.ranking-buit {
+  text-align: center; color: var(--pedra); font-size: 0.95rem;
+  line-height: 1.6; padding: 3rem 1rem;
+}
 .ranking-item {
   display: flex; align-items: center; gap: 0.7rem;
   padding: 0.7rem 0.8rem; border-radius: 10px;

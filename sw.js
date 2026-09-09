@@ -3,12 +3,12 @@
 //  Gestiona cache offline i instal·lació PWA
 // ════════════════════════════════════════════════════════
 
-const CACHE_NOM = 'medalles-v2';
+const CACHE_NOM = 'medalles-v3';
 const CACHE_FITXERS = [
-  '/',
-  '/index.html',
-  '/balisa.html',
-  '/manifest.json',
+  './',
+  './index.html',
+  './balisa.html',
+  './manifest.json',
   'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Fraunces:ital,wght@0,300;0,700;1,300&display=swap'
 ];
 

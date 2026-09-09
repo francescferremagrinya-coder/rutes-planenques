@@ -394,6 +394,8 @@ window.addEventListener('beforeinstallprompt', (e) => {
 });
 
 const esIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+// Navegadors interns (Instagram, Facebook, TikTok...) amaguen el botó de compartir de Safari
+const esNavegadorIntern = /Instagram|FBAN|FBAV|TikTok|Line\//.test(navigator.userAgent);
 if (esIOS && !jaInstallada) {
   mostrarAvisInstallacio();
 }
@@ -401,7 +403,14 @@ if (esIOS && !jaInstallada) {
 function mostrarInstallacio() {
   const contingut = document.getElementById('installacio-contingut');
 
-  if (promptInstallacio) {
+  if (esIOS && esNavegadorIntern) {
+    contingut.innerHTML = `
+      <p class="installacio-avis">Estàs obrint l'enllaç des de dins d'Instagram, i aquest navegador intern amaga el botó de compartir de Safari necessari per instal·lar l'app.</p>
+      <div class="pas"><span class="installacio-pas-num">1</span><span>Toca els <strong>tres puntets (•••)</strong> a dalt a la dreta.</span></div>
+      <div class="pas"><span class="installacio-pas-num">2</span><span>Tria <strong>«Obre al navegador»</strong> (o «Obre a Safari»).</span></div>
+      <div class="pas"><span class="installacio-pas-num">3</span><span>Un cop a Safari, torna a prémer aquest mateix botó (📲) per veure els passos d'instal·lació.</span></div>
+    `;
+  } else if (promptInstallacio) {
     contingut.innerHTML = `
       <p class="installacio-avis">Instal·la Rutes Planenques a la pantalla d'inici del mòbil per obrir-la com una app, sense passar pel navegador.</p>
       <button class="btn-principal" onclick="instalarAraApp()" style="margin-bottom:1rem">📲 Instal·la-la ara</button>

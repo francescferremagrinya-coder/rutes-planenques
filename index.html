@@ -14,7 +14,7 @@
 <!-- Firebase -->
 <script type="module">
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
-import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged }
+import { getAuth, signInWithRedirect, GoogleAuthProvider, signOut, onAuthStateChanged }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getFirestore, doc, getDoc, setDoc, updateDoc, collection,
   getDocs, onSnapshot, serverTimestamp, arrayUnion, query, orderBy }
@@ -335,7 +335,7 @@ onAuthStateChanged(auth, async (user) => {
 
 async function loginGoogle() {
   try {
-    await signInWithPopup(auth, provider);
+    await signInWithRedirect(auth, provider);
   } catch (e) {
     mostrarToast('Error al iniciar sessió: ' + e.message, true);
   }

@@ -609,6 +609,9 @@ async function personalitzarMedalles(nom, medallesObtingudes) {
 // ════════════════════════════════════════════════════════
 //  RANKING
 // ════════════════════════════════════════════════════════
+// Correus exclosos del rànquing públic (organitzadors, no participants)
+const RANKING_EXCLOSOS_EMAIL = ["jessica.martinez.gabarro@gmail.com"];
+
 function escoltarRanking() {
   const q = query(collection(db, 'usuaris'), orderBy('punts', 'desc'));
   onSnapshot(q, (snap) => {
@@ -619,6 +622,7 @@ function escoltarRanking() {
       const u = d.data();
       const medalles = (u.medalles || []).length;
       if (medalles === 0) return; // no mostris usuaris sense cap medalla
+      if (ADMINS.includes(d.id) || RANKING_EXCLOSOS_EMAIL.includes(u.email)) return;
       const div = document.createElement('div');
       div.className = 'ranking-item' + (d.id === usuariActual?.uid ? ' jo' : '');
       const emoji = pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : `${pos}.`;
@@ -795,10 +799,14 @@ function tancarCelebracio() {
 // ════════════════════════════════════════════════════════
 //  ADMIN — panell per gestionar balises
 // ════════════════════════════════════════════════════════
-function mostrarAdmin() {
+async function mostrarAdmin() {
   if (!esAdmin) return;
   document.getElementById('admin-panel').style.display =
     document.getElementById('admin-panel').style.display === 'none' ? 'block' : 'none';
+
+  // Comptador de gent registrada (usuaris que han entrat amb Google)
+  const totalUsuaris = (await getDocs(collection(db, 'usuaris'))).size;
+  document.getElementById('admin-total-usuaris').textContent = totalUsuaris;
 
   // Genera QRs per les balises noves
   const container = document.getElementById('admin-qrs');
@@ -1408,6 +1416,8 @@ header {
   border-radius: 12px; padding: 1rem;
 }
 #admin-panel h3 { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--or); margin-bottom: 0.8rem; }
+.admin-comptador { font-size: 0.95rem; color: var(--crema); margin-bottom: 1.2rem; }
+.admin-comptador span { font-family: 'Fraunces', serif; font-weight: 700; font-size: 1.3rem; color: var(--or); }
 .admin-qrs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
 .admin-qr-item { text-align: center; }
 .admin-qr-item img { width: 100%; max-width: 140px; border-radius: 8px; }
@@ -1568,6 +1578,8 @@ header {
     <!-- Admin -->
     <button id="admin-btn" onclick="mostrarAdmin()">⚙ Panell d'admin — QRs i gestió</button>
     <div id="admin-panel">
+      <h3>Gent registrada</h3>
+      <p class="admin-comptador"><span id="admin-total-usuaris">—</span> persones han entrat amb Google</p>
       <h3>QRs del sistema nou</h3>
       <div class="admin-qrs-grid" id="admin-qrs"></div>
     </div>

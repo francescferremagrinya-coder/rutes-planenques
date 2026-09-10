@@ -334,15 +334,12 @@ onAuthStateChanged(auth, async (user) => {
 });
 
 async function loginGoogle() {
-  const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-  if (standalone) {
-    mostrarAvisSafari();
-    return;
-  }
   try {
     await signInWithPopup(auth, provider);
   } catch (e) {
-    mostrarToast('Error al iniciar sessió: ' + e.message, true);
+    // Si el pop-up falla (per exemple, restriccions de l'app instal·lada a iOS),
+    // oferim l'alternativa d'obrir-ho a Safari en lloc de deixar-ho penjat.
+    mostrarAvisSafari();
   }
 }
 

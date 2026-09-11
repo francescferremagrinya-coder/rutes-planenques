@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Prova Radar Capons</title>
+<style>
+  :root{
+    --fons:#1A2E1D; --or:#D4A843; --crema:#F5F0E8; --pedra:#A89880; --vermell:#C0524A;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--fons);color:var(--crema);
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;}
+  body{min-height:100vh; padding:1.2rem 1.2rem 8rem; display:flex; flex-direction:column; gap:1rem;}
+  h1{font-size:1.3rem; margin:0 0 0.2rem; color:var(--or);}
+  .card{background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1);
+    border-radius:16px; padding:1.2rem; text-align:center;}
+  .pantalla{display:none; flex-direction:column; gap:1rem;}
+  .pantalla.actiu{display:flex;}
+  .btn{display:block; width:100%; padding:0.9rem; border:none; border-radius:12px;
+    font-size:1rem; font-weight:700; margin-top:0.7rem; cursor:pointer;}
+  .btn-principal{background:var(--or); color:#1A2E1D;}
+  .btn-secundari{background:transparent; color:var(--crema); border:1px solid rgba(255,255,255,0.2);}
+  .btn-trobat{background:var(--vermell); color:white;}
+  .distancia{font-size:3.2rem; font-weight:800; color:var(--or); margin:0.3rem 0;}
+  .unitat{font-size:1rem; color:var(--pedra);}
+  .fletxa-zona{width:170px; height:170px; margin:0.5rem auto; position:relative;
+    border-radius:50%; border:3px solid rgba(212,168,67,0.3); display:flex; align-items:center; justify-content:center;}
+  .fletxa{font-size:5rem; transition:transform 0.25s ease; display:inline-block;}
+  .nom-punt{font-size:1.1rem; font-weight:700; margin-bottom:0.2rem;}
+  .progres{font-size:0.8rem; color:var(--pedra); letter-spacing:0.05em; text-transform:uppercase;}
+  .avis{font-size:0.85rem; color:var(--pedra); line-height:1.4;}
+  .avis.ok{color:#8FBF8F;}
+  .debug{position:fixed; left:0; right:0; bottom:0; background:rgba(0,0,0,0.75);
+    font-size:0.7rem; padding:0.6rem 1rem; line-height:1.5; max-height:40vh; overflow-y:auto;}
+  .debug label{display:flex; justify-content:space-between; gap:0.5rem; align-items:center; margin:0.2rem 0;}
+  .debug input[type=number]{width:60px; background:#111; color:var(--crema); border:1px solid #444; border-radius:6px; padding:2px 4px;}
+  .debug summary{cursor:pointer; color:var(--or); font-weight:700; font-size:0.75rem;}
+  .fila-debug{display:flex; gap:0.5rem; margin-top:0.4rem;}
+  .fila-debug button{flex:1; font-size:0.7rem; padding:0.4rem; border-radius:8px; border:1px solid #555; background:#222; color:var(--crema);}
+  .emoji-gran{font-size:3rem;}
+</style>
+</head>
+<body>
+
+<h1>🧭 Prova de camp — Radar Capons</h1>
+
+<!-- PANTALLA 0: PERMISOS -->
+<div class="pantalla actiu" id="p-permisos">
+  <div class="card">
+    <p>Aquest prototip fa servir la teva ubicació real i (si el mòbil ho permet) la brúixola, per simular el radar del joc.</p>
+    <button class="btn btn-principal" onclick="activaTot()">📍 Activa ubicació i brúixola</button>
+    <p class="avis" id="estat-permisos"></p>
+  </div>
+</div>
+
+<!-- PANTALLA 1: COMPROVACIÓ PARKING -->
+<div class="pantalla" id="p-parking">
+  <div class="card">
+    <div class="emoji-gran">🅿️</div>
+    <p class="nom-punt">Comprovant si ets al pàrquing...</p>
+    <div class="distancia" id="dist-parking">—</div>
+    <div class="unitat">metres fins al pàrquing</div>
+    <p class="avis" id="avis-parking"></p>
+    <a class="btn btn-secundari" id="link-maps-parking" target="_blank">🗺️ Com arribar-hi</a>
+    <button class="btn btn-principal" id="btn-comenca" style="display:none" onclick="comencaCaça()">Ja hi sóc! Comença la recerca</button>
+  </div>
+</div>
+
+<!-- PANTALLA 2: RADAR -->
+<div class="pantalla" id="p-radar">
+  <div class="progres" id="progres-radar">Capó 1 de 6</div>
+  <div class="card">
+    <div class="nom-punt" id="nom-capo-radar">Buscant...</div>
+    <div class="fletxa-zona"><span class="fletxa" id="fletxa">⬆️</span></div>
+    <div class="distancia" id="dist-radar">—</div>
+    <div class="unitat">metres</div>
+    <p class="avis" id="avis-radar">Camina i l'agulla t'anirà guiant</p>
+  </div>
+  <div class="card" id="card-trobat" style="display:none">
+    <p>🔍 Ets a prop! Busca'l pels voltants.</p>
+    <button class="btn btn-trobat" onclick="capoTrobat()">✅ He trobat el Capó (simula escaneig QR)</button>
+  </div>
+</div>
+
+<!-- PANTALLA 3: FINAL -->
+<div class="pantalla" id="p-final">
+  <div class="card">
+    <div class="emoji-gran">🏆</div>
+    <h2 style="color:var(--or)">Enhorabona, exploradors!</h2>
+    <p>Heu trobat tots els Capons amagats a les barraques.</p>
+    <button class="btn btn-principal" onclick="reiniciaProva()">🔄 Torna a començar la prova</button>
+  </div>
+</div>
+
+<!-- DEBUG / CONTROLS DE PROVA -->
+<div class="debug">
+  <details>
+    <summary>⚙️ Panell de prova (ajustos i dreceres)</summary>
+    <label>Radi pàrquing (m) <input type="number" id="radi-parking" value="50" min="5" onchange="actualitza()"></label>
+    <label>Radi detecció Capó (m) <input type="number" id="radi-capo" value="15" min="3" onchange="actualitza()"></label>
+    <div class="fila-debug">
+      <button onclick="forcaParking()">Força&nbsp;'ja hi sóc'</button>
+      <button onclick="capoTrobat()">Força&nbsp;'trobat'</button>
+      <button onclick="reiniciaProva()">Reinicia</button>
+    </div>
+    <p id="debug-info" style="margin-top:0.5rem; opacity:0.8;"></p>
+    <p id="debug-error" style="color:#e88;"></p>
+  </details>
+</div>
+
+<script>
+const PUNTS = [
+  {nom:'1r Capó',        lat:41.3606531, lon:1.3460364},
+  {nom:'2n Capó (Arnes)', lat:41.3569498, lon:1.3458423},
+  {nom:'3r Capó',        lat:41.3566108, lon:1.3429408},
+  {nom:'4t Capó',        lat:41.3579554, lon:1.3432104},
+  {nom:'5è Capó',        lat:41.3566649, lon:1.3405034},
+  {nom:'6è Capó',        lat:41.3600871, lon:1.3453602},
+];
+const PARKING = {lat:41.3613185, lon:1.3458540};
+
+let posActual = null;
+let headingActual = null;
+let indexCapo = 0;
+let estat = 'permisos'; // permisos -> parking -> radar -> final
+
+function toRad(g){ return g*Math.PI/180; }
+function toDeg(r){ return r*180/Math.PI; }
+
+function distanciaMetres(lat1,lon1,lat2,lon2){
+  const R=6371000;
+  const dLat=toRad(lat2-lat1), dLon=toRad(lon2-lon1);
+  const a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function bearingGraus(lat1,lon1,lat2,lon2){
+  const dLon=toRad(lon2-lon1);
+  const y=Math.sin(dLon)*Math.cos(toRad(lat2));
+  const x=Math.cos(toRad(lat1))*Math.sin(toRad(lat2)) - Math.sin(toRad(lat1))*Math.cos(toRad(lat2))*Math.cos(dLon);
+  return (toDeg(Math.atan2(y,x))+360)%360;
+}
+
+function mostraPantalla(id){
+  document.querySelectorAll('.pantalla').forEach(p=>p.classList.remove('actiu'));
+  document.getElementById(id).classList.add('actiu');
+}
+
+async function activaTot(){
+  const info = document.getElementById('estat-permisos');
+  info.textContent = 'Demanant permisos...';
+
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function'){
+    try{
+      const resp = await DeviceOrientationEvent.requestPermission();
+      if (resp === 'granted') window.addEventListener('deviceorientation', gestionaOrientacio);
+    }catch(e){ console.error(e); }
+  } else {
+    window.addEventListener('deviceorientationabsolute', gestionaOrientacio, true);
+    window.addEventListener('deviceorientation', gestionaOrientacio, true);
+  }
+
+  if (!navigator.geolocation){
+    info.textContent = 'Aquest navegador no suporta geolocalització.';
+    return;
+  }
+  navigator.geolocation.watchPosition(pos=>{
+    posActual = pos.coords;
+    document.getElementById('debug-error').textContent = '';
+    actualitza();
+  }, err=>{
+    document.getElementById('debug-error').textContent = 'Error GPS: ' + err.message;
+  }, {enableHighAccuracy:true, maximumAge:0, timeout:15000});
+
+  info.textContent = 'Ubicació activada. Esperant senyal GPS...';
+  estat = 'parking';
+  mostraPantalla('p-parking');
+  document.getElementById('link-maps-parking').href =
+    `https://www.google.com/maps/dir/?api=1&destination=${PARKING.lat},${PARKING.lon}`;
+}
+
+function gestionaOrientacio(e){
+  if (typeof e.webkitCompassHeading === 'number') headingActual = e.webkitCompassHeading;
+  else if (e.alpha !== null) headingActual = (360 - e.alpha) % 360;
+}
+
+function actualitza(){
+  if (!posActual) return;
+  const radiParking = parseFloat(document.getElementById('radi-parking').value) || 50;
+  const radiCapo = parseFloat(document.getElementById('radi-capo').value) || 15;
+
+  document.getElementById('debug-info').textContent =
+    `lat:${posActual.latitude.toFixed(6)} lon:${posActual.longitude.toFixed(6)} `+
+    `precisió:${Math.round(posActual.accuracy)}m heading:${headingActual!==null?Math.round(headingActual):'—'}°`;
+
+  if (estat === 'parking'){
+    const d = distanciaMetres(posActual.latitude, posActual.longitude, PARKING.lat, PARKING.lon);
+    document.getElementById('dist-parking').textContent = Math.round(d);
+    const avis = document.getElementById('avis-parking');
+    const btn = document.getElementById('btn-comenca');
+    if (d <= radiParking){
+      avis.textContent = '✅ Ja ets al pàrquing!';
+      avis.className = 'avis ok';
+      btn.style.display = 'block';
+    } else {
+      avis.textContent = 'Encara no estàs al pàrquing.';
+      avis.className = 'avis';
+      btn.style.display = 'none';
+    }
+  }
+
+  if (estat === 'radar'){
+    const punt = PUNTS[indexCapo];
+    const d = distanciaMetres(posActual.latitude, posActual.longitude, punt.lat, punt.lon);
+    document.getElementById('dist-radar').textContent = Math.round(d);
+    document.getElementById('nom-capo-radar').textContent = 'Buscant: ' + punt.nom;
+
+    const fletxa = document.getElementById('fletxa');
+    if (headingActual !== null){
+      const rumb = bearingGraus(posActual.latitude, posActual.longitude, punt.lat, punt.lon);
+      const angle = (rumb - headingActual + 360) % 360;
+      fletxa.style.transform = `rotate(${angle}deg)`;
+      document.getElementById('avis-radar').textContent = "Segueix la fletxa";
+    } else {
+      document.getElementById('avis-radar').textContent = "Brúixola no disponible: guia't només pels metres";
+    }
+
+    document.getElementById('card-trobat').style.display = (d <= radiCapo) ? 'block' : 'none';
+  }
+}
+
+function comencaCaça(){
+  estat = 'radar';
+  indexCapo = 0;
+  mostraPantalla('p-radar');
+  document.getElementById('progres-radar').textContent = `Capó ${indexCapo+1} de ${PUNTS.length}`;
+  actualitza();
+}
+
+function capoTrobat(){
+  indexCapo++;
+  if (indexCapo >= PUNTS.length){
+    estat = 'final';
+    mostraPantalla('p-final');
+  } else {
+    document.getElementById('progres-radar').textContent = `Capó ${indexCapo+1} de ${PUNTS.length}`;
+    document.getElementById('card-trobat').style.display = 'none';
+    actualitza();
+  }
+}
+
+function forcaParking(){
+  document.getElementById('btn-comenca').style.display = 'block';
+}
+
+function reiniciaProva(){
+  indexCapo = 0;
+  estat = 'parking';
+  mostraPantalla('p-parking');
+  actualitza();
+}
+</script>
+</body>
+</html>

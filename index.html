@@ -713,15 +713,52 @@ async function iniciarEscaner() {
     );
   } catch (e) {
     console.error('Error escàner QR:', e);
+    mostrarPantalla('joc');
+
     const nom = e?.name || '';
+    if (nom === 'NotAllowedError') {
+      // El permís de càmera està denegat per aquest lloc: cal canviar-ho a Configuració,
+      // no serveix de res obrir-ho a Safari perquè comparteixen el mateix permís.
+      mostrarAvisPermisCamera();
+      return;
+    }
+
+    const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    if (standalone) {
+      // A la versió instal·lada, iOS de vegades bloqueja la càmera sense motiu aparent.
+      mostrarAvisSafari();
+      return;
+    }
+
     let missatge = 'No s\'ha pogut accedir a la càmera.';
-    if (nom === 'NotAllowedError') missatge = 'Cal donar permís a la càmera per escanejar.';
-    else if (nom === 'NotFoundError') missatge = 'No s\'ha trobat cap càmera al dispositiu.';
+    if (nom === 'NotFoundError') missatge = 'No s\'ha trobat cap càmera al dispositiu.';
     else if (e?.message?.includes('llibreria')) missatge = e.message;
     mostrarToast(missatge, true);
-    mostrarPantalla('joc');
   }
 }
+
+function mostrarAvisPermisCamera() {
+  const contingut = document.getElementById('permis-camera-contingut');
+  if (esIOS) {
+    contingut.innerHTML = `
+      <div class="pas"><span class="pas-icon">1️⃣</span><span>Obre <strong>Configuració</strong> del mòbil</span></div>
+      <div class="pas"><span class="pas-icon">2️⃣</span><span>Baixa fins a <strong>Safari</strong> i toca <strong>Càmera</strong></span></div>
+      <div class="pas"><span class="pas-icon">3️⃣</span><span>Busca aquest lloc a la llista i canvia'l a <strong>Permetre</strong></span></div>
+      <div class="pas"><span class="pas-icon">4️⃣</span><span>Torna a l'app (des de la icona o des de Safari) i prova d'escanejar un altre cop</span></div>
+    `;
+  } else {
+    contingut.innerHTML = `
+      <div class="pas"><span class="pas-icon">1️⃣</span><span>Toca el <strong>🔒</strong> o els <strong>⋮</strong> a la barra d'adreces del navegador</span></div>
+      <div class="pas"><span class="pas-icon">2️⃣</span><span>Obre <strong>Permisos del lloc</strong> i posa <strong>Càmera</strong> a <strong>Permetre</strong></span></div>
+      <div class="pas"><span class="pas-icon">3️⃣</span><span>Torna a l'app i prova d'escanejar un altre cop</span></div>
+    `;
+  }
+  document.getElementById('modal-permis-camera').style.display = 'block';
+}
+function tancarAvisPermisCamera() {
+  document.getElementById('modal-permis-camera').style.display = 'none';
+}
+window.tancarAvisPermisCamera = tancarAvisPermisCamera;
 
 function tancarEscaner() {
   if (escaner) { escaner.stop(); escaner = null; }
@@ -837,9 +874,29 @@ async function mostrarAdmin() {
   document.getElementById('admin-panel').style.display =
     document.getElementById('admin-panel').style.display === 'none' ? 'block' : 'none';
 
-  // Comptador de gent registrada (usuaris que han entrat amb Google)
-  const totalUsuaris = (await getDocs(collection(db, 'usuaris'))).size;
-  document.getElementById('admin-total-usuaris').textContent = totalUsuaris;
+  // Comptador de gent registrada (usuaris que han entrat amb Google) + llista amb medalles
+  const totsUsuaris = await getDocs(collection(db, 'usuaris'));
+  document.getElementById('admin-total-usuaris').textContent = totsUsuaris.size;
+
+  const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+
+  const llistaUsuaris = document.getElementById('admin-usuaris-llista');
+  const files = [];
+  totsUsuaris.forEach(d => files.push(d.data()));
+  files.sort((a, b) => (b.medalles?.length || 0) - (a.medalles?.length || 0));
+
+  llistaUsuaris.innerHTML = files.map(u => {
+    const medalles = u.medalles || [];
+    const noms = medalles.map(m => escapeHtml(m.nom)).join(', ') || '<em>cap encara</em>';
+    return `
+      <div class="admin-usuari-item">
+        <p class="admin-usuari-nom">${escapeHtml(u.nom || u.email || 'Sense nom')} — ${medalles.length} 🏅</p>
+        <p class="admin-usuari-medalles">${noms}</p>
+      </div>
+    `;
+  }).join('');
 
   // Genera QRs per les balises noves
   const container = document.getElementById('admin-qrs');
@@ -1316,7 +1373,7 @@ header {
   background: var(--fons);
   overflow-y: auto;
 }
-#modal-obre-safari, #modal-installacio {
+#modal-obre-safari, #modal-installacio, #modal-permis-camera {
   display: none;
   position: fixed; inset: 0; z-index: 210;
   background: var(--fons);
@@ -1469,6 +1526,12 @@ header {
 .admin-comptador { font-size: 0.95rem; color: var(--crema); margin-bottom: 1.2rem; }
 .admin-comptador span { font-family: 'Fraunces', serif; font-weight: 700; font-size: 1.3rem; color: var(--or); }
 .admin-qrs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.8rem; }
+.admin-usuaris-llista { max-height: 280px; overflow-y: auto; margin-bottom: 1.4rem; border: 1px solid rgba(255,255,255,0.1); border-radius: 10px; }
+.admin-usuari-item { padding: 0.6rem 0.8rem; border-bottom: 1px solid rgba(255,255,255,0.08); }
+.admin-usuari-item:last-child { border-bottom: none; }
+.admin-usuari-nom { font-size: 0.85rem; font-weight: 700; color: var(--crema); margin: 0 0 0.15rem; }
+.admin-usuari-medalles { font-size: 0.75rem; color: var(--pedra); margin: 0; }
+.admin-usuari-medalles em { opacity: 0.6; font-style: italic; }
 .admin-qr-item { text-align: center; }
 .admin-qr-item img { width: 100%; max-width: 140px; border-radius: 8px; }
 .admin-qr-nom { font-size: 0.72rem; font-weight: 700; margin-bottom: 0.3rem; }
@@ -1567,10 +1630,21 @@ header {
 <div id="modal-obre-safari" style="display:none">
   <div class="intro-card">
     <span class="intro-logo">🧭</span>
-    <h1 class="intro-titol">Inicia sessió des de Safari</h1>
-    <p class="installacio-avis">Per motius de seguretat d'iPhone, el primer cop has d'iniciar sessió amb Google des de Safari (no des de l'app ja instal·lada). Un cop hagis entrat, torna a obrir aquesta icona i ja et reconeixerà.</p>
+    <h1 class="intro-titol" id="avissafari-titol">Obre-ho des de Safari</h1>
+    <p class="installacio-avis" id="avissafari-text">iOS de vegades bloqueja el login o la càmera quan s'obren des de l'app ja instal·lada a la pantalla d'inici. Obre l'enllaç a Safari (no des d'aquesta icona) i torna-ho a provar des d'allà.</p>
     <button class="btn-principal" onclick="copiarEnllacApp()" style="margin-bottom:1rem">🔗 Copia l'enllaç per obrir a Safari</button>
     <button class="btn-principal" onclick="tancarAvisSafari()" style="background:transparent;border:1px solid rgba(255,255,255,0.15)">Entesos</button>
+  </div>
+</div>
+
+<!-- ══ MODAL PERMÍS CÀMERA DENEGAT ══ -->
+<div id="modal-permis-camera" style="display:none">
+  <div class="intro-card">
+    <span class="intro-logo">📷</span>
+    <h1 class="intro-titol">Cal activar el permís de la càmera</h1>
+    <p class="installacio-avis">Sembla que la càmera està bloquejada per a aquest lloc. Per solucionar-ho:</p>
+    <div class="joc-explicacio" id="permis-camera-contingut"></div>
+    <button class="btn-principal" onclick="tancarAvisPermisCamera()">Entesos</button>
   </div>
 </div>
 
@@ -1641,6 +1715,7 @@ header {
     <div id="admin-panel">
       <h3>Gent registrada</h3>
       <p class="admin-comptador"><span id="admin-total-usuaris">—</span> persones han entrat amb Google</p>
+      <div id="admin-usuaris-llista" class="admin-usuaris-llista"></div>
       <h3>QRs del sistema nou</h3>
       <div class="admin-qrs-grid" id="admin-qrs"></div>
     </div>

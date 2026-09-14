@@ -397,7 +397,7 @@ const RUTES_INFO = {
   capona: {
     titol: "La Ruta dels Capons",
     subtitol: "Una gimcana familiar entre les barraques de pedra seca",
-    imatge: "medalles-capons/portada-capona.jpg",
+    imatge: "medalles-capons/portada-capona-horitzontal.jpg",
     paragrafs: [
       "Fa molts anys, a la masia de la Capona, una de les més importants del Pla, hi vivien uns petits éssers de pedra que ajudaven en tot el que calia. Amb el temps, la masia es va anar abandonant... i els seus habitants, els Capons, es van escampar per totes les barraques de pedra seca que hi ha pels volts, amagant-se dins de les pedres que tant bé coneixien.",
       "Aquesta proposta és diferent de les altres rutes: no cal fer quilòmetres ni desnivell, sinó seguir un radar que et guiarà, pas a pas, cap a cada Capó amagat. Quan hi arribis, una pista t'ajudarà a trobar-lo exactament.",
@@ -1201,6 +1201,25 @@ function tancarGimcana() {
   mostrarPantalla('joc');
 }
 
+// Només per a admin: mostra directament la pista d'un Capó concret,
+// sense necessitat d'estar-hi físicament ni tenir GPS. Útil per provar textos.
+function forcarPistaGimcana(id) {
+  if (!esAdmin) return;
+  const c = BALISES.find(b => b.id === id);
+  if (!c) return;
+  gimcanaObjectiuActual = c;
+  gimcanaWaypointIdx = 0;
+
+  mostrarPantalla('gimcana');
+  document.getElementById('gimcana-parking').style.display = 'none';
+  document.getElementById('gimcana-radar').style.display = 'block';
+  document.getElementById('gimcana-progres').textContent = `${c.nom} (forçat des de l'admin)`;
+  document.getElementById('gimcana-radar-dist').textContent = '0';
+  document.getElementById('gimcana-bafarada').textContent = 'Mode de prova: pista forçada.';
+  document.getElementById('gimcana-pista-text').textContent = c.pista || '';
+  document.getElementById('gimcana-pista-card').style.display = 'block';
+}
+
 // ════════════════════════════════════════════════════════
 //  ADMIN — panell per gestionar balises
 // ════════════════════════════════════════════════════════
@@ -1232,6 +1251,12 @@ async function mostrarAdmin() {
       </div>
     `;
   }).join('');
+
+  // Botons per forçar la pista de cada Capó de la gimcana (per provar sense haver-hi d'anar físicament)
+  const forceContainer = document.getElementById('admin-gimcana-force');
+  forceContainer.innerHTML = gimcanaCapons().map(c => `
+    <button class="admin-force-btn" onclick="forcarPistaGimcana('${c.id}')">${c.icon} ${c.nom}</button>
+  `).join('');
 
   // Genera QRs per les balises noves
   const container = document.getElementById('admin-qrs');
@@ -1360,6 +1385,7 @@ window.copiarEnllacApp = copiarEnllacApp;
 window.iniciarGimcana = iniciarGimcana;
 window.comencaRadarGimcana = comencaRadarGimcana;
 window.tancarGimcana = tancarGimcana;
+window.forcarPistaGimcana = forcarPistaGimcana;
 
 // Registre Service Worker (PWA)
 if ('serviceWorker' in navigator) {
@@ -1870,6 +1896,12 @@ header {
 .admin-usuari-nom { font-size: 0.85rem; font-weight: 700; color: var(--crema); margin: 0 0 0.15rem; }
 .admin-usuari-medalles { font-size: 0.75rem; color: var(--pedra); margin: 0; }
 .admin-usuari-medalles em { opacity: 0.6; font-style: italic; }
+.admin-gimcana-force { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1.4rem; }
+.admin-force-btn {
+  background: rgba(123,181,200,0.12); border: 1px solid rgba(123,181,200,0.3);
+  color: var(--crema); border-radius: 8px; padding: 0.6rem; text-align: left;
+  font-size: 0.8rem; cursor: pointer; font-family: 'Space Grotesk', sans-serif;
+}
 .admin-qr-item { text-align: center; }
 .admin-qr-item img { width: 100%; max-width: 140px; border-radius: 8px; }
 .admin-qr-nom { font-size: 0.72rem; font-weight: 700; margin-bottom: 0.3rem; }
@@ -2077,6 +2109,8 @@ header {
       <h3>Gent registrada</h3>
       <p class="admin-comptador"><span id="admin-total-usuaris">—</span> persones han entrat amb Google</p>
       <div id="admin-usuaris-llista" class="admin-usuaris-llista"></div>
+      <h3>🎯 Forçar pista d'un Capó (prova)</h3>
+      <div id="admin-gimcana-force" class="admin-gimcana-force"></div>
       <h3>QRs del sistema nou</h3>
       <div class="admin-qrs-grid" id="admin-qrs"></div>
     </div>

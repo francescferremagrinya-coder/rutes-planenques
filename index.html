@@ -415,9 +415,6 @@ document.getElementById('nivell-card-moro').style.backgroundImage =
   `linear-gradient(180deg, rgba(26,46,29,0.05) 45%, rgba(10,16,10,0.92) 100%), url('${FOTO_COVA_MORO}')`;
 document.getElementById('nivell-card-capona').style.backgroundImage =
   `linear-gradient(180deg, rgba(26,46,29,0.05) 45%, rgba(10,16,10,0.92) 100%), url('${RUTES_INFO.capona.imatge}')`;
-if (MOSTRAR_RUTA_CAPONA) {
-  document.getElementById('nivell-card-capona').style.display = 'block';
-}
 
 function obrirRutaDetall(clau) {
   const r = RUTES_INFO[clau];
@@ -502,6 +499,8 @@ onAuthStateChanged(auth, async (user) => {
   usuariActual = user;
   if (user) {
     esAdmin = ADMINS.includes(user.uid);
+    document.getElementById('nivell-card-capona').style.display =
+      (MOSTRAR_RUTA_CAPONA || esAdmin) ? 'block' : 'none';
     const introVista = await assegurarPerfil(user);
     mostrarPantalla(introVista ? 'joc' : 'intro');
     inicialitzarPuntsNivells();
@@ -746,8 +745,9 @@ function actualitzarPunts() {
 
 function inicialitzarPuntsNivells() {
   const wrap = document.getElementById('nivells-punts');
-  const cards = document.getElementById('nivells-carrusel').children;
-  wrap.innerHTML = Array.from(cards).map((_, i) => `<span class="${i === 0 ? 'actiu' : ''}"></span>`).join('');
+  const cards = Array.from(document.getElementById('nivells-carrusel').children)
+    .filter(el => el.style.display !== 'none');
+  wrap.innerHTML = cards.map((_, i) => `<span class="${i === 0 ? 'actiu' : ''}"></span>`).join('');
 }
 
 function actualitzarPuntsNivells() {

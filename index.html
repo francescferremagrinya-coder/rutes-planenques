@@ -25,6 +25,12 @@ import { getFirestore, doc, getDoc, setDoc, updateDoc, collection,
 //  Substitueix aquests valors pels del teu projecte Firebase
 //  (Firebase Console → Project Settings → Your apps → Config)
 // ════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════
+//  🎯 RUTA DELS CAPONS — canvia a "true" quan estigui llesta
+//  per publicar-se (ninotets físics col·locats i QRs enganxats)
+// ════════════════════════════════════════════════════════
+const MOSTRAR_RUTA_CAPONA = false;
+
 const firebaseConfig = {
   apiKey: "AIzaSyC1jtpfx9csBNkvXjrXe5gUnMI0Y3F_U5Y",
   authDomain: "rutes-planenques.firebaseapp.com",
@@ -473,12 +479,6 @@ function tancarRutaDetall() {
 //  🔐 ADMIN — UIDs de Google dels administradors
 //  El teu UID el trobes a Firebase Console → Authentication
 // ════════════════════════════════════════════════════════
-// ════════════════════════════════════════════════════════
-//  🎯 RUTA DELS CAPONS — canvia a "true" quan estigui llesta
-//  per publicar-se (ninotets físics col·locats i QRs enganxats)
-// ════════════════════════════════════════════════════════
-const MOSTRAR_RUTA_CAPONA = false;
-
 const ADMINS = [
   "oTzgpttsZOajy2zk6EXphqUKtA02"
 ];

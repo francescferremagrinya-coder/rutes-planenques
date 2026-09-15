@@ -500,7 +500,7 @@ onAuthStateChanged(auth, async (user) => {
   if (user) {
     esAdmin = ADMINS.includes(user.uid);
     document.getElementById('nivell-card-capona').style.display =
-      (MOSTRAR_RUTA_CAPONA || esAdmin) ? 'block' : 'none';
+      (MOSTRAR_RUTA_CAPONA || esAdmin) ? 'flex' : 'none';
     const introVista = await assegurarPerfil(user);
     mostrarPantalla(introVista ? 'joc' : 'intro');
     inicialitzarPuntsNivells();

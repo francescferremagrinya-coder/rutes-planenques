@@ -117,7 +117,7 @@ const BALISES = [
     punts: 80,
     categoria: "Gimcana · Ruta dels Capons",
     descripcio: "El constructor: aixecava les barraques sense morter ni ciment",
-    imatge: "medalles-capons/capo-margeter.jpg",
+    imatge: "medalles/capo-margeter.jpg",
     lat: 41.3606471, lng: 1.3460398,
     radi: 25,
     token: "mrgtr7q2",
@@ -134,7 +134,7 @@ const BALISES = [
     punts: 80,
     categoria: "Gimcana · Ruta dels Capons",
     descripcio: "Viu entre bolets i penombra, endinsat en una de les barraques",
-    imatge: "medalles-capons/capo-boletaire.jpg",
+    imatge: "medalles/capo-boletaire.jpg",
     lat: 41.3593772, lng: 1.345733,
     radi: 25,
     token: "blttr4k9",
@@ -151,7 +151,7 @@ const BALISES = [
     punts: 80,
     categoria: "Gimcana · Ruta dels Capons",
     descripcio: "El collidor de raïm, sempre a punt per celebrar la verema",
-    imatge: "medalles-capons/capo-veremador.jpg",
+    imatge: "medalles/capo-veremador.jpg",
     lat: 41.3581328, lng: 1.3462299,
     radi: 25,
     token: "vrmdr8h3",
@@ -168,7 +168,7 @@ const BALISES = [
     punts: 80,
     categoria: "Gimcana · Ruta dels Capons",
     descripcio: "Cuida les abelles des d'un forat del marge de pedra",
-    imatge: "medalles-capons/capo-apicultor.jpg",
+    imatge: "medalles/capo-apicultor.jpg",
     lat: 41.3569389, lng: 1.3458252,
     radi: 25,
     token: "apctr2m6",
@@ -185,7 +185,7 @@ const BALISES = [
     punts: 80,
     categoria: "Gimcana · Ruta dels Capons",
     descripcio: "Vetlla pel bestiar des del corral de pedra seca",
-    imatge: "medalles-capons/capo-pastor.jpg",
+    imatge: "medalles/capo-pastor.jpg",
     lat: 41.3566105, lng: 1.3428681,
     radi: 25,
     token: "pstr9x14",
@@ -202,7 +202,7 @@ const BALISES = [
     punts: 80,
     categoria: "Gimcana · Ruta dels Capons",
     descripcio: "Sempre amb la boca plena de dolços, amagat a l'ombra",
-    imatge: "medalles-capons/capo-llepol.jpg",
+    imatge: "medalles/capo-llepol.jpg",
     lat: 41.3568843, lng: 1.3433455,
     radi: 25,
     token: "llpl5w28",
@@ -219,7 +219,7 @@ const BALISES = [
     punts: 80,
     categoria: "Gimcana · Ruta dels Capons",
     descripcio: "Sempre té set, viu on es recollia l'aigua de pluja",
-    imatge: "medalles-capons/capo-assedegat.jpg",
+    imatge: "medalles/capo-assedegat.jpg",
     lat: 41.3581099, lng: 1.3432271,
     radi: 25,
     token: "assdg6t7",
@@ -236,7 +236,7 @@ const BALISES = [
     punts: 100,
     categoria: "Gimcana · Ruta dels Capons",
     descripcio: "El darrer i més endormiscat de tots els Capons",
-    imatge: "medalles-capons/capo-dormilega.jpg",
+    imatge: "medalles/capo-dormilega.jpg",
     lat: 41.3600875, lng: 1.3453906,
     radi: 25,
     token: "drmlg3n5",
@@ -397,7 +397,7 @@ const RUTES_INFO = {
   capona: {
     titol: "La Ruta dels Capons",
     subtitol: "Una gimcana familiar entre les barraques de pedra seca",
-    imatge: "medalles-capons/portada-capona.jpg",
+    imatge: "medalles/portada-capona.jpg",
     paragrafs: [
       "Fa molts anys, a la masia de la Capona, una de les més importants del Pla, hi vivien uns petits éssers de pedra que ajudaven en tot el que calia. Amb el temps, la masia es va anar abandonant... i els seus habitants, els Capons, es van escampar per totes les barraques de pedra seca que hi ha pels volts, amagant-se dins de les pedres que tant bé coneixien.",
       "Aquesta proposta és diferent de les altres rutes: no cal fer quilòmetres ni desnivell, sinó seguir un radar que et guiarà, pas a pas, cap a cada Capó amagat. Quan hi arribis, una pista t'ajudarà a trobar-lo exactament.",
@@ -1228,31 +1228,8 @@ async function mostrarAdmin() {
   document.getElementById('admin-panel').style.display =
     document.getElementById('admin-panel').style.display === 'none' ? 'block' : 'none';
 
-  // Comptador de gent registrada (usuaris que han entrat amb Google) + llista amb medalles
-  const totsUsuaris = await getDocs(collection(db, 'usuaris'));
-  document.getElementById('admin-total-usuaris').textContent = totsUsuaris.size;
-
-  const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({
-    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-  }[c]));
-
-  const llistaUsuaris = document.getElementById('admin-usuaris-llista');
-  const files = [];
-  totsUsuaris.forEach(d => files.push(d.data()));
-  files.sort((a, b) => (b.medalles?.length || 0) - (a.medalles?.length || 0));
-
-  llistaUsuaris.innerHTML = files.map(u => {
-    const medalles = u.medalles || [];
-    const noms = medalles.map(m => escapeHtml(m.nom)).join(', ') || '<em>cap encara</em>';
-    return `
-      <div class="admin-usuari-item">
-        <p class="admin-usuari-nom">${escapeHtml(u.nom || u.email || 'Sense nom')} — ${medalles.length} 🏅</p>
-        <p class="admin-usuari-medalles">${noms}</p>
-      </div>
-    `;
-  }).join('');
-
   // Botons per forçar la pista de cada Capó de la gimcana (per provar sense haver-hi d'anar físicament)
+  // Es fa abans de tocar Firestore perquè sempre funcioni, encara que la llista d'usuaris falli
   const forceContainer = document.getElementById('admin-gimcana-force');
   forceContainer.innerHTML = gimcanaCapons().map(c => `
     <button class="admin-force-btn" onclick="forcarPistaGimcana('${c.id}')">${c.icon} ${c.nom}</button>
@@ -1275,6 +1252,37 @@ async function mostrarAdmin() {
     `;
     container.appendChild(div);
   });
+
+  // Comptador de gent registrada (usuaris que han entrat amb Google) + llista amb medalles
+  // Protegit amb try/catch perquè, si falla (p.ex. permisos de Firestore), no bloquegi
+  // la resta del panell (botons de forçar pista i QRs), que ja s'han generat més amunt
+  try {
+    const totsUsuaris = await getDocs(collection(db, 'usuaris'));
+    document.getElementById('admin-total-usuaris').textContent = totsUsuaris.size;
+
+    const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+
+    const llistaUsuaris = document.getElementById('admin-usuaris-llista');
+    const files = [];
+    totsUsuaris.forEach(d => files.push(d.data()));
+    files.sort((a, b) => (b.medalles?.length || 0) - (a.medalles?.length || 0));
+
+    llistaUsuaris.innerHTML = files.map(u => {
+      const medalles = u.medalles || [];
+      const noms = medalles.map(m => escapeHtml(m.nom)).join(', ') || '<em>cap encara</em>';
+      return `
+        <div class="admin-usuari-item">
+          <p class="admin-usuari-nom">${escapeHtml(u.nom || u.email || 'Sense nom')} — ${medalles.length} 🏅</p>
+          <p class="admin-usuari-medalles">${noms}</p>
+        </div>
+      `;
+    }).join('');
+  } catch (err) {
+    document.getElementById('admin-usuaris-llista').innerHTML =
+      `<p class="admin-usuari-medalles">No s'ha pogut carregar la llista d'usuaris (${err.message || err}).</p>`;
+  }
 }
 
 // ════════════════════════════════════════════════════════

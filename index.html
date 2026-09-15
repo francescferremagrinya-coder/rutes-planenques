@@ -989,8 +989,8 @@ async function validarIAtorgarMedalla(balisa, verificarGPS) {
     return;
   }
 
-  // Verificació GPS (per QRs nous)
-  if (verificarGPS) {
+  // Verificació GPS (per QRs nous) — els admins es poden saltar la comprovació per fer proves
+  if (verificarGPS && !esAdmin) {
     mostrarToast('📡 Verificant ubicació GPS...');
     try {
       const pos = await obtenirGPS();
@@ -1006,6 +1006,8 @@ async function validarIAtorgarMedalla(balisa, verificarGPS) {
       mostrarToast('Cal permetre l\'accés al GPS per validar.', true);
       return;
     }
+  } else if (verificarGPS && esAdmin) {
+    mostrarToast('📡 Admin: comprovació GPS saltada.');
   }
 
   // ✅ Atorgar medalla

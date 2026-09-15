@@ -1102,6 +1102,7 @@ function gimcanaMissatgeHost(d) {
 
 async function iniciarGimcana() {
   mostrarPantalla('gimcana');
+  document.getElementById('gimcana-debug').style.display = esAdmin ? 'block' : 'none';
   document.getElementById('gimcana-parking').style.display = 'block';
   document.getElementById('gimcana-radar').style.display = 'none';
   document.getElementById('gimcana-parking-avis').textContent = '';
@@ -1211,6 +1212,7 @@ function forcarPistaGimcana(id) {
   gimcanaWaypointIdx = 0;
 
   mostrarPantalla('gimcana');
+  document.getElementById('gimcana-debug').style.display = 'block';
   document.getElementById('gimcana-parking').style.display = 'none';
   document.getElementById('gimcana-radar').style.display = 'block';
   document.getElementById('gimcana-progres').textContent = `${c.nom} (forçat des de l'admin)`;
@@ -1218,6 +1220,35 @@ function forcarPistaGimcana(id) {
   document.getElementById('gimcana-bafarada').textContent = 'Mode de prova: pista forçada.';
   document.getElementById('gimcana-pista-text').textContent = c.pista || '';
   document.getElementById('gimcana-pista-card').style.display = 'block';
+  document.getElementById('gimcana-debug-info').textContent = `${c.id} — ${c.nom}`;
+}
+
+// Panell de prova dins la pròpia pantalla de gimcana (només admin)
+let gimcanaDebugIdx = 0;
+
+function debugForcaPistaActual() {
+  if (!esAdmin) return;
+  const c = gimcanaObjectiuActual;
+  if (!c) { mostrarToast('Encara no hi ha cap Capó actiu. Prova amb «Capó següent».', true); return; }
+  document.getElementById('gimcana-pista-text').textContent = c.pista || '';
+  document.getElementById('gimcana-pista-card').style.display = 'block';
+  document.getElementById('gimcana-debug-info').textContent = `Pista forçada: ${c.nom}`;
+}
+
+function debugCapoSeguent() {
+  if (!esAdmin) return;
+  const llista = gimcanaCapons();
+  if (!llista.length) return;
+  gimcanaDebugIdx = (gimcanaDebugIdx + 1) % llista.length;
+  forcarPistaGimcana(llista[gimcanaDebugIdx].id);
+}
+
+function debugCapoAnterior() {
+  if (!esAdmin) return;
+  const llista = gimcanaCapons();
+  if (!llista.length) return;
+  gimcanaDebugIdx = (gimcanaDebugIdx - 1 + llista.length) % llista.length;
+  forcarPistaGimcana(llista[gimcanaDebugIdx].id);
 }
 
 // ════════════════════════════════════════════════════════
@@ -1394,6 +1425,9 @@ window.iniciarGimcana = iniciarGimcana;
 window.comencaRadarGimcana = comencaRadarGimcana;
 window.tancarGimcana = tancarGimcana;
 window.forcarPistaGimcana = forcarPistaGimcana;
+window.debugForcaPistaActual = debugForcaPistaActual;
+window.debugCapoSeguent = debugCapoSeguent;
+window.debugCapoAnterior = debugCapoAnterior;
 
 // Registre Service Worker (PWA)
 if ('serviceWorker' in navigator) {
@@ -1992,6 +2026,25 @@ header {
 #gimcana-pista-card { margin-top: 1.5rem; background: rgba(255,255,255,0.05); border-radius: 14px; padding: 1.2rem; }
 .gimcana-pista-titol { color: var(--or); font-weight: 700; margin-bottom: 0.6rem; }
 .gimcana-pista-text { font-style: italic; font-size: 1.1rem; line-height: 1.6; margin-bottom: 1rem; }
+
+/* Panell de proves (només admin), fix a baix de la pantalla de gimcana */
+#gimcana-debug {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 110;
+  background: rgba(0,0,0,0.85); backdrop-filter: blur(6px);
+  padding: 0.6rem 1rem calc(0.6rem + env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(212,168,67,0.3);
+}
+#gimcana-debug summary {
+  cursor: pointer; color: var(--or); font-weight: 700; font-size: 0.75rem;
+  text-transform: uppercase; letter-spacing: 0.05em;
+}
+.gimcana-debug-fila { display: flex; gap: 0.5rem; margin-top: 0.5rem; }
+.gimcana-debug-fila button {
+  flex: 1; font-size: 0.72rem; padding: 0.5rem; border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.08);
+  color: var(--crema); font-family: 'Space Grotesk', sans-serif; cursor: pointer;
+}
+#gimcana-debug-info { margin-top: 0.4rem; font-size: 0.7rem; color: var(--pedra); }
 </style>
 </head>
 <body>
@@ -2237,6 +2290,21 @@ header {
       <p class="gimcana-pista-text" id="gimcana-pista-text"></p>
       <button class="btn-principal" onclick="tancarGimcana(); iniciarEscaner()">📷 Escanejar el Capó</button>
     </div>
+  </div>
+
+  <!-- Panell de proves — només visible per a admin -->
+  <div id="gimcana-debug" style="display:none">
+    <details>
+      <summary>⚙️ Panell de prova (només admin)</summary>
+      <div class="gimcana-debug-fila">
+        <button onclick="debugCapoAnterior()">‹ Capó anterior</button>
+        <button onclick="debugCapoSeguent()">Capó següent ›</button>
+      </div>
+      <div class="gimcana-debug-fila">
+        <button onclick="debugForcaPistaActual()">Força la pista ara</button>
+      </div>
+      <p id="gimcana-debug-info"></p>
+    </details>
   </div>
 </div>
 

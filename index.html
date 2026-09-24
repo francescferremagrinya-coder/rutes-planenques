@@ -1281,6 +1281,31 @@ function debugCapoAnterior() {
 // ════════════════════════════════════════════════════════
 //  ADMIN — panell per gestionar balises
 // ════════════════════════════════════════════════════════
+// Esborra només les medalles dels Capons (CAP0X) del compte de qui ho prem,
+// per poder repetir les proves de camp sense haver de tocar Firestore a mà.
+async function resetCaponsPropis() {
+  if (!esAdmin || !usuariActual) return;
+  if (!confirm('Segur que vols esborrar les TEVES medalles dels Capons? Això no afecta la resta de medalles ni altres usuaris.')) return;
+
+  const ref = doc(db, 'usuaris', usuariActual.uid);
+  const snap = await getDoc(ref);
+  const dades = snap.data();
+  const medalles = dades.medalles || [];
+
+  const idsCapons = new Set(gimcanaCapons().map(c => c.id));
+  const puntsPerdits = medalles.filter(m => idsCapons.has(m.id)).reduce((s, m) => s + (m.punts || 0), 0);
+  const medallesRestants = medalles.filter(m => !idsCapons.has(m.id));
+
+  await updateDoc(ref, {
+    medalles: medallesRestants,
+    punts: Math.max(0, (dades.punts || 0) - puntsPerdits)
+  });
+
+  mostrarToast('Medalles dels Capons esborrades. Ja pots tornar a provar la gimcana! 🔄');
+  carregarPerfil();
+}
+window.resetCaponsPropis = resetCaponsPropis;
+
 async function mostrarAdmin() {
   if (!esAdmin) return;
   document.getElementById('admin-panel').style.display =
@@ -2049,7 +2074,7 @@ header {
 .gimcana-host-avatar { font-size: 2.4rem; flex-shrink: 0; }
 .gimcana-bafarada { background: var(--crema); color: var(--fons); border-radius: 14px; border-bottom-left-radius: 2px; padding: 0.55rem 0.8rem; font-size: 0.8rem; font-weight: 600; flex: 1; }
 .gimcana-fletxa-zona { width: 160px; height: 160px; margin: 0.5rem auto; border-radius: 50%; border: 3px solid rgba(212,168,67,0.3); display: flex; align-items: center; justify-content: center; }
-.gimcana-fletxa { width: 118px; height: 118px; display: inline-block; transition: transform 0.25s ease; }
+.gimcana-fletxa { width: 118px; height: 118px; display: inline-block; transition: transform 0.25s ease; transform-box: fill-box; transform-origin: center; }
 #gimcana-pista-card { margin-top: 1.5rem; background: rgba(255,255,255,0.05); border-radius: 14px; padding: 1.2rem; }
 .gimcana-pista-titol { color: var(--or); font-weight: 700; margin-bottom: 0.6rem; }
 .gimcana-pista-text { font-style: italic; font-size: 1.1rem; line-height: 1.6; margin-bottom: 1rem; white-space: pre-line; }
@@ -2199,6 +2224,8 @@ header {
       <div id="admin-usuaris-llista" class="admin-usuaris-llista"></div>
       <h3>🎯 Forçar pista d'un Capó (prova)</h3>
       <div id="admin-gimcana-force" class="admin-gimcana-force"></div>
+      <h3>🔄 Reiniciar proves</h3>
+      <button class="admin-force-btn" onclick="resetCaponsPropis()">Esborra les MEVES medalles dels Capons</button>
       <h3>QRs del sistema nou</h3>
       <div class="admin-qrs-grid" id="admin-qrs"></div>
     </div>

@@ -1087,6 +1087,7 @@ let gimcanaWatchId = null;
 let gimcanaHeading = null;
 let gimcanaWaypointIdx = 0;
 let gimcanaObjectiuActual = null;
+let gimcanaBrujolaOk = false;
 
 function gimcanaCapons() {
   return BALISES.filter(b => b.gimcana);
@@ -1137,6 +1138,34 @@ async function iniciarGimcana() {
 }
 
 async function comencaRadarGimcana() {
+  // El permís de brúixola d'iOS només es concedeix si es demana de manera
+  // immediata dins el mateix clic de l'usuari; si fem algun 'await' abans
+  // (Firestore, GPS...) Safari el denega en silenci i la brúixola mai s'activa.
+  const statusEl = document.getElementById('gimcana-brujola-status');
+  gimcanaBrujolaOk = false;
+  if (statusEl) statusEl.textContent = '🧭 Activant brúixola…';
+
+  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
+    DeviceOrientationEvent.requestPermission()
+      .then(r => {
+        if (r === 'granted') {
+          window.addEventListener('deviceorientation', gimcanaOrientacio);
+        } else if (statusEl) {
+          statusEl.textContent = '⚠️ Permís de brúixola denegat. Configuració del mòbil › Safari › Ubicació, o esborra les dades del lloc i torna-ho a provar.';
+        }
+      })
+      .catch(() => { if (statusEl) statusEl.textContent = '⚠️ Aquest navegador no ha pogut activar la brúixola.'; });
+  } else {
+    window.addEventListener('deviceorientationabsolute', gimcanaOrientacio, true);
+    window.addEventListener('deviceorientation', gimcanaOrientacio, true);
+  }
+
+  setTimeout(() => {
+    if (!gimcanaBrujolaOk && statusEl && statusEl.textContent.includes('Activant')) {
+      statusEl.textContent = '⚠️ El mòbil no envia dades de brúixola. Gira una mica el telèfon o camina uns passos.';
+    }
+  }, 4000);
+
   const proper = await properCapoGimcana();
   if (!proper) {
     mostrarToast('Ja has trobat tots els Capons! 🏆');
@@ -1168,15 +1197,6 @@ async function comencaRadarGimcana() {
   const idx = gimcanaCapons().findIndex(c => c.id === proper.id);
   document.getElementById('gimcana-progres').textContent = `Capó ${idx + 1} de ${total}`;
 
-  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-    DeviceOrientationEvent.requestPermission()
-      .then(r => { if (r === 'granted') window.addEventListener('deviceorientation', gimcanaOrientacio); })
-      .catch(() => {});
-  } else {
-    window.addEventListener('deviceorientationabsolute', gimcanaOrientacio, true);
-    window.addEventListener('deviceorientation', gimcanaOrientacio, true);
-  }
-
   if (gimcanaWatchId === null) {
     gimcanaWatchId = navigator.geolocation.watchPosition(
       pos => actualitzaRadarGimcana(pos.coords),
@@ -1189,6 +1209,11 @@ async function comencaRadarGimcana() {
 function gimcanaOrientacio(e) {
   if (typeof e.webkitCompassHeading === 'number') gimcanaHeading = e.webkitCompassHeading;
   else if (e.alpha !== null) gimcanaHeading = (360 - e.alpha) % 360;
+  else return;
+
+  gimcanaBrujolaOk = true;
+  const statusEl = document.getElementById('gimcana-brujola-status');
+  if (statusEl) statusEl.textContent = `🧭 Brúixola activa (${Math.round(gimcanaHeading)}°)`;
 }
 
 function actualitzaRadarGimcana(coords) {
@@ -2074,6 +2099,7 @@ header {
 .gimcana-host-avatar { font-size: 2.4rem; flex-shrink: 0; }
 .gimcana-bafarada { background: var(--crema); color: var(--fons); border-radius: 14px; border-bottom-left-radius: 2px; padding: 0.55rem 0.8rem; font-size: 0.8rem; font-weight: 600; flex: 1; }
 .gimcana-fletxa-zona { width: 160px; height: 160px; margin: 0.5rem auto; border-radius: 50%; border: 3px solid rgba(212,168,67,0.3); display: flex; align-items: center; justify-content: center; }
+.gimcana-brujola-status { font-size: 0.75rem; color: var(--pedra); text-align: center; margin-top: 0.3rem; min-height: 1.2em; opacity: 0.85; }
 .gimcana-fletxa { width: 118px; height: 118px; display: inline-block; transition: transform 0.25s ease; transform-box: fill-box; transform-origin: center; }
 #gimcana-pista-card { margin-top: 1.5rem; background: rgba(255,255,255,0.05); border-radius: 14px; padding: 1.2rem; }
 .gimcana-pista-titol { color: var(--or); font-weight: 700; margin-bottom: 0.6rem; }
@@ -2347,6 +2373,7 @@ header {
       </svg>
     </div>
     <p class="gimcana-dist"><span id="gimcana-radar-dist">—</span> m</p>
+    <p class="gimcana-brujola-status" id="gimcana-brujola-status"></p>
 
     <div id="gimcana-pista-card" style="display:none">
       <p class="gimcana-pista-titol">🔍 Ets a prop!</p>

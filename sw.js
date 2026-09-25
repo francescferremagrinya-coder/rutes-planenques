@@ -3,7 +3,7 @@
 //  Gestiona cache offline i instal·lació PWA
 // ════════════════════════════════════════════════════════
 
-const CACHE_NOM = 'medalles-v4';
+const CACHE_NOM = 'medalles-v5';
 const CACHE_FITXERS = [
   './',
   './index.html',

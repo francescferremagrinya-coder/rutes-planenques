@@ -1088,6 +1088,7 @@ let gimcanaHeading = null;
 let gimcanaWaypointIdx = 0;
 let gimcanaObjectiuActual = null;
 let gimcanaBrujolaOk = false;
+let gimcanaFletxaRotacio = 0;
 
 function gimcanaCapons() {
   return BALISES.filter(b => b.gimcana);
@@ -1235,7 +1236,13 @@ function actualitzaRadarGimcana(coords) {
   const fletxa = document.getElementById('gimcana-fletxa');
   if (gimcanaHeading !== null) {
     const rumb = gimcanaBearing(coords.latitude, coords.longitude, objectiu.lat, objectiu.lng);
-    fletxa.style.transform = `rotate(${(rumb - gimcanaHeading + 360) % 360}deg)`;
+    const objectiuDeg = (rumb - gimcanaHeading + 360) % 360;
+    // Gira sempre pel camí més curt: si no ho féssim, en creuar el llindar
+    // 359°→0° la fletxa faria una volta sencera en comptes d'un petit gir,
+    // cosa que es percep com si anés lenta o es quedés endarrerida.
+    let diff = ((objectiuDeg - gimcanaFletxaRotacio) % 360 + 540) % 360 - 180;
+    gimcanaFletxaRotacio += diff;
+    fletxa.style.transform = `rotate(${gimcanaFletxaRotacio}deg)`;
   }
 
   if (dFinal <= (c.radi || 25)) {
@@ -2100,7 +2107,7 @@ header {
 .gimcana-bafarada { background: var(--crema); color: var(--fons); border-radius: 14px; border-bottom-left-radius: 2px; padding: 0.55rem 0.8rem; font-size: 0.8rem; font-weight: 600; flex: 1; }
 .gimcana-fletxa-zona { width: 160px; height: 160px; margin: 0.5rem auto; border-radius: 50%; border: 3px solid rgba(212,168,67,0.3); display: flex; align-items: center; justify-content: center; }
 .gimcana-brujola-status { font-size: 0.75rem; color: var(--pedra); text-align: center; margin-top: 0.3rem; min-height: 1.2em; opacity: 0.85; }
-.gimcana-fletxa { width: 118px; height: 118px; display: inline-block; transition: transform 0.25s ease; transform-box: fill-box; transform-origin: center; }
+.gimcana-fletxa { width: 118px; height: 118px; display: inline-block; transition: transform 0.15s linear; transform-box: fill-box; transform-origin: center; }
 #gimcana-pista-card { margin-top: 1.5rem; background: rgba(255,255,255,0.05); border-radius: 14px; padding: 1.2rem; }
 .gimcana-pista-titol { color: var(--or); font-weight: 700; margin-bottom: 0.6rem; }
 .gimcana-pista-text { font-style: italic; font-size: 1.1rem; line-height: 1.6; margin-bottom: 1rem; white-space: pre-line; }
@@ -2366,10 +2373,8 @@ header {
       <svg class="gimcana-fletxa" id="gimcana-fletxa" viewBox="0 0 100 100">
         <circle cx="50" cy="50" r="47" fill="none" stroke="#D4A843" stroke-width="1.6"/>
         <circle cx="50" cy="50" r="42" fill="none" stroke="#D4A843" stroke-width="0.6" opacity="0.7"/>
-        <polygon points="69.4,30.5 57,50 69.4,69.4 50,57 30.5,69.4 43,50 30.5,30.5 50,43" fill="#A89880" stroke="#16240F" stroke-width="0.5"/>
-        <polygon points="50,9 56,50 50,56 44,50" fill="#C0524A" stroke="#16240F" stroke-width="0.5"/>
-        <polygon points="50,56 56,50 50,91 44,50" fill="#F5F0E8" stroke="#16240F" stroke-width="0.5"/>
-        <circle cx="50" cy="50" r="5.5" fill="#1A2E1D" stroke="#D4A843" stroke-width="0.9"/>
+        <polygon points="50,6 68,42 55,42 55,88 45,88 45,42 32,42" fill="#C0524A" stroke="#16240F" stroke-width="1.4" stroke-linejoin="round"/>
+        <circle cx="50" cy="50" r="6" fill="#1A2E1D" stroke="#D4A843" stroke-width="1"/>
       </svg>
     </div>
     <p class="gimcana-dist"><span id="gimcana-radar-dist">—</span> m</p>

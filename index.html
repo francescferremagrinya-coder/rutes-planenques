@@ -31,6 +31,13 @@ import { getFirestore, doc, getDoc, setDoc, updateDoc, collection,
 // ════════════════════════════════════════════════════════
 const MOSTRAR_RUTA_CAPONA = false;
 
+// Mentre MOSTRAR_RUTA_CAPONA sigui false, aquests correus (el de Google amb
+// què entren a l'app) també podran veure i jugar la Ruta dels Capons, sense
+// necessitat de ser admins. Afegeix-hi els correus dels testers que vulguis.
+const TESTERS_CAPONA = [
+  "jessica.martinez.gabarro@gmail.com",
+];
+
 const firebaseConfig = {
   apiKey: "AIzaSyC1jtpfx9csBNkvXjrXe5gUnMI0Y3F_U5Y",
   authDomain: "rutes-planenques.firebaseapp.com",
@@ -515,8 +522,8 @@ onAuthStateChanged(auth, async (user) => {
   usuariActual = user;
   if (user) {
     esAdmin = ADMINS.includes(user.uid);
-    document.getElementById('nivell-card-capona').style.display =
-      (MOSTRAR_RUTA_CAPONA || esAdmin) ? 'flex' : 'none';
+    const potVeureCapona = MOSTRAR_RUTA_CAPONA || esAdmin || TESTERS_CAPONA.includes(user.email);
+    document.getElementById('nivell-card-capona').style.display = potVeureCapona ? 'flex' : 'none';
     const { introVista, avisVist } = await assegurarPerfil(user);
     introPendent = !introVista;
     if (!avisVist) {

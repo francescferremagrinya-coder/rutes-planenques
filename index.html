@@ -92,6 +92,7 @@ const BALISES = [
     punts: 150,
     categoria: "Patrimoni · Ruta 3",
     descripcio: "Dins la cova on els Miquelets van resistir durant la Guerra de Successió",
+    conte: "🤝 Ets al terme de Cabra del Camp, un poble veí que guarda amb orgull aquest racó ple d'història. Descobrim-lo i cuidem-lo amb el mateix respecte que voldríem pel nostre propi patrimoni.",
     // QR vell — URL del Google Forms existent
     url_forms: "https://forms.gle/nsBHwvk3EHx3n9fi7",
     token: "mqlts26fr", // token secret — no compartir
@@ -108,6 +109,7 @@ const BALISES = [
     punts: 200,
     categoria: "Cims · Ruta 3",
     descripcio: "Just al cim del Barretet, amb vistes sobre tot el Pla de Santa Maria",
+    conte: "🤝 Has arribat a un cim que Cabra del Camp estima com a seu. Aquest projecte no vol apropiar-se'n res: només compartir-lo i conèixer-lo millor, amb tot el respecte per qui l'ha cuidat sempre.",
     // QR vell — URL del Google Forms existent
     url_forms: "https://forms.gle/2nGFKJ16v6TBzEFK7",
     token: "brrtt94xk", // token secret — no compartir
@@ -1093,9 +1095,9 @@ async function mostrarCelebracio(balisa) {
 
   const conteEl = document.getElementById('celebracio-conte');
   const btnEl = document.getElementById('celebracio-btn');
+  conteEl.textContent = balisa.conte || '';
+  conteEl.style.display = balisa.conte ? 'block' : 'none';
   if (balisa.gimcana) {
-    conteEl.textContent = balisa.conte || '';
-    conteEl.style.display = balisa.conte ? 'block' : 'none';
     const proper = await properCapoGimcana();
     if (proper) {
       btnEl.textContent = 'Segueix buscant';
@@ -1105,7 +1107,6 @@ async function mostrarCelebracio(balisa) {
       btnEl.onclick = () => { tancarCelebracio(); };
     }
   } else {
-    conteEl.style.display = 'none';
     btnEl.textContent = 'Genial!';
     btnEl.onclick = () => { tancarCelebracio(); };
   }
@@ -2365,6 +2366,7 @@ header {
   <!-- TAB RUTES -->
   <div id="tab-rutes">
     <p class="rutes-explica">🏅 Cada ruta amaga una insígnia. Escaneja el QR que trobaràs al lloc per aconseguir-la.</p>
+    <p class="rutes-explica">🤝 Aquest projecte neix al Pla, però algunes rutes transcorren per termes de pobles veïns. Les vivim i en gaudim amb el mateix respecte que voldríem pel nostre propi patrimoni.</p>
     <p class="carrusel-hint">‹ Llisca per veure les rutes ›</p>
     <div class="nivells-carrusel" id="nivells-carrusel" onscroll="actualitzarPuntsNivells()">
 

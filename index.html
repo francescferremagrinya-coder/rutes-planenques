@@ -999,13 +999,21 @@ async function processarQR(text) {
     return;
   }
 
-  // 2. Detectar si és QR NOU (payload base64 del nostre sistema)
+  // 2. Detectar si és QR NOU (payload base64 del nostre sistema).
+  //    Accepta dos formats: el JSON {id,token} de sempre, o el simplificat
+  //    "id:token" (menys caràcters → QR amb menys mòduls, pensat per gravar/imprimir en petit).
   try {
     const url = new URL(text);
     const payload = url.searchParams.get('b');
     if (payload) {
-      const data = JSON.parse(atob(payload));
-      const balisa = BALISES.find(b => b.id === data.id && b.token === data.token);
+      const decoded = atob(payload);
+      let id, token;
+      try {
+        ({ id, token } = JSON.parse(decoded));
+      } catch {
+        [id, token] = decoded.split(':');
+      }
+      const balisa = BALISES.find(b => b.id === id && b.token === token);
       if (balisa) {
         await validarIAtorgarMedalla(balisa, true);
         return;
@@ -1394,7 +1402,7 @@ async function mostrarAdmin() {
   container.innerHTML = '';
   const base = window.location.origin + window.location.pathname;
   BALISES.filter(b => b.token).forEach(b => {
-    const payload = btoa(JSON.stringify({ id: b.id, token: b.token }));
+    const payload = b.qrSimple ? btoa(`${b.id}:${b.token}`) : btoa(JSON.stringify({ id: b.id, token: b.token }));
     const url = `${base}?b=${payload}`;
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(url)}&margin=10`;
     const div = document.createElement('div');
@@ -1574,18 +1582,19 @@ onAuthStateChanged(auth, async (user) => {
     const pendent = sessionStorage.getItem('qr_pendent');
     if (pendent) {
       sessionStorage.removeItem('qr_pendent');
+      // Comprovem primer el cas especial de "forms" (si mai s'hi arriba);
+      // si el payload no és JSON (p.ex. el format simplificat "id:token"),
+      // el try/catch cau igualment cap a processarQR, que ja sap llegir tots dos formats.
       try {
         const data = JSON.parse(atob(pendent));
         if (data.forms) {
-          // QR vell — cerca la balisa per ID directament
           const balisa = BALISES.find(b => b.id === data.id);
           if (balisa) await validarIAtorgarMedalla(balisa, false);
-        } else {
-          // QR nou — processa normalment
-          const fakeUrl = `${location.origin}${location.pathname}?b=${pendent}`;
-          await processarQR(fakeUrl);
+          return;
         }
       } catch {}
+      const fakeUrl = `${location.origin}${location.pathname}?b=${pendent}`;
+      await processarQR(fakeUrl);
     }
   }
 });

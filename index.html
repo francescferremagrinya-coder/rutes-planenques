@@ -119,6 +119,32 @@ const BALISES = [
     radi: 60
   },
   {
+    id: "B05",
+    nom: "El Carrer dels Cavallers",
+    icon: "🕳️",
+    color: "#5C4A2A",
+    punts: 150,
+    categoria: "Patrimoni · Ruta 4",
+    descripcio: "Un avenc estret i profund que sembla tret d'una pel·lícula d'aventures",
+    token: "cav4k9x2", // token secret — no compartir
+    qrSimple: true, // QR simplificat (menys mòduls) pensat per gravar/imprimir en petit
+    lat: 41.4290000, lng: 1.2736940,
+    radi: 100
+  },
+  {
+    id: "B06",
+    nom: "Roc del Cogulló",
+    icon: "⛰️",
+    color: "#5C7A3E",
+    punts: 200,
+    categoria: "Cims · Ruta 4",
+    descripcio: "El mirador amb les millors vistes de tota la ruta, entre la Conca de Barberà i les serres properes",
+    token: "cog7m2p9", // token secret — no compartir
+    qrSimple: true, // QR simplificat (menys mòduls) pensat per gravar/imprimir en petit
+    lat: 41.4270147, lng: 1.3027379,
+    radi: 50
+  },
+  {
     id: "CAP01",
     nom: "Capó Margeter",
     icon: "🧱",
@@ -1090,15 +1116,25 @@ async function mostrarCelebracio(balisa) {
   document.getElementById('celebracio-punts').textContent = `+${balisa.punts} pts`;
 
   const imgEl = document.getElementById('celebracio-img');
-  imgEl.src = balisa.imatge || '';
-  // Els Capons de la gimcana no porten el nom escrit a sobre — només la medalla final el portarà
-  if (balisa.imatge && !balisa.gimcana) {
-    try {
-      const canvas = await crearImatgePersonalitzada(balisa, usuariActual?.displayName || '');
-      imgEl.src = canvas.toDataURL('image/png');
-    } catch (e) {
-      console.error('No s\'ha pogut personalitzar la imatge de celebració', e);
+  const iconFbEl = document.getElementById('celebracio-icon-fb');
+  if (balisa.imatge) {
+    imgEl.src = balisa.imatge;
+    imgEl.style.display = 'block';
+    iconFbEl.style.display = 'none';
+    // Els Capons de la gimcana no porten el nom escrit a sobre — només la medalla final el portarà
+    if (!balisa.gimcana) {
+      try {
+        const canvas = await crearImatgePersonalitzada(balisa, usuariActual?.displayName || '');
+        imgEl.src = canvas.toDataURL('image/png');
+      } catch (e) {
+        console.error('No s\'ha pogut personalitzar la imatge de celebració', e);
+      }
     }
+  } else {
+    // Sense imatge pròpia encara: mostrem la icona de la balisa en gran
+    imgEl.style.display = 'none';
+    iconFbEl.textContent = balisa.icon || '🏅';
+    iconFbEl.style.display = 'block';
   }
 
   const conteEl = document.getElementById('celebracio-conte');
@@ -2161,6 +2197,11 @@ header {
   filter: drop-shadow(0 8px 24px rgba(212,168,67,0.35));
   animation: celebracio-rebot 0.7s 0.15s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
+.celebracio-icon-fb {
+  font-size: 5rem; text-align: center; margin: 0 auto 1.2rem;
+  filter: drop-shadow(0 8px 24px rgba(212,168,67,0.35));
+  animation: celebracio-rebot 0.7s 0.15s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
 @keyframes celebracio-rebot {
   0% { transform: scale(0) rotate(-15deg); opacity: 0; }
   100% { transform: scale(1) rotate(0deg); opacity: 1; }
@@ -2546,6 +2587,7 @@ header {
     <p class="celebracio-titol">🎉 Enhorabona!</p>
     <p class="celebracio-sub">Has aconseguit una medalla</p>
     <img id="celebracio-img" class="celebracio-img" src="" alt="">
+    <span id="celebracio-icon-fb" class="celebracio-icon-fb" style="display:none"></span>
     <p class="celebracio-nom" id="celebracio-nom">—</p>
     <p class="celebracio-punts" id="celebracio-punts">+0 pts</p>
     <p class="celebracio-conte" id="celebracio-conte" style="display:none"></p>

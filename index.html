@@ -1421,6 +1421,43 @@ async function resetCaponsPropis() {
 }
 window.resetCaponsPropis = resetCaponsPropis;
 
+// Actualitza els punts de les medalles JA guanyades per TOTS els usuaris perquè coincideixin
+// amb els valors actuals de BALISES (per defecte, canviar punts a BALISES només afecta
+// medalles noves — això posa també les antigues al dia).
+async function recalcularPuntuacionsGlobals() {
+  if (!esAdmin) return;
+  if (!confirm('Això actualitzarà els punts de les medalles ja guanyades de TOTS els usuaris perquè coincideixin amb els valors actuals. Vols continuar?')) return;
+
+  const mapaPunts = new Map(BALISES.map(b => [b.id, b.punts]));
+  const totsUsuaris = await getDocs(collection(db, 'usuaris'));
+  let actualitzats = 0;
+
+  for (const d of totsUsuaris.docs) {
+    const dades = d.data();
+    const medalles = dades.medalles || [];
+    if (!medalles.length) continue;
+
+    let hiHaCanvis = false;
+    const medallesActualitzades = medalles.map(m => {
+      const puntsActuals = mapaPunts.get(m.id);
+      if (puntsActuals !== undefined && puntsActuals !== m.punts) {
+        hiHaCanvis = true;
+        return { ...m, punts: puntsActuals };
+      }
+      return m;
+    });
+    if (!hiHaCanvis) continue;
+
+    const nouTotal = medallesActualitzades.reduce((s, m) => s + (m.punts || 0), 0);
+    await updateDoc(doc(db, 'usuaris', d.id), { medalles: medallesActualitzades, punts: nouTotal });
+    actualitzats++;
+  }
+
+  mostrarToast(`✅ Puntuacions recalculades per a ${actualitzats} usuaris.`);
+  mostrarAdmin();
+}
+window.recalcularPuntuacionsGlobals = recalcularPuntuacionsGlobals;
+
 async function mostrarAdmin() {
   if (!esAdmin) return;
   document.getElementById('admin-panel').style.display =
@@ -2408,6 +2445,8 @@ header {
       <div id="admin-gimcana-force" class="admin-gimcana-force"></div>
       <h3>🔄 Reiniciar proves</h3>
       <button class="admin-force-btn" onclick="resetCaponsPropis()">Esborra les MEVES medalles dels Capons</button>
+      <h3>🔢 Puntuacions</h3>
+      <button class="admin-force-btn" onclick="recalcularPuntuacionsGlobals()">Actualitza els punts de TOTHOM als valors actuals</button>
       <h3>QRs del sistema nou</h3>
       <div class="admin-qrs-grid" id="admin-qrs"></div>
     </div>

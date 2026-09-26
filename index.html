@@ -265,6 +265,8 @@ const RUTES_INFO = {
   moro: {
     titol: "La Cova del Moro",
     subtitol: "Un racó llegendari sota el Replà",
+    dificultat: 'moderada',
+    avisSeguretat: "⚠️ Cal fer una petita grimpada i passar per un pas estret entre roques per arribar-hi. Recomanada per a gent acostumada a caminar per entorns de muntanya.",
     imatge: FOTO_COVA_MORO,
     wikiloc: "https://loc.wiki/t/241386671",
     foto360: "https://photos.google.com/direct/AF1QipPRY6kTJtQt0kCstaaSuMnqO7t5DAgPtHcSPLt5N2vByZvBQdpWQgHLNzmxiG197A/photos",
@@ -301,6 +303,8 @@ const RUTES_INFO = {
   pinyaseka: {
     titol: "Sender Pinya Seka",
     subtitol: "Crestejant entre l'Alt Camp i la Conca",
+    dificultat: 'moderada',
+    avisSeguretat: "⚠️ Hi ha blocs de pedra i petites grimpades, i alguns trams passen a tocar del caire de la cinglera amb exposició al buit. Cal extremar la precaució en aquests punts.",
     imatge: "rutes/pinya-seka.JPG",
     wikiloc: "https://loc.wiki/t/251784397",
     foto360: "https://photos.app.goo.gl/uUiTQRMNv5s6yax28",
@@ -328,6 +332,8 @@ const RUTES_INFO = {
   miqueletsBarretet: {
     titol: "Cova dels Miquelets i cresta del Barretet",
     subtitol: "Història i grimpada al peu del Coll de Cabra",
+    dificultat: 'exigent',
+    avisSeguretat: "⚠️ Aquesta és la ruta més exigent de la col·lecció. La cresta del Barretet requereix utilitzar les mans en diversos punts i té trams aeris amb exposició real. No recomanada per a persones amb vertigen, sense experiència en terrenys de muntanya, o acompanyades de nens petits.",
     imatge: "rutes/el-barretet.JPG",
     wikiloc: "https://loc.wiki/t/268673465",
     foto360: "https://tour.panoee.net/6a290c489c10065a3fa9c6c6/dji_0365",
@@ -359,6 +365,8 @@ const RUTES_INFO = {
   cogullo: {
     titol: "Muntet del Blat, Carrer de Cavallers i el Cogulló",
     subtitol: "Una ruta aventurera entre carenes i barrancs",
+    dificultat: 'exigent',
+    avisSeguretat: "⚠️ Ruta exigent físicament, amb trams tècnics (cordes i cadenes) per superar desnivells i una grimpada assistida. Cal bon calçat i estar acostumat a caminar per terreny irregular amb desnivell.",
     imatge: "rutes/roc-cogullo.JPG",
     wikiloc: "https://loc.wiki/t/284201544?wa=sc",
     foto360: "https://tour.panoee.net/6a9d23b05691d57b6649429f/cogullo-360",
@@ -423,6 +431,13 @@ function obrirRutaDetall(clau) {
   document.getElementById('ruta-detall-hero').style.backgroundImage = `url('${r.imatge}')`;
   document.getElementById('ruta-detall-titol').textContent = r.titol;
   document.getElementById('ruta-detall-subtitol').textContent = r.subtitol;
+  const avisEl = document.getElementById('ruta-detall-avis');
+  if (r.avisSeguretat) {
+    avisEl.textContent = r.avisSeguretat;
+    avisEl.style.display = 'block';
+  } else {
+    avisEl.style.display = 'none';
+  }
   const btnWikiloc = document.getElementById('ruta-detall-wikiloc');
   if (r.wikiloc) {
     btnWikiloc.href = r.wikiloc;
@@ -1863,6 +1878,14 @@ header {
   font-size: 0.7rem; font-weight: 700; letter-spacing: 0.05em;
   text-transform: uppercase; color: var(--or);
 }
+.nivell-dificultat {
+  position: absolute; top: 1.2rem; right: 1.2rem;
+  backdrop-filter: blur(4px);
+  padding: 0.3rem 0.8rem; border-radius: 20px;
+  font-size: 0.7rem; font-weight: 700; letter-spacing: 0.02em;
+}
+.nivell-dificultat.moderada { background: rgba(212,168,67,0.85); color: #16240F; }
+.nivell-dificultat.exigent { background: rgba(192,82,74,0.9); color: #F5F0E8; }
 .nivell-info { width: 100%; }
 .nivell-nom { font-family: 'Fraunces', serif; font-size: 1.4rem; font-weight: 700; line-height: 1.2; margin-bottom: 0.5rem; }
 .nivell-stats { font-size: 0.78rem; color: var(--pedra); margin-bottom: 1rem; }
@@ -1942,6 +1965,16 @@ header {
 .ruta-detall-cos { padding: 1.5rem 1.3rem 3rem; margin-top: -2.5rem; position: relative; }
 .ruta-detall-titol { font-family: 'Fraunces', serif; font-size: 1.7rem; font-weight: 700; margin-bottom: 0.2rem; }
 .ruta-detall-subtitol { color: var(--pedra); font-style: italic; font-size: 0.9rem; margin-bottom: 1.3rem; }
+.ruta-detall-avis {
+  background: rgba(192,82,74,0.15);
+  border: 1px solid rgba(192,82,74,0.5);
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin-bottom: 1.3rem;
+  color: var(--crema);
+}
 .ruta-detall-botons { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.8rem; }
 .ruta-detall-nota-qr {
   font-size: 0.75rem; color: var(--pedra); line-height: 1.5;
@@ -2332,6 +2365,7 @@ header {
       <div class="nivell-card" id="nivell-card-moro" onclick="obrirRutaDetall('moro')"
            style="background-image: linear-gradient(180deg, rgba(26,46,29,0.05) 45%, rgba(10,16,10,0.92) 100%)">
         <span class="nivell-etiqueta">Ruta 1</span>
+        <span class="nivell-dificultat moderada">Moderada</span>
         <div class="nivell-info">
           <h2 class="nivell-nom">Cova del Moro des de Fàtima</h2>
           <div class="nivell-stats">📏 3,34 km · ⬆️ 392 m · ⏱️ 49 min</div>
@@ -2343,6 +2377,7 @@ header {
       <div class="nivell-card" onclick="obrirRutaDetall('pinyaseka')"
            style="background-image: linear-gradient(180deg, rgba(26,46,29,0.05) 45%, rgba(10,16,10,0.92) 100%), url('rutes/pinya-seka.JPG')">
         <span class="nivell-etiqueta">Ruta 2</span>
+        <span class="nivell-dificultat moderada">Moderada</span>
         <div class="nivell-info">
           <h2 class="nivell-nom">Sender Pinya Seka des del Replà de Sant Ramon</h2>
           <div class="nivell-stats">📏 10,00 km · ⬆️ 418 m · ⏱️ 3h 18min</div>
@@ -2354,6 +2389,7 @@ header {
       <div class="nivell-card" onclick="obrirRutaDetall('miqueletsBarretet')"
            style="background-image: linear-gradient(180deg, rgba(26,46,29,0.05) 45%, rgba(10,16,10,0.92) 100%), url('rutes/el-barretet.JPG')">
         <span class="nivell-etiqueta">Ruta 3</span>
+        <span class="nivell-dificultat exigent">⚠️ Exigent</span>
         <div class="nivell-info">
           <h2 class="nivell-nom">Cova dels Miquelets + Cresta del Barretet</h2>
           <div class="nivell-stats">📏 7,3 km · ⬆️ 410 m · ⏱️ 2h 30min</div>
@@ -2365,6 +2401,7 @@ header {
       <div class="nivell-card" onclick="obrirRutaDetall('cogullo')"
            style="background-image: linear-gradient(180deg, rgba(26,46,29,0.05) 45%, rgba(10,16,10,0.92) 100%), url('rutes/roc-cogullo.JPG')">
         <span class="nivell-etiqueta">Ruta 4</span>
+        <span class="nivell-dificultat exigent">⚠️ Exigent</span>
         <div class="nivell-info">
           <h2 class="nivell-nom">Muntet del Blat, Carrer de Cavallers i el Cogulló</h2>
           <div class="nivell-stats">📏 16,15 km · ⬆️ 526 m · ⏱️ 2h 47min</div>
@@ -2468,6 +2505,7 @@ header {
   <div class="ruta-detall-cos">
     <h1 class="ruta-detall-titol" id="ruta-detall-titol">—</h1>
     <p class="ruta-detall-subtitol" id="ruta-detall-subtitol"></p>
+    <p class="ruta-detall-avis" id="ruta-detall-avis" style="display:none"></p>
     <div class="ruta-detall-botons">
       <a class="btn-wikiloc" id="ruta-detall-wikiloc" href="#" target="_blank" rel="noopener">
         <span>▶</span> Obrir a Wikiloc

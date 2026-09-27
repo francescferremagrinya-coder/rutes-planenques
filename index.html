@@ -400,6 +400,7 @@ const RUTES_INFO = {
   cogullo: {
     titol: "Muntet del Blat, Carrer de Cavallers i el Cogulló",
     subtitol: "Una ruta aventurera entre carenes i barrancs",
+    actiu: false, // encara no s'han col·locat els QR físics al camp
     dificultat: 'exigent',
     avisSeguretat: "⚠️ Ruta exigent físicament, amb trams tècnics (cordes i cadenes) per superar desnivells i una grimpada assistida. Cal bon calçat i estar acostumat a caminar per terreny irregular amb desnivell.",
     imatge: "rutes/roc-cogullo.JPG",
@@ -491,14 +492,27 @@ function obrirRutaDetall(clau) {
 
   const btnCta = document.getElementById('ruta-detall-cta');
   const notaQr = document.getElementById('ruta-detall-nota-qr');
-  if (clau === 'capona') {
-    btnCta.textContent = '🎯 Comença la gimcana';
-    btnCta.onclick = () => { tancarRutaDetall(); iniciarGimcana(); };
-    notaQr.textContent = '🧭 Segueix el radar fins a cada Capó i escaneja el QR que trobaràs amagat per aconseguir-lo.';
+  const properamentEl = document.getElementById('ruta-detall-properament');
+  btnCta.disabled = false;
+  if (r.actiu === false) {
+    properamentEl.textContent = "🚧 Aquesta ruta encara no està activa. Estem enllestint les insígnies físiques del camí — molt aviat hi podràs jugar!";
+    properamentEl.style.display = 'block';
+    btnCta.textContent = 'Properament disponible';
+    btnCta.onclick = null;
+    btnCta.disabled = true;
+    notaQr.style.display = 'none';
   } else {
-    btnCta.textContent = '📷 Escanejar QR';
-    btnCta.onclick = () => { tancarRutaDetall(); iniciarEscaner(); };
-    notaQr.textContent = "🏅 Quan arribis físicament al lloc, escaneja el QR que hi trobaràs per aconseguir la insígnia d'aquesta ruta.";
+    properamentEl.style.display = 'none';
+    notaQr.style.display = 'block';
+    if (clau === 'capona') {
+      btnCta.textContent = '🎯 Comença la gimcana';
+      btnCta.onclick = () => { tancarRutaDetall(); iniciarGimcana(); };
+      notaQr.textContent = '🧭 Segueix el radar fins a cada Capó i escaneja el QR que trobaràs amagat per aconseguir-lo.';
+    } else {
+      btnCta.textContent = '📷 Escanejar QR';
+      btnCta.onclick = () => { tancarRutaDetall(); iniciarEscaner(); };
+      notaQr.textContent = "🏅 Quan arribis físicament al lloc, escaneja el QR que hi trobaràs per aconseguir la insígnia d'aquesta ruta.";
+    }
   }
 
   const paraOSeccio = p => p.startsWith('## ')
@@ -2066,6 +2080,20 @@ header {
   margin-bottom: 1.3rem;
   color: var(--crema);
 }
+.ruta-detall-properament {
+  background: rgba(212,168,67,0.12);
+  border: 1px solid rgba(212,168,67,0.5);
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin-bottom: 1.3rem;
+  color: var(--crema);
+}
+#ruta-detall-cta:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 .ruta-detall-botons { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.8rem; }
 .ruta-detall-nota-qr {
   font-size: 0.75rem; color: var(--pedra); line-height: 1.5;
@@ -2605,6 +2633,7 @@ header {
     <h1 class="ruta-detall-titol" id="ruta-detall-titol">—</h1>
     <p class="ruta-detall-subtitol" id="ruta-detall-subtitol"></p>
     <p class="ruta-detall-avis" id="ruta-detall-avis" style="display:none"></p>
+    <p class="ruta-detall-properament" id="ruta-detall-properament" style="display:none"></p>
     <div class="ruta-detall-botons">
       <a class="btn-wikiloc" id="ruta-detall-wikiloc" href="#" target="_blank" rel="noopener">
         <span>▶</span> Obrir a Wikiloc

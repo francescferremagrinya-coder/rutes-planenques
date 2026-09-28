@@ -19,6 +19,8 @@ import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChang
 import { getFirestore, doc, getDoc, setDoc, updateDoc, collection,
   getDocs, onSnapshot, serverTimestamp, arrayUnion, query, orderBy }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+import { getAnalytics, logEvent, isSupported as analyticsSuportada }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js';
 
 // ════════════════════════════════════════════════════════
 //  ⚙️ CONFIGURACIÓ FIREBASE
@@ -44,7 +46,11 @@ const firebaseConfig = {
   projectId: "rutes-planenques",
   storageBucket: "rutes-planenques.firebasestorage.app",
   messagingSenderId: "843557916096",
-  appId: "1:843557916096:web:3d6911bdd7ad6bec0bcc25"
+  appId: "1:843557916096:web:3d6911bdd7ad6bec0bcc25",
+  // Firebase Console → engranatge ⚙️ → Configuració del projecte → pestanya
+  // "Integracions" (o "Your apps" → afegeix Google Analytics si encara no
+  // hi és) → copia el "ID de mesurament" (comença per "G-").
+  measurementId: "G-XXXXXXXXXX"
 };
 
 // ════════════════════════════════════════════════════════
@@ -468,6 +474,7 @@ function obrirRutaDetall(clau) {
   const r = RUTES_INFO[clau];
   if (!r) return;
 
+  trackEvent('ruta_oberta', { ruta: clau });
   document.getElementById('ruta-detall-hero').style.backgroundImage = `url('${r.imatge}')`;
   document.getElementById('ruta-detall-titol').textContent = r.titol;
   document.getElementById('ruta-detall-subtitol').textContent = r.subtitol;
@@ -555,6 +562,14 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 const provider = new GoogleAuthProvider();
+
+// Analytics — no funciona a tots els navegadors (p.ex. sense cookies),
+// per això ho comprovem amb isSupported() abans d'inicialitzar-lo.
+let analytics = null;
+analyticsSuportada().then(ok => { if (ok) analytics = getAnalytics(app); }).catch(() => {});
+function trackEvent(nom, params) {
+  try { if (analytics) logEvent(analytics, nom, params); } catch {}
+}
 
 let usuariActual = null;
 let esAdmin = false;
@@ -648,6 +663,7 @@ async function tancarIntro() {
 
 async function tancarAvisLegal() {
   mostrarPantalla(introPendent ? 'intro' : 'joc');
+  trackEvent('avis_legal_acceptat');
   if (usuariActual) {
     const ref = doc(db, 'usuaris', usuariActual.uid);
     updateDoc(ref, { avisResponsabilitatVist: true }).catch(() => {});
@@ -953,6 +969,7 @@ function carregarHtml5Qrcode() {
 
 async function iniciarEscaner() {
   mostrarPantalla('escaner');
+  trackEvent('escaner_obert');
 
   try {
     const Html5Qrcode = await carregarHtml5Qrcode();
@@ -1123,6 +1140,11 @@ async function validarIAtorgarMedalla(balisa, verificarGPS) {
     punts: (dades.punts || 0) + balisa.punts
   });
 
+  trackEvent('medalla_aconseguida', { balisa_id: balisa.id, balisa_nom: balisa.nom, punts: balisa.punts });
+  if (balisa.gimcana && !(await properCapoGimcana())) {
+    trackEvent('gimcana_completada');
+  }
+
   mostrarCelebracio(balisa);
 }
 
@@ -1218,6 +1240,7 @@ function gimcanaMissatgeHost(d) {
 
 async function iniciarGimcana() {
   mostrarPantalla('gimcana');
+  trackEvent('gimcana_iniciada');
   document.getElementById('gimcana-debug').style.display = esAdmin ? 'block' : 'none';
   document.getElementById('gimcana-parking').style.display = 'block';
   document.getElementById('gimcana-radar').style.display = 'none';

@@ -1017,7 +1017,12 @@ async function iniciarEscaner() {
     escaner = new Html5Qrcode("qr-reader");
 
     await escaner.start(
-      { facingMode: "environment" },
+      {
+        facingMode: "environment",
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+        advanced: [{ focusMode: "continuous" }]
+      },
       {
         fps: 10,
         qrbox: (viewfinderWidth, viewfinderHeight) => {
@@ -1832,8 +1837,10 @@ header {
   background: none; border: 1px solid rgba(255,255,255,0.15); color: var(--pedra);
   font-size: 0.75rem; cursor: pointer; width: 26px; height: 26px;
   border-radius: 50%; flex-shrink: 0; margin-right: 0.3rem;
+  display: flex; align-items: center; justify-content: center; line-height: 1;
 }
 .btn-info:hover { color: var(--crema); border-color: rgba(255,255,255,0.3); }
+.btn-info svg { width: 15px; height: 15px; }
 
 /* ── PANTALLA LOGIN ── */
 #pantalla-login {
@@ -2568,7 +2575,7 @@ header {
     </div>
     <img id="usuari-foto" src="" alt="Foto perfil" title="El teu perfil">
     <button class="btn-info" id="btn-installa" onclick="mostrarInstallacio()" title="Instal·la l'app" style="display:none">📲</button>
-    <a class="btn-info" href="https://www.instagram.com/rutesplanenques" target="_blank" rel="noopener" title="Segueix-nos a Instagram">📷</a>
+    <a class="btn-info" href="https://www.instagram.com/rutesplanenques" target="_blank" rel="noopener" title="Segueix-nos a Instagram"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="6"></rect><circle cx="12" cy="12" r="5"></circle><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"></circle></svg></a>
     <button class="btn-info" onclick="obrirSuggeriments()" title="Bústia de suggeriments">✉️</button>
     <button class="btn-info" onclick="obrirIntro()" title="Com funciona?">❔</button>
     <button class="btn-logout" onclick="logout()">Sortir</button>

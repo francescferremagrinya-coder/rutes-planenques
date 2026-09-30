@@ -1268,24 +1268,44 @@ let gimcanaBrujolaOk = false;
 let gimcanaFletxaRotacio = 0;
 let gimcanaPistaMostrada = false;
 
-// So curt (dues notes ascendents) quan apareix una pista, generat amb Web Audio
-// API perquè no calgui afegir cap fitxer d'àudio a l'app.
+// So de dos cops de tambor greus (amb un punt de soroll sec per donar-hi cos),
+// quan apareix una pista. Generat amb Web Audio API, sense cap fitxer d'àudio.
 function tocarSoPista() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const ara = ctx.currentTime;
-    [[880, 0], [1318.5, 0.12]].forEach(([freq, retard]) => {
+
+    const cop = (inici, freqInicial, freqFinal, durada, volum) => {
+      // Cos del tambor: to greu que cau ràpidament
       const osc = ctx.createOscillator();
-      const guany = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      guany.gain.setValueAtTime(0.0001, ara + retard);
-      guany.gain.exponentialRampToValueAtTime(0.25, ara + retard + 0.02);
-      guany.gain.exponentialRampToValueAtTime(0.0001, ara + retard + 0.3);
-      osc.connect(guany).connect(ctx.destination);
-      osc.start(ara + retard);
-      osc.stop(ara + retard + 0.32);
-    });
+      const guanyOsc = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freqInicial, ara + inici);
+      osc.frequency.exponentialRampToValueAtTime(freqFinal, ara + inici + durada);
+      guanyOsc.gain.setValueAtTime(volum, ara + inici);
+      guanyOsc.gain.exponentialRampToValueAtTime(0.001, ara + inici + durada);
+      osc.connect(guanyOsc).connect(ctx.destination);
+      osc.start(ara + inici);
+      osc.stop(ara + inici + durada + 0.02);
+
+      // Cop sec: un breu esclat de soroll filtrat, perquè soni a pell de tambor
+      const mostres = Math.floor(ctx.sampleRate * 0.04);
+      const buffer = ctx.createBuffer(1, mostres, ctx.sampleRate);
+      const dades = buffer.getChannelData(0);
+      for (let i = 0; i < mostres; i++) dades[i] = (Math.random() * 2 - 1) * (1 - i / mostres);
+      const soroll = ctx.createBufferSource();
+      soroll.buffer = buffer;
+      const filtre = ctx.createBiquadFilter();
+      filtre.type = 'lowpass';
+      filtre.frequency.value = 700;
+      const guanySoroll = ctx.createGain();
+      guanySoroll.gain.value = volum * 0.6;
+      soroll.connect(filtre).connect(guanySoroll).connect(ctx.destination);
+      soroll.start(ara + inici);
+    };
+
+    cop(0, 180, 55, 0.22, 0.55);
+    cop(0.24, 170, 48, 0.32, 0.6);
   } catch {}
 }
 

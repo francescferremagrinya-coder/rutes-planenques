@@ -1031,24 +1031,17 @@ async function iniciarEscaner() {
       await processarQR(text);
     };
 
-    try {
-      // Configuració millorada: més resolució i autoenfoc continu, per llegir
-      // millor els QR petits o allunyats. No tots els dispositius l'admeten.
-      await escaner.start(
-        {
-          facingMode: "environment",
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-          advanced: [{ focusMode: "continuous" }]
-        },
-        configEscaner, onLlegit, () => {}
-      );
-    } catch (eMillorada) {
-      // Si falla amb la configuració millorada, ho tornem a provar amb la
-      // configuració mínima (més compatible amb dispositius Android diversos).
-      console.warn('Escàner amb configuració millorada ha fallat, reintentant amb la bàsica:', eMillorada);
-      await escaner.start({ facingMode: "environment" }, configEscaner, onLlegit, () => {});
-    }
+    // Demanem una resolució més alta (ajuda a llegir QR petits o allunyats),
+    // sense forçar l'autoenfoc: aquell paràmetre fallava en alguns Android i
+    // deixava l'escàner sense funcionar.
+    await escaner.start(
+      {
+        facingMode: "environment",
+        width: { ideal: 1920 },
+        height: { ideal: 1080 }
+      },
+      configEscaner, onLlegit, () => {}
+    );
   } catch (e) {
     console.error('Error escàner QR:', e);
     mostrarPantalla('joc');

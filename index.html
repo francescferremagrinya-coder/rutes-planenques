@@ -1261,6 +1261,7 @@ function tancarCelebracio() {
 const GIMCANA_PARKING = { lat: 41.3613185, lng: 1.3458540 };
 let gimcanaWatchId = null;
 let gimcanaHeading = null;
+let gimcanaUltimesCoords = null;
 let gimcanaWaypointIdx = 0;
 let gimcanaObjectiuActual = null;
 let gimcanaBrujolaOk = false;
@@ -1400,7 +1401,7 @@ async function comencaRadarGimcana() {
 
   if (gimcanaWatchId === null) {
     gimcanaWatchId = navigator.geolocation.watchPosition(
-      pos => actualitzaRadarGimcana(pos.coords),
+      pos => { gimcanaUltimesCoords = pos.coords; actualitzaRadarGimcana(pos.coords); },
       () => {},
       { enableHighAccuracy: true, maximumAge: 0, timeout: 15000 }
     );
@@ -1415,6 +1416,11 @@ function gimcanaOrientacio(e) {
   gimcanaBrujolaOk = true;
   const statusEl = document.getElementById('gimcana-brujola-status');
   if (statusEl) statusEl.textContent = `🧭 Brúixola activa (${Math.round(gimcanaHeading)}°)`;
+
+  // Redibuixa la fletxa a cada lectura de la brúixola, no només quan arriba
+  // una nova posició GPS (que pot trigar uns segons entre actualitzacions i
+  // fa que la fletxa vagi endarrerida respecte a on apuntes el mòbil).
+  if (gimcanaUltimesCoords) actualitzaRadarGimcana(gimcanaUltimesCoords);
 }
 
 function actualitzaRadarGimcana(coords) {

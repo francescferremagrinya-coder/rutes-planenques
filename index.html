@@ -675,6 +675,47 @@ function obrirIntro() {
 }
 
 // ════════════════════════════════════════════════════════
+//  BÚSTIA DE SUGGERIMENTS
+// ════════════════════════════════════════════════════════
+function obrirSuggeriments() {
+  const camp = document.getElementById('suggeriment-text');
+  const ok = document.getElementById('suggeriment-ok');
+  if (camp) camp.value = '';
+  if (ok) ok.style.display = 'none';
+  document.getElementById('modal-suggeriments').style.display = 'block';
+  trackEvent('suggeriments_obert');
+}
+
+function tancarSuggeriments() {
+  document.getElementById('modal-suggeriments').style.display = 'none';
+}
+
+async function enviarSuggeriment() {
+  const camp = document.getElementById('suggeriment-text');
+  const text = camp.value.trim();
+  if (!text) return;
+  const btn = document.getElementById('suggeriment-enviar');
+  btn.disabled = true;
+  try {
+    const ref = doc(collection(db, 'suggeriments'));
+    await setDoc(ref, {
+      text,
+      uid: usuariActual ? usuariActual.uid : null,
+      nom: usuariActual ? usuariActual.displayName : null,
+      email: usuariActual ? usuariActual.email : null,
+      creat: serverTimestamp()
+    });
+    trackEvent('suggeriment_enviat');
+    camp.value = '';
+    document.getElementById('suggeriment-ok').style.display = 'block';
+  } catch (e) {
+    alert('No s\'ha pogut enviar el suggeriment. Torna-ho a provar.');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ════════════════════════════════════════════════════════
 //  INSTAL·LACIÓ DE L'APP (afegeix a pantalla d'inici)
 // ════════════════════════════════════════════════════════
 let promptInstallacio = null;
@@ -1652,6 +1693,9 @@ window.logout = logout;
 window.tancarIntro = tancarIntro;
 window.tancarAvisLegal = tancarAvisLegal;
 window.obrirIntro = obrirIntro;
+window.obrirSuggeriments = obrirSuggeriments;
+window.tancarSuggeriments = tancarSuggeriments;
+window.enviarSuggeriment = enviarSuggeriment;
 window.tancarCelebracio = tancarCelebracio;
 window.actualitzarPunts = actualitzarPunts;
 window.actualitzarPuntsNivells = actualitzarPuntsNivells;
@@ -2062,13 +2106,33 @@ header {
   background: var(--fons);
   overflow-y: auto;
 }
-#modal-obre-safari, #modal-installacio, #modal-permis-camera {
+#modal-obre-safari, #modal-installacio, #modal-permis-camera, #modal-suggeriments {
   display: none;
   position: fixed; inset: 0; z-index: 210;
   background: var(--fons);
   overflow-y: auto;
   padding: 3rem 1.5rem 2rem;
   text-align: center;
+}
+.suggeriment-textarea {
+  width: 100%;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 14px;
+  color: var(--crema);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.95rem;
+  padding: 1rem;
+  margin-bottom: 1.2rem;
+  resize: vertical;
+  box-sizing: border-box;
+}
+.suggeriment-textarea::placeholder { color: var(--pedra); }
+.suggeriment-textarea:focus { outline: none; border-color: var(--or); }
+.suggeriment-ok {
+  font-size: 0.9rem;
+  color: var(--or);
+  margin-bottom: 1.2rem;
 }
 .installacio-pas-num {
   flex-shrink: 0; width: 1.6rem; height: 1.6rem; border-radius: 50%;
@@ -2453,6 +2517,19 @@ header {
   </div>
 </div>
 
+<!-- ══ MODAL BÚSTIA DE SUGGERIMENTS ══ -->
+<div id="modal-suggeriments" style="display:none">
+  <div class="intro-card">
+    <span class="intro-logo">✉️</span>
+    <h1 class="intro-titol">La teva opinió ens importa</h1>
+    <p class="installacio-avis">Estem oberts a suggeriments: què milloraries, què t'ha agradat, o si has trobat algun problema.</p>
+    <textarea id="suggeriment-text" class="suggeriment-textarea" placeholder="Escriu aquí el teu suggeriment..." rows="5"></textarea>
+    <p id="suggeriment-ok" class="suggeriment-ok" style="display:none">Gràcies! Hem rebut el teu suggeriment.</p>
+    <button class="btn-principal" id="suggeriment-enviar" onclick="enviarSuggeriment()" style="margin-bottom:1rem">Enviar</button>
+    <button class="btn-principal" onclick="tancarSuggeriments()" style="background:transparent;border:1px solid rgba(255,255,255,0.15)">Tancar</button>
+  </div>
+</div>
+
 <!-- ══ PANTALLA JOC ══ -->
 <div id="pantalla-joc">
   <header>
@@ -2464,6 +2541,7 @@ header {
     <img id="usuari-foto" src="" alt="Foto perfil" title="El teu perfil">
     <button class="btn-info" id="btn-installa" onclick="mostrarInstallacio()" title="Instal·la l'app" style="display:none">📲</button>
     <a class="btn-info" href="https://www.instagram.com/rutesplanenques" target="_blank" rel="noopener" title="Segueix-nos a Instagram">📷</a>
+    <button class="btn-info" onclick="obrirSuggeriments()" title="Bústia de suggeriments">✉️</button>
     <button class="btn-info" onclick="obrirIntro()" title="Com funciona?">❔</button>
     <button class="btn-logout" onclick="logout()">Sortir</button>
   </header>

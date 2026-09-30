@@ -1600,6 +1600,34 @@ async function mostrarAdmin() {
     document.getElementById('admin-usuaris-llista').innerHTML =
       `<p class="admin-usuari-medalles">No s'ha pogut carregar la llista d'usuaris (${err.message || err}).</p>`;
   }
+
+  // Llista de suggeriments rebuts (només lectura, per l'admin)
+  try {
+    const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({
+      '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+    }[c]));
+    const q = query(collection(db, 'suggeriments'), orderBy('creat', 'desc'));
+    const totsSuggeriments = await getDocs(q);
+    const llistaSuggeriments = document.getElementById('admin-suggeriments-llista');
+    if (totsSuggeriments.empty) {
+      llistaSuggeriments.innerHTML = '<p class="admin-usuari-medalles"><em>Cap suggeriment encara</em></p>';
+    } else {
+      llistaSuggeriments.innerHTML = totsSuggeriments.docs.map(d => {
+        const s = d.data();
+        const data = s.creat?.toDate ? s.creat.toDate().toLocaleString('ca-ES') : '';
+        const autor = escapeHtml(s.nom || s.email || 'Anònim');
+        return `
+          <div class="admin-usuari-item">
+            <p class="admin-usuari-nom">${autor} <span class="admin-usuari-medalles">· ${data}</span></p>
+            <p class="admin-usuari-medalles">${escapeHtml(s.text)}</p>
+          </div>
+        `;
+      }).join('');
+    }
+  } catch (err) {
+    document.getElementById('admin-suggeriments-llista').innerHTML =
+      `<p class="admin-usuari-medalles">No s'han pogut carregar els suggeriments (${err.message || err}).</p>`;
+  }
 }
 
 // ════════════════════════════════════════════════════════
@@ -2596,6 +2624,8 @@ header {
       <button class="admin-force-btn" onclick="resetCaponsPropis()">Esborra les MEVES medalles dels Capons</button>
       <h3>🔢 Puntuacions</h3>
       <button class="admin-force-btn" onclick="recalcularPuntuacionsGlobals()">Actualitza els punts de TOTHOM als valors actuals</button>
+      <h3>✉️ Suggeriments</h3>
+      <div id="admin-suggeriments-llista" class="admin-usuaris-llista"></div>
       <h3>QRs del sistema nou</h3>
       <div class="admin-qrs-grid" id="admin-qrs"></div>
     </div>

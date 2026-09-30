@@ -1016,29 +1016,39 @@ async function iniciarEscaner() {
     const Html5Qrcode = await carregarHtml5Qrcode();
     escaner = new Html5Qrcode("qr-reader");
 
-    await escaner.start(
-      {
-        facingMode: "environment",
-        width: { ideal: 1920 },
-        height: { ideal: 1080 },
-        advanced: [{ focusMode: "continuous" }]
-      },
-      {
-        fps: 10,
-        qrbox: (viewfinderWidth, viewfinderHeight) => {
-          const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-          const mida = Math.floor(minEdge * 0.7);
-          return { width: mida, height: mida };
-        }
-      },
-      async (text) => {
-        await escaner.stop();
-        escaner = null;
-        mostrarPantalla('joc');
-        await processarQR(text);
-      },
-      () => {}
-    );
+    const configEscaner = {
+      fps: 10,
+      qrbox: (viewfinderWidth, viewfinderHeight) => {
+        const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
+        const mida = Math.floor(minEdge * 0.7);
+        return { width: mida, height: mida };
+      }
+    };
+    const onLlegit = async (text) => {
+      await escaner.stop();
+      escaner = null;
+      mostrarPantalla('joc');
+      await processarQR(text);
+    };
+
+    try {
+      // Configuració millorada: més resolució i autoenfoc continu, per llegir
+      // millor els QR petits o allunyats. No tots els dispositius l'admeten.
+      await escaner.start(
+        {
+          facingMode: "environment",
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+          advanced: [{ focusMode: "continuous" }]
+        },
+        configEscaner, onLlegit, () => {}
+      );
+    } catch (eMillorada) {
+      // Si falla amb la configuració millorada, ho tornem a provar amb la
+      // configuració mínima (més compatible amb dispositius Android diversos).
+      console.warn('Escàner amb configuració millorada ha fallat, reintentant amb la bàsica:', eMillorada);
+      await escaner.start({ facingMode: "environment" }, configEscaner, onLlegit, () => {});
+    }
   } catch (e) {
     console.error('Error escàner QR:', e);
     mostrarPantalla('joc');
@@ -1052,14 +1062,18 @@ async function iniciarEscaner() {
     }
 
     const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-    if (standalone) {
+    if (standalone && esIOS) {
       // A la versió instal·lada, iOS de vegades bloqueja la càmera sense motiu aparent.
+      // Aquest problema és específic d'iOS/Safari: a Android l'app instal·lada (PWA)
+      // usa Chrome per sota i no té aquesta limitació.
       mostrarAvisSafari();
       return;
     }
 
     let missatge = 'No s\'ha pogut accedir a la càmera.';
     if (nom === 'NotFoundError') missatge = 'No s\'ha trobat cap càmera al dispositiu.';
+    else if (nom === 'NotReadableError') missatge = 'La càmera sembla estar en ús per una altra app. Tanca-la i torna-ho a provar.';
+    else if (nom === 'OverconstrainedError') missatge = 'La càmera del dispositiu no admet la configuració demanada. Torna-ho a provar.';
     else if (e?.message?.includes('llibreria')) missatge = e.message;
     mostrarToast(missatge, true);
   }

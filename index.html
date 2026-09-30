@@ -1267,6 +1267,7 @@ let gimcanaObjectiuActual = null;
 let gimcanaBrujolaOk = false;
 let gimcanaFletxaRotacio = 0;
 let gimcanaPistaMostrada = false;
+let gimcanaBruixolaAbsolutaActiva = false;
 
 // So de tambors tribals (a l'estil "Jumanji"): uns cops secs que pugen de
 // tensió i acaben amb un cop greu de tambor, quan apareix una pista.
@@ -1332,6 +1333,13 @@ async function properCapoGimcana() {
   return gimcanaCapons().find(c => !medalles.some(m => m.id === c.id)) || null;
 }
 
+// Mitjana entre dos angles seguint sempre el camí més curt (evita el salt
+// a la volta 359°→0°), amb 'factor' entre 0 (no es mou) i 1 (salta directe).
+function suavitzarAngle(actual, nou, factor) {
+  const diff = ((nou - actual + 540) % 360) - 180;
+  return (actual + diff * factor + 360) % 360;
+}
+
 function gimcanaBearing(lat1, lng1, lat2, lng2) {
   const toRad = g => g * Math.PI / 180, toDeg = r => r * 180 / Math.PI;
   const dLon = toRad(lng2 - lng1);
@@ -1389,8 +1397,13 @@ async function comencaRadarGimcana() {
       })
       .catch(() => { if (statusEl) statusEl.textContent = '⚠️ Aquest navegador no ha pogut activar la brúixola.'; });
   } else {
-    window.addEventListener('deviceorientationabsolute', gimcanaOrientacio, true);
-    window.addEventListener('deviceorientation', gimcanaOrientacio, true);
+    // A Android sovint es disparen alhora 'deviceorientation' (pot ser relatiu
+    // a la posició inicial del mòbil, no al nord real) i 'deviceorientationabsolute'
+    // (referenciat al nord). Barrejar-los feia que la brúixola saltés i indiqués
+    // malament. Un cop rebem el primer esdeveniment absolut, ignorem els relatius.
+    gimcanaBruixolaAbsolutaActiva = false;
+    window.addEventListener('deviceorientationabsolute', gimcanaOrientacioAbsoluta, true);
+    window.addEventListener('deviceorientation', gimcanaOrientacioRelativa, true);
   }
 
   setTimeout(() => {
@@ -1440,10 +1453,28 @@ async function comencaRadarGimcana() {
   }
 }
 
+// A Android es dispara sovint 'deviceorientation' A MÉS de 'deviceorientationabsolute'
+// per al mateix gir físic, amb valors lleugerament diferents. Un cop confirmem que
+// tenim esdeveniments absoluts (referenciats al nord real), ignorem els relatius.
+function gimcanaOrientacioAbsoluta(e) {
+  gimcanaBruixolaAbsolutaActiva = true;
+  gimcanaOrientacio(e);
+}
+function gimcanaOrientacioRelativa(e) {
+  if (gimcanaBruixolaAbsolutaActiva && !e.absolute) return;
+  if (e.absolute) gimcanaBruixolaAbsolutaActiva = true;
+  gimcanaOrientacio(e);
+}
+
 function gimcanaOrientacio(e) {
-  if (typeof e.webkitCompassHeading === 'number') gimcanaHeading = e.webkitCompassHeading;
-  else if (e.alpha !== null) gimcanaHeading = (360 - e.alpha) % 360;
+  let nouHeading;
+  if (typeof e.webkitCompassHeading === 'number') nouHeading = e.webkitCompassHeading;
+  else if (e.alpha !== null) nouHeading = (360 - e.alpha) % 360;
   else return;
+
+  // Suavitzem la lectura (barrejant-la amb l'anterior pel camí més curt) perquè
+  // el soroll propi del sensor no faci tremolar ni saltar la fletxa.
+  gimcanaHeading = gimcanaHeading === null ? nouHeading : suavitzarAngle(gimcanaHeading, nouHeading, 0.4);
 
   gimcanaBrujolaOk = true;
   const statusEl = document.getElementById('gimcana-brujola-status');

@@ -1268,44 +1268,56 @@ let gimcanaBrujolaOk = false;
 let gimcanaFletxaRotacio = 0;
 let gimcanaPistaMostrada = false;
 
-// So de dos cops de tambor greus (amb un punt de soroll sec per donar-hi cos),
-// quan apareix una pista. Generat amb Web Audio API, sense cap fitxer d'àudio.
+// So de tambors tribals (a l'estil "Jumanji"): uns cops secs que pugen de
+// tensió i acaben amb un cop greu de tambor, quan apareix una pista.
+// Generat amb Web Audio API, sense cap fitxer d'àudio.
 function tocarSoPista() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const ara = ctx.currentTime;
 
-    const cop = (inici, freqInicial, freqFinal, durada, volum) => {
-      // Cos del tambor: to greu que cau ràpidament
-      const osc = ctx.createOscillator();
-      const guanyOsc = ctx.createGain();
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(freqInicial, ara + inici);
-      osc.frequency.exponentialRampToValueAtTime(freqFinal, ara + inici + durada);
-      guanyOsc.gain.setValueAtTime(volum, ara + inici);
-      guanyOsc.gain.exponentialRampToValueAtTime(0.001, ara + inici + durada);
-      osc.connect(guanyOsc).connect(ctx.destination);
-      osc.start(ara + inici);
-      osc.stop(ara + inici + durada + 0.02);
-
-      // Cop sec: un breu esclat de soroll filtrat, perquè soni a pell de tambor
-      const mostres = Math.floor(ctx.sampleRate * 0.04);
+    // Genera un breu esclat de soroll (base de qualsevol cop de tambor "sec")
+    const esclatSoroll = (inici, durada, tipusFiltre, freqFiltre, volum) => {
+      const mostres = Math.floor(ctx.sampleRate * durada);
       const buffer = ctx.createBuffer(1, mostres, ctx.sampleRate);
       const dades = buffer.getChannelData(0);
       for (let i = 0; i < mostres; i++) dades[i] = (Math.random() * 2 - 1) * (1 - i / mostres);
       const soroll = ctx.createBufferSource();
       soroll.buffer = buffer;
       const filtre = ctx.createBiquadFilter();
-      filtre.type = 'lowpass';
-      filtre.frequency.value = 700;
-      const guanySoroll = ctx.createGain();
-      guanySoroll.gain.value = volum * 0.6;
-      soroll.connect(filtre).connect(guanySoroll).connect(ctx.destination);
+      filtre.type = tipusFiltre;
+      filtre.frequency.value = freqFiltre;
+      if (tipusFiltre === 'bandpass') filtre.Q.value = 1.2;
+      const guany = ctx.createGain();
+      guany.gain.setValueAtTime(volum, ara + inici);
+      guany.gain.exponentialRampToValueAtTime(0.001, ara + inici + durada);
+      soroll.connect(filtre).connect(guany).connect(ctx.destination);
       soroll.start(ara + inici);
     };
 
-    cop(0, 180, 55, 0.22, 0.55);
-    cop(0.24, 170, 48, 0.32, 0.6);
+    // Cop agut i sec, a l'estil d'una mà sobre la pell d'un djembe
+    const cop = (inici, volum) => esclatSoroll(inici, 0.09, 'bandpass', 900, volum);
+
+    // Cop greu i llarg, per marcar el final de la frase rítmica
+    const boom = (inici, volum) => {
+      const osc = ctx.createOscillator();
+      const guanyOsc = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(150, ara + inici);
+      osc.frequency.exponentialRampToValueAtTime(45, ara + inici + 0.38);
+      guanyOsc.gain.setValueAtTime(volum, ara + inici);
+      guanyOsc.gain.exponentialRampToValueAtTime(0.001, ara + inici + 0.4);
+      osc.connect(guanyOsc).connect(ctx.destination);
+      osc.start(ara + inici);
+      osc.stop(ara + inici + 0.42);
+      esclatSoroll(inici, 0.06, 'lowpass', 500, volum * 0.8);
+    };
+
+    // Ritme tribal: tres cops que van pujant de tensió + un cop greu final
+    cop(0, 0.3);
+    cop(0.15, 0.38);
+    cop(0.28, 0.46);
+    boom(0.44, 0.7);
   } catch {}
 }
 

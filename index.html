@@ -1040,6 +1040,8 @@ async function iniciarEscaner() {
     mostrarPantalla('joc');
 
     const nom = e?.name || '';
+    trackEvent('escaner_error', { nom: nom || 'desconegut', missatge: String(e?.message || '').slice(0, 100) });
+
     if (nom === 'NotAllowedError') {
       // El permís de càmera està denegat per aquest lloc: cal canviar-ho a Configuració,
       // no serveix de res obrir-ho a Safari perquè comparteixen el mateix permís.
@@ -1061,6 +1063,7 @@ async function iniciarEscaner() {
     else if (nom === 'NotReadableError') missatge = 'La càmera sembla estar en ús per una altra app. Tanca-la i torna-ho a provar.';
     else if (nom === 'OverconstrainedError') missatge = 'La càmera del dispositiu no admet la configuració demanada. Torna-ho a provar.';
     else if (e?.message?.includes('llibreria')) missatge = e.message;
+    else missatge += ` (${nom || e?.message || 'error desconegut'})`;
     mostrarToast(missatge, true);
   }
 }
@@ -1419,19 +1422,31 @@ async function comencaRadarGimcana() {
 // tenim esdeveniments absoluts (referenciats al nord real), ignorem els relatius.
 function gimcanaOrientacioAbsoluta(e) {
   gimcanaBruixolaAbsolutaActiva = true;
-  gimcanaOrientacio(e);
+  gimcanaOrientacio(e, true);
 }
 function gimcanaOrientacioRelativa(e) {
   if (gimcanaBruixolaAbsolutaActiva && !e.absolute) return;
   if (e.absolute) gimcanaBruixolaAbsolutaActiva = true;
-  gimcanaOrientacio(e);
+  gimcanaOrientacio(e, !!e.absolute);
 }
 
-function gimcanaOrientacio(e) {
+function gimcanaOrientacio(e, esAbsolut) {
   let nouHeading;
-  if (typeof e.webkitCompassHeading === 'number') nouHeading = e.webkitCompassHeading;
-  else if (e.alpha !== null) nouHeading = (360 - e.alpha) % 360;
-  else return;
+  if (typeof e.webkitCompassHeading === 'number') {
+    // iOS Safari: ja ve directament com a rumb de brúixola (0° = nord, creixent
+    // en sentit horari).
+    nouHeading = e.webkitCompassHeading;
+  } else if (esAbsolut && e.alpha !== null) {
+    // Android ('deviceorientationabsolute'): l'alfa ja és directament el rumb
+    // de la brúixola, igual que a iOS. Abans li fèiem "360 - alfa", que en
+    // realitat el reflectia (no simplement l'invertia), i per això la fletxa
+    // apuntava en direcció contrària a la de l'iPhone.
+    nouHeading = e.alpha;
+  } else if (e.alpha !== null) {
+    // Últim recurs: esdeveniment no absolut, l'alfa és relatiu a la posició
+    // inicial del mòbil, no al nord real. Aproximació poc fiable.
+    nouHeading = (360 - e.alpha) % 360;
+  } else return;
 
   // Suavitzem la lectura (barrejant-la amb l'anterior pel camí més curt) perquè
   // el soroll propi del sensor no faci tremolar ni saltar la fletxa.

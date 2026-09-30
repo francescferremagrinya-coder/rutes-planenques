@@ -1272,6 +1272,28 @@ let gimcanaWaypointIdx = 0;
 let gimcanaObjectiuActual = null;
 let gimcanaBrujolaOk = false;
 let gimcanaFletxaRotacio = 0;
+let gimcanaPistaMostrada = false;
+
+// So curt (dues notes ascendents) quan apareix una pista, generat amb Web Audio
+// API perquè no calgui afegir cap fitxer d'àudio a l'app.
+function tocarSoPista() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ara = ctx.currentTime;
+    [[880, 0], [1318.5, 0.12]].forEach(([freq, retard]) => {
+      const osc = ctx.createOscillator();
+      const guany = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      guany.gain.setValueAtTime(0.0001, ara + retard);
+      guany.gain.exponentialRampToValueAtTime(0.25, ara + retard + 0.02);
+      guany.gain.exponentialRampToValueAtTime(0.0001, ara + retard + 0.3);
+      osc.connect(guany).connect(ctx.destination);
+      osc.start(ara + retard);
+      osc.stop(ara + retard + 0.32);
+    });
+  } catch {}
+}
 
 function gimcanaCapons() {
   return BALISES.filter(b => b.gimcana);
@@ -1377,6 +1399,7 @@ async function comencaRadarGimcana() {
   document.getElementById('gimcana-parking').style.display = 'none';
   document.getElementById('gimcana-radar').style.display = 'block';
   document.getElementById('gimcana-pista-card').style.display = 'none';
+  gimcanaPistaMostrada = false;
 
   const total = gimcanaCapons().length;
   const idx = gimcanaCapons().findIndex(c => c.id === proper.id);
@@ -1430,9 +1453,14 @@ function actualitzaRadarGimcana(coords) {
   }
 
   if (dFinal <= (c.radi || 25)) {
+    if (!gimcanaPistaMostrada) {
+      gimcanaPistaMostrada = true;
+      tocarSoPista();
+    }
     document.getElementById('gimcana-pista-text').textContent = c.pista || '';
     document.getElementById('gimcana-pista-card').style.display = 'block';
   } else {
+    gimcanaPistaMostrada = false;
     document.getElementById('gimcana-pista-card').style.display = 'none';
   }
 }

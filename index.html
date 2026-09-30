@@ -1031,15 +1031,8 @@ async function iniciarEscaner() {
       await processarQR(text);
     };
 
-    // Demanem una resolució més alta (ajuda a llegir QR petits o allunyats),
-    // sense forçar l'autoenfoc: aquell paràmetre fallava en alguns Android i
-    // deixava l'escàner sense funcionar.
     await escaner.start(
-      {
-        facingMode: "environment",
-        width: { ideal: 1920 },
-        height: { ideal: 1080 }
-      },
+      { facingMode: "environment" },
       configEscaner, onLlegit, () => {}
     );
   } catch (e) {

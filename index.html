@@ -1292,16 +1292,13 @@ function gimcanaCapons() {
   return BALISES.filter(b => b.gimcana);
 }
 
-// Encadena el pàrquing, els punts de pas i la ubicació de cada Capó (en ordre
-// de visita) per formar una aproximació del recorregut sencer de la gimcana,
-// sense necessitat de cap traçat GPS addicional.
+// Traçat real del recorregut sencer de la gimcana, exportat del GPX enregistrat
+// a peu de camp (pàrquing → els 8 Capons → tornada), per detectar amb precisió
+// si algú se'n surt.
+const GIMCANA_TRAJECTE_GPX = [{lat:41.36126,lng:1.345869}, {lat:41.361195,lng:1.345906}, {lat:41.36107,lng:1.345902}, {lat:41.36084,lng:1.345848}, {lat:41.360645,lng:1.345845}, {lat:41.360565,lng:1.34591}, {lat:41.360577,lng:1.3461688}, {lat:41.36052,lng:1.3463305}, {lat:41.360523,lng:1.346326}, {lat:41.360382,lng:1.34623}, {lat:41.359543,lng:1.345847}, {lat:41.359295,lng:1.345768}, {lat:41.359165,lng:1.345939}, {lat:41.358685,lng:1.345687}, {lat:41.358387,lng:1.345532}, {lat:41.35819,lng:1.346126}, {lat:41.358116,lng:1.346207}, {lat:41.357796,lng:1.34605}, {lat:41.35765,lng:1.345951}, {lat:41.357582,lng:1.345928}, {lat:41.357513,lng:1.345956}, {lat:41.357437,lng:1.346028}, {lat:41.35737,lng:1.346051}, {lat:41.35728,lng:1.346012}, {lat:41.356407,lng:1.345624}, {lat:41.35599,lng:1.345562}, {lat:41.355946,lng:1.34549}, {lat:41.35595,lng:1.345403}, {lat:41.355984,lng:1.34523}, {lat:41.356,lng:1.345033}, {lat:41.356106,lng:1.344554}, {lat:41.3561,lng:1.344509}, {lat:41.35623,lng:1.343775}, {lat:41.356308,lng:1.343413}, {lat:41.356354,lng:1.343278}, {lat:41.356422,lng:1.343074}, {lat:41.35655,lng:1.343131}, {lat:41.356544,lng:1.3428222}, {lat:41.35656,lng:1.3431394}, {lat:41.35656,lng:1.343136}, {lat:41.356865,lng:1.343272}, {lat:41.356842,lng:1.3434737}, {lat:41.356888,lng:1.3432884}, {lat:41.356888,lng:1.343282}, {lat:41.35719,lng:1.343416}, {lat:41.357292,lng:1.342962}, {lat:41.35732,lng:1.342935}, {lat:41.35738,lng:1.342864}, {lat:41.357655,lng:1.343006}, {lat:41.358124,lng:1.343273}, {lat:41.35825,lng:1.3430318}, {lat:41.358517,lng:1.3423948}, {lat:41.35852,lng:1.342389}, {lat:41.358574,lng:1.342478}, {lat:41.358788,lng:1.342891}, {lat:41.35919,lng:1.343541}, {lat:41.35986,lng:1.344414}, {lat:41.36024,lng:1.344833}, {lat:41.36052,lng:1.345114}, {lat:41.36,lng:1.345235}, {lat:41.36001,lng:1.3453152}, {lat:41.359997,lng:1.3452492}, {lat:41.359997,lng:1.345236}, {lat:41.360317,lng:1.345161}, {lat:41.36055,lng:1.3453312}, {lat:41.360847,lng:1.3455168}, {lat:41.36117,lng:1.3457956}, {lat:41.36126,lng:1.3458679}];
+
 function gimcanaTrajecte() {
-  const punts = [{ lat: GIMCANA_PARKING.lat, lng: GIMCANA_PARKING.lng }];
-  gimcanaCapons().forEach(c => {
-    (c.waypoints || []).forEach(w => punts.push({ lat: w.lat, lng: w.lng }));
-    punts.push({ lat: c.lat, lng: c.lng });
-  });
-  return punts;
+  return GIMCANA_TRAJECTE_GPX;
 }
 
 // Distància (en metres) d'un punt al segment A-B més proper, amb una projecció

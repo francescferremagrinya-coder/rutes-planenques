@@ -1201,6 +1201,7 @@ async function validarIAtorgarMedalla(balisa, verificarGPS) {
 //  CELEBRACIÓ — pantalla d'enhorabona en obtenir una medalla
 // ════════════════════════════════════════════════════════
 async function mostrarCelebracio(balisa) {
+  tocarSoCelebracio();
   document.getElementById('celebracio-nom').textContent = balisa.nom;
   document.getElementById('celebracio-punts').textContent = `+${balisa.punts} pts`;
 
@@ -1266,25 +1267,100 @@ let gimcanaPistaMostrada = false;
 let gimcanaBruixolaAbsolutaActiva = false;
 let gimcanaDarrerAvisFora = 0;
 const GIMCANA_AVIS_FORA_INTERVAL_M = 40;
+let gimcanaWakeLock = null;
 
-// So curt (dues notes ascendents) quan apareix una pista, generat amb Web Audio
-// API perquè no calgui afegir cap fitxer d'àudio a l'app.
+// Evita que la pantalla s'apagui sola mentre es fa la gimcana, perquè els
+// avisos sonors segueixin funcionant amb el mòbil a la butxaca (si es bloqueja
+// la pantalla o es canvia d'app, el navegador deixa de poder executar codi
+// igualment: això només evita el bloqueig automàtic per inactivitat).
+async function activarWakeLock() {
+  try {
+    if ('wakeLock' in navigator) gimcanaWakeLock = await navigator.wakeLock.request('screen');
+  } catch {}
+}
+function alliberarWakeLock() {
+  if (gimcanaWakeLock) { gimcanaWakeLock.release().catch(() => {}); gimcanaWakeLock = null; }
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && gimcanaWatchId !== null && !gimcanaWakeLock) activarWakeLock();
+});
+
+// ════════════════════════════════════════════════════════
+//  SONS DE LA GIMCANA — generats amb Web Audio API, sense fitxers d'àudio
+// ════════════════════════════════════════════════════════
+
+// Una nota amb timbre de campaneta (fonamental + harmònics suaus)
+function tocarNotaCampana(ctx, ara, freq, inici, durada, volum) {
+  const guanyNota = ctx.createGain();
+  guanyNota.gain.setValueAtTime(volum, ara + inici);
+  guanyNota.gain.exponentialRampToValueAtTime(0.0005, ara + inici + durada);
+  guanyNota.connect(ctx.destination);
+  [[1, 1], [2, 0.5], [3.005, 0.25]].forEach(([mult, amp]) => {
+    const osc = ctx.createOscillator();
+    osc.type = 'sine';
+    osc.frequency.value = freq * mult;
+    const g = ctx.createGain();
+    g.gain.value = amp / 1.75;
+    osc.connect(g).connect(guanyNota);
+    osc.start(ara + inici);
+    osc.stop(ara + inici + durada + 0.05);
+  });
+}
+
+// Un breu espurneig (soroll filtrat en agut) per acompanyar els sons de bona notícia
+function tocarEspurneig(ctx, ara, inici, durada, volum) {
+  const mostres = Math.floor(ctx.sampleRate * durada);
+  const buffer = ctx.createBuffer(1, mostres, ctx.sampleRate);
+  const dades = buffer.getChannelData(0);
+  for (let i = 0; i < mostres; i++) dades[i] = Math.random() * 2 - 1;
+  const soroll = ctx.createBufferSource();
+  soroll.buffer = buffer;
+  const filtre = ctx.createBiquadFilter();
+  filtre.type = 'highpass';
+  filtre.frequency.value = 6000;
+  const guany = ctx.createGain();
+  guany.gain.setValueAtTime(volum, ara + inici);
+  guany.gain.exponentialRampToValueAtTime(0.0005, ara + inici + durada);
+  soroll.connect(filtre).connect(guany).connect(ctx.destination);
+  soroll.start(ara + inici);
+}
+
+// So de "revelació" (arpegi ascendent amb espurneig) quan apareix una pista
 function tocarSoPista() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const ara = ctx.currentTime;
-    [[880, 0], [1318.5, 0.12]].forEach(([freq, retard]) => {
-      const osc = ctx.createOscillator();
-      const guany = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      guany.gain.setValueAtTime(0.0001, ara + retard);
-      guany.gain.exponentialRampToValueAtTime(0.25, ara + retard + 0.02);
-      guany.gain.exponentialRampToValueAtTime(0.0001, ara + retard + 0.3);
-      osc.connect(guany).connect(ctx.destination);
-      osc.start(ara + retard);
-      osc.stop(ara + retard + 0.32);
-    });
+    const notes = [523.25, 659.25, 783.99, 1046.50];
+    const inicis = [0, 0.11, 0.22, 0.35];
+    notes.forEach((freq, i) => tocarNotaCampana(ctx, ara, freq, inicis[i], 0.9, 0.22));
+    tocarEspurneig(ctx, ara, 0.35, 0.5, 0.12);
+  } catch {}
+}
+
+// So de celebració (escala ascendent + acord sostingut + espurneig) en obrir una medalla
+function tocarSoCelebracio() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ara = ctx.currentTime;
+    const escala = [523.25, 587.33, 659.25, 698.46, 783.99, 1046.50, 1318.51];
+    const inicis = [0, 0.09, 0.18, 0.27, 0.36, 0.46, 0.56];
+    escala.forEach((freq, i) => tocarNotaCampana(ctx, ara, freq, inicis[i], 0.7, 0.20));
+    const acord = [523.25, 659.25, 783.99, 1046.50];
+    acord.forEach(freq => tocarNotaCampana(ctx, ara, freq, 0.70, 1.6, 0.22));
+    tocarEspurneig(ctx, ara, 0.70, 1.0, 0.14);
+  } catch {}
+}
+
+// So de "tornes al camí" (tres notes + acord curt + espurneig), després d'haver-se'n sortit
+function tocarSoTornadaCami() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ara = ctx.currentTime;
+    const notes = [392.00, 493.88, 587.33];
+    const inicis = [0, 0.1, 0.2];
+    notes.forEach((freq, i) => tocarNotaCampana(ctx, ara, freq, inicis[i], 0.5, 0.22));
+    [392.00, 493.88, 587.33, 783.99].forEach(freq => tocarNotaCampana(ctx, ara, freq, 0.32, 0.7, 0.18));
+    tocarEspurneig(ctx, ara, 0.32, 0.5, 0.1);
   } catch {}
 }
 
@@ -1362,23 +1438,23 @@ function distanciaAlTrajecte(lat, lng, trajecte) {
   return minDist;
 }
 
-// So d'avís (dos avisos curts i idèntics) quan et vas allunyant del recorregut,
-// diferent del de la pista perquè es distingeixi clarament de l'orella.
+// So d'avís (dues notes descendents, interval de tritó) quan et vas allunyant
+// del recorregut, amb ona triangular perquè es distingeixi clarament dels
+// sons de bona notícia però sense cansar si es repeteix sovint.
 function tocarSoForaCami() {
   try {
     const ctx = new (window.AudioContext || window.webkitAudioContext)();
     const ara = ctx.currentTime;
-    [0, 0.18].forEach(retard => {
+    [[587.33, 0, 0.22, 0.28], [415.30, 0.20, 0.28, 0.30]].forEach(([freq, inici, durada, volum]) => {
       const osc = ctx.createOscillator();
       const guany = ctx.createGain();
-      osc.type = 'square';
-      osc.frequency.value = 600;
-      guany.gain.setValueAtTime(0.0001, ara + retard);
-      guany.gain.exponentialRampToValueAtTime(0.15, ara + retard + 0.02);
-      guany.gain.exponentialRampToValueAtTime(0.0001, ara + retard + 0.14);
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      guany.gain.setValueAtTime(volum, ara + inici);
+      guany.gain.exponentialRampToValueAtTime(0.0005, ara + inici + durada);
       osc.connect(guany).connect(ctx.destination);
-      osc.start(ara + retard);
-      osc.stop(ara + retard + 0.16);
+      osc.start(ara + inici);
+      osc.stop(ara + inici + durada + 0.05);
     });
   } catch {}
 }
@@ -1414,6 +1490,7 @@ function gimcanaMissatgeHost(d) {
 async function iniciarGimcana() {
   mostrarPantalla('gimcana');
   trackEvent('gimcana_iniciada');
+  mostrarToast('🔊 Activa el volum del mòbil per sentir els avisos del joc!');
   document.getElementById('gimcana-debug').style.display = esAdmin ? 'block' : 'none';
   document.getElementById('gimcana-parking').style.display = 'block';
   document.getElementById('gimcana-radar').style.display = 'none';
@@ -1442,6 +1519,7 @@ async function comencaRadarGimcana() {
   const statusEl = document.getElementById('gimcana-brujola-status');
   gimcanaBrujolaOk = false;
   if (statusEl) statusEl.textContent = '🧭 Activant brúixola…';
+  activarWakeLock();
 
   if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
     DeviceOrientationEvent.requestPermission()
@@ -1557,13 +1635,6 @@ function gimcanaOrientacio(e, esAbsolut) {
   if (gimcanaUltimesCoords) actualitzaRadarGimcana(gimcanaUltimesCoords);
 }
 
-function obrirCalibracioBrujola() {
-  document.getElementById('modal-calibracio-brujola').style.display = 'block';
-  trackEvent('calibracio_brujola_oberta');
-}
-function tancarCalibracioBrujola() {
-  document.getElementById('modal-calibracio-brujola').style.display = 'none';
-}
 
 function actualitzaRadarGimcana(coords) {
   actualitzaPuntMapa(coords);
@@ -1612,6 +1683,10 @@ function actualitzaRadarGimcana(coords) {
   const distTrajecte = distanciaAlTrajecte(coords.latitude, coords.longitude, gimcanaTrajecte());
   const nivellFora = Math.floor(distTrajecte / GIMCANA_AVIS_FORA_INTERVAL_M);
   if (nivellFora === 0) {
+    if (gimcanaDarrerAvisFora > 0) {
+      tocarSoTornadaCami();
+      mostrarToast('✅ Ets de nou al recorregut!');
+    }
     gimcanaDarrerAvisFora = 0;
   } else if (nivellFora > gimcanaDarrerAvisFora) {
     gimcanaDarrerAvisFora = nivellFora;
@@ -1625,6 +1700,7 @@ function tancarGimcana() {
     navigator.geolocation.clearWatch(gimcanaWatchId);
     gimcanaWatchId = null;
   }
+  alliberarWakeLock();
   mostrarPantalla('joc');
 }
 
@@ -1925,10 +2001,8 @@ window.tancarAvisLegal = tancarAvisLegal;
 window.obrirIntro = obrirIntro;
 window.obrirSuggeriments = obrirSuggeriments;
 window.tancarSuggeriments = tancarSuggeriments;
-window.obrirCalibracioBrujola = obrirCalibracioBrujola;
 window.mostrarMapaGimcana = mostrarMapaGimcana;
 window.tancarMapaGimcana = tancarMapaGimcana;
-window.tancarCalibracioBrujola = tancarCalibracioBrujola;
 window.enviarSuggeriment = enviarSuggeriment;
 window.tancarCelebracio = tancarCelebracio;
 window.actualitzarPunts = actualitzarPunts;
@@ -2342,7 +2416,7 @@ header {
   background: var(--fons);
   overflow-y: auto;
 }
-#modal-obre-safari, #modal-installacio, #modal-permis-camera, #modal-suggeriments, #modal-calibracio-brujola {
+#modal-obre-safari, #modal-installacio, #modal-permis-camera, #modal-suggeriments {
   display: none;
   position: fixed; inset: 0; z-index: 210;
   background: var(--fons);
@@ -2784,33 +2858,6 @@ header {
   </div>
 </div>
 
-<!-- ══ MODAL CALIBRACIÓ BRÚIXOLA ══ -->
-<div id="modal-calibracio-brujola" style="display:none">
-  <div class="intro-card">
-    <span class="intro-logo">🧭</span>
-    <h1 class="intro-titol">Calibra la brúixola</h1>
-    <div class="joc-explicacio">
-      <div class="pas">
-        <span class="pas-icon">8️⃣</span>
-        <span>Mou el mòbil fent un <strong>vuit a l'aire</strong> (com si el dibuixessis), uns quants cops seguits.</span>
-      </div>
-      <div class="pas">
-        <span class="pas-icon">🧲</span>
-        <span>Allunya't de <strong>cotxes, estructures metàl·liques o fundes amb imant</strong>: poden desviar molt la lectura.</span>
-      </div>
-      <div class="pas">
-        <span class="pas-icon">🗺️</span>
-        <span>Si tens l'app de <strong>Google Maps</strong> o de <strong>Brúixola</strong> del mòbil, obre-la un moment: sol detectar la falta de calibratge i et guia amb l'animació del vuit.</span>
-      </div>
-      <div class="pas">
-        <span class="pas-icon">↩️</span>
-        <span>Torna aquí i segueix la recerca. Els mòbils varien molt en la qualitat del sensor: si segueix anant una mica erràtica, fixa't sobretot en la distància en metres.</span>
-      </div>
-    </div>
-    <button class="btn-principal" onclick="tancarCalibracioBrujola()">Entesos</button>
-  </div>
-</div>
-
 <!-- ══ PANTALLA JOC ══ -->
 <div id="pantalla-joc">
   <header>
@@ -3005,7 +3052,6 @@ header {
     </div>
     <p class="gimcana-dist"><span id="gimcana-radar-dist">—</span> m</p>
     <p class="gimcana-brujola-status" id="gimcana-brujola-status"></p>
-    <button class="gimcana-calibra-btn" onclick="obrirCalibracioBrujola()">🧭 La brúixola no apunta bé? Calibra-la</button>
     <button class="gimcana-calibra-btn" onclick="mostrarMapaGimcana()">🗺️ Veure el mapa</button>
 
     <div id="gimcana-pista-card" style="display:none">

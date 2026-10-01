@@ -1301,6 +1301,43 @@ function gimcanaTrajecte() {
   return GIMCANA_TRAJECTE_GPX;
 }
 
+// ─────────────────────────────────────────────────────────────
+// Mapa del recorregut amb punt GPS en viu, sobre la imatge estàtica
+// rutes/mapa-capons.jpg. Els límits següents són exactament els que es
+// van fer servir per generar aquella imatge (1600×2050 px), així que
+// la conversió lat/lng -> % reprodueix on queda dibuixat cada tram.
+// ─────────────────────────────────────────────────────────────
+const GIMCANA_MAPA = {
+  latMin: 41.355946, latMax: 41.3613185,
+  lngMin: 1.342389, lngMax: 1.3463305,
+  imgW: 1600, imgH: 2050,
+  drawLeft: 180, drawRight: 1420, drawTop: 240, drawBottom: 1890
+};
+
+function actualitzaPuntMapa(coords) {
+  const punt = document.getElementById('gimcana-mapa-punt');
+  if (!punt) return;
+  const m = GIMCANA_MAPA;
+  const xFrac = (coords.longitude - m.lngMin) / (m.lngMax - m.lngMin);
+  const yFrac = (coords.latitude - m.latMax) / (m.latMin - m.latMax);
+  const px = m.drawLeft + xFrac * (m.drawRight - m.drawLeft);
+  const py = m.drawTop + yFrac * (m.drawBottom - m.drawTop);
+  punt.style.left = (px / m.imgW * 100) + '%';
+  punt.style.top = (py / m.imgH * 100) + '%';
+}
+
+function mostrarMapaGimcana() {
+  document.getElementById('gimcana-radar').style.display = 'none';
+  document.getElementById('gimcana-mapa').style.display = 'block';
+  if (gimcanaUltimesCoords) actualitzaPuntMapa(gimcanaUltimesCoords);
+  trackEvent('gimcana_mapa_obert');
+}
+
+function tancarMapaGimcana() {
+  document.getElementById('gimcana-mapa').style.display = 'none';
+  document.getElementById('gimcana-radar').style.display = 'block';
+}
+
 // Distància (en metres) d'un punt al segment A-B més proper, amb una projecció
 // plana senzilla (prou precisa a la distància curta d'aquesta gimcana).
 function distanciaPuntASegment(lat, lng, lat1, lng1, lat2, lng2) {
@@ -1457,6 +1494,7 @@ async function comencaRadarGimcana() {
 
   document.getElementById('gimcana-parking').style.display = 'none';
   document.getElementById('gimcana-radar').style.display = 'block';
+  document.getElementById('gimcana-mapa').style.display = 'none';
   document.getElementById('gimcana-pista-card').style.display = 'none';
   gimcanaPistaMostrada = false;
   gimcanaDarrerAvisFora = 0;
@@ -1528,6 +1566,7 @@ function tancarCalibracioBrujola() {
 }
 
 function actualitzaRadarGimcana(coords) {
+  actualitzaPuntMapa(coords);
   const c = gimcanaObjectiuActual;
   if (!c) return;
   const waypoints = c.waypoints || [];
@@ -1887,6 +1926,8 @@ window.obrirIntro = obrirIntro;
 window.obrirSuggeriments = obrirSuggeriments;
 window.tancarSuggeriments = tancarSuggeriments;
 window.obrirCalibracioBrujola = obrirCalibracioBrujola;
+window.mostrarMapaGimcana = mostrarMapaGimcana;
+window.tancarMapaGimcana = tancarMapaGimcana;
 window.tancarCalibracioBrujola = tancarCalibracioBrujola;
 window.enviarSuggeriment = enviarSuggeriment;
 window.tancarCelebracio = tancarCelebracio;
@@ -2600,6 +2641,18 @@ header {
   text-decoration: underline; cursor: pointer; margin: 0.4rem auto 0; display: block;
 }
 .gimcana-calibra-btn:hover { opacity: 1; }
+.gimcana-mapa-zona {
+  position: relative; width: 100%; border-radius: 14px; overflow: hidden;
+  margin-bottom: 1.5rem; border: 1px solid rgba(212,168,67,0.3);
+}
+.gimcana-mapa-zona img { width: 100%; display: block; }
+#gimcana-mapa-punt {
+  position: absolute; width: 18px; height: 18px; border-radius: 50%;
+  background: var(--or); border: 3px solid var(--crema);
+  transform: translate(-50%, -50%);
+  box-shadow: 0 0 0 7px rgba(212,168,67,0.35);
+  transition: left 0.4s linear, top 0.4s linear;
+}
 .gimcana-fletxa { width: 118px; height: 118px; display: inline-block; transition: transform 0.15s linear; transform-box: fill-box; transform-origin: center; }
 #gimcana-pista-card { margin-top: 1.5rem; background: rgba(255,255,255,0.05); border-radius: 14px; padding: 1.2rem; }
 .gimcana-pista-titol { color: var(--or); font-weight: 700; margin-bottom: 0.6rem; }
@@ -2953,12 +3006,22 @@ header {
     <p class="gimcana-dist"><span id="gimcana-radar-dist">—</span> m</p>
     <p class="gimcana-brujola-status" id="gimcana-brujola-status"></p>
     <button class="gimcana-calibra-btn" onclick="obrirCalibracioBrujola()">🧭 La brúixola no apunta bé? Calibra-la</button>
+    <button class="gimcana-calibra-btn" onclick="mostrarMapaGimcana()">🗺️ Veure el mapa</button>
 
     <div id="gimcana-pista-card" style="display:none">
       <p class="gimcana-pista-titol">🔍 Ets a prop!</p>
       <p class="gimcana-pista-text" id="gimcana-pista-text"></p>
       <button class="btn-principal" onclick="tancarGimcana(); iniciarEscaner()">📷 Escanejar el Capó</button>
     </div>
+  </div>
+
+  <div id="gimcana-mapa" class="gimcana-secc" style="display:none">
+    <p class="gimcana-progres">On ets ara mateix</p>
+    <div class="gimcana-mapa-zona">
+      <img src="rutes/mapa-capons.jpg" alt="Mapa del recorregut">
+      <div id="gimcana-mapa-punt"></div>
+    </div>
+    <button class="btn-principal" onclick="tancarMapaGimcana()">🧭 Tornar al radar</button>
   </div>
 
   <!-- Panell de proves — només visible per a admin -->

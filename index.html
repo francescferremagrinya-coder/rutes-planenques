@@ -2779,11 +2779,22 @@ header {
 .gimcana-fletxa-zona { width: 160px; height: 160px; margin: 0.5rem auto; border-radius: 50%; border: 3px solid rgba(212,168,67,0.3); display: flex; align-items: center; justify-content: center; }
 .gimcana-brujola-status { font-size: 0.75rem; color: var(--pedra); text-align: center; margin-top: 0.3rem; min-height: 1.2em; opacity: 0.85; }
 .gimcana-calibra-btn {
-  background: none; border: none; color: var(--or); opacity: 0.85;
-  font-family: 'Space Grotesk', sans-serif; font-size: 0.75rem;
-  text-decoration: underline; cursor: pointer; margin: 0.4rem auto 0; display: block;
+  width: 100%;
+  background: rgba(212,168,67,0.12);
+  color: var(--crema);
+  border: 2px solid var(--or);
+  border-radius: 14px;
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 0.9rem 1.2rem;
+  cursor: pointer;
+  margin: 0.8rem 0 0;
+  display: block;
+  transition: background 0.2s, transform 0.1s;
 }
-.gimcana-calibra-btn:hover { opacity: 1; }
+.gimcana-calibra-btn:hover { background: rgba(212,168,67,0.22); }
+.gimcana-calibra-btn:active { transform: scale(0.98); }
 .gimcana-mapa-zona {
   position: relative; width: 100%; border-radius: 14px; overflow: hidden;
   margin-bottom: 1.5rem; border: 1px solid rgba(212,168,67,0.3);

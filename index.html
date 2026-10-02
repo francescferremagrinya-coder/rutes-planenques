@@ -166,6 +166,7 @@ const BALISES = [
     lat: 41.3606471, lng: 1.3460398,
     radi: 25,
     token: "mrgtr7q2",
+    codi: "MARG",
     gimcana: true,
     pista: "Pedra a pedra, pam a pam,\nfaig parets i no em canso mai!\nSense cola ni ciment,\nles col·loco amb molt de talent.\n\nDamunt de la barraca em trobaràs,\nprop d'on l'expedició començaràs!",
     conte: "Has trobat el Capó Margeter! Va ser ell qui, pedra a pedra, sense morter ni ciment, va aixecar totes les barraques que ara veus pel camí. Coneix cada paret com si fos seva.",
@@ -183,6 +184,7 @@ const BALISES = [
     lat: 41.3593772, lng: 1.345733,
     radi: 25,
     token: "blttr4k9",
+    codi: "BOLE",
     gimcana: true,
     pista: "Bolets amunt, bolets avall,\nsempre en busco pel meu voltant!\nDel camí ample m'he apartat,\ni a dalt del talús he pujat.\nSi mires bé prop del pi,\npotser em trobaràs per allí.",
     conte: "El Capó Boletaire surt d'entre la molsa i els bolets d'una cantonada fosca. «Sabia que arribaries», diu content, «busquem junts els altres».",
@@ -200,6 +202,7 @@ const BALISES = [
     lat: 41.3581328, lng: 1.3462299,
     radi: 25,
     token: "vrmdr8h3",
+    codi: "VERE",
     gimcana: true,
     pista: "Quan arriba el temps de veremar,\njo no paro de saltar!\nEntre raïms em trobaràs,\ni a prop d'un pal em buscaràs.",
     conte: "El Capó Veremador riu en veure't arribar carregat de ganes. «Un altre trobat!», diu, encara amb gust de raïm. «Seguim buscant».",
@@ -217,6 +220,7 @@ const BALISES = [
     lat: 41.3569389, lng: 1.3458252,
     radi: 25,
     token: "apctr2m6",
+    codi: "APIC",
     gimcana: true,
     pista: "Brunzit per aquí, brunzit per allà\nLes abelles no paren de volar.\n\nAmb molta cura recullo la mel,\nmentres elles volen pel cel.\n\nSempre rialleres\ndins les arneres!",
     conte: "El Capó Apicultor et rep brunzint fluixet, envoltat de les seves abelles. «Cada cop en queden menys per trobar», diu somrient.",
@@ -234,6 +238,7 @@ const BALISES = [
     lat: 41.3566105, lng: 1.3428681,
     radi: 25,
     token: "pstr9x14",
+    codi: "PAST",
     gimcana: true,
     pista: "Beee, beee! Jo era pastor,\nde les ovelles, el cuidador!\n\nQuan arribava la nit fosqueta,\nel ramat entrava a la caseta.\n\ni jo, al davant,\nme les quedo vigilant!",
     conte: "El Capó Pastor et rep amb un somriure tranquil, com si t'esperés des de fa estona. «Ja falta poc», et diu, assenyalant cap on toca seguir.",
@@ -251,6 +256,7 @@ const BALISES = [
     lat: 41.3568843, lng: 1.3433455,
     radi: 25,
     token: "llpl5w28",
+    codi: "LLEP",
     gimcana: true,
     pista: "Nyam, nyam, que bo!\nSóc molt llaminer, així sóc jo!\n\nBusco fruita dolça per berenar,\ni una bona ombra on descansar!",
     conte: "El Capó Llèpol, sempre amb la boca plena de dolços, surt content de la seva amagatalla. «Ja en queden ben pocs per trobar», diu, llepant-se els dits.",
@@ -268,6 +274,7 @@ const BALISES = [
     lat: 41.3581099, lng: 1.3432271,
     radi: 25,
     token: "assdg6t7",
+    codi: "ASSE",
     gimcana: true,
     pista: "Glup, glup, glup! Quina set!\nNecessito aigua, això és ben cert!\n\nQuan plovia, l'aigua guardaven,\ni així les gotes no s'escapaven.\n\nBusca on la pluja es podia aprofitar,\nque potser m'hi he anat a refrescar!",
     conte: "El Capó Assedegat t'esperava somiant amb la propera pluja. «Cada cop en queden menys per trobar», diu, mig eixut, mig content.",
@@ -285,6 +292,7 @@ const BALISES = [
     lat: 41.3600875, lng: 1.3453906,
     radi: 25,
     token: "drmlg3n5",
+    codi: "DORM",
     gimcana: true,
     pista: "Zzz, zzz, zzz... estic adormit,\nhe arribat al final ben rendit!\n\nBusca'm en un racó ben amagat,\non la llum del sol no hi ha arribat.\n\nSóc l'últim Capó que has de trobar,\nperò parla fluixet... que vull descansar!",
     conte: "Per fi! El Capó Dormilega obre un ull, mig adormit encara, i somriu en veure-us. Amb tots els Capons retrobats, la família torna a estar completa. «Gràcies a tu», diuen tots alhora, «sempre hi continuarem vivint, esperant el proper explorador».",
@@ -713,6 +721,37 @@ async function enviarSuggeriment() {
   } finally {
     btn.disabled = false;
   }
+}
+
+// ════════════════════════════════════════════════════════
+//  CODI MANUAL — alternativa al QR per als Capons de la gimcana,
+//  per quan la càmera no funciona. Mateixa validació d'ubicació
+//  GPS que el QR, així que el codi no serveix de res si no s'és
+//  físicament a prop del Capó.
+// ════════════════════════════════════════════════════════
+function obrirCodiManual() {
+  const camp = document.getElementById('codi-manual-input');
+  if (camp) camp.value = '';
+  document.getElementById('modal-codi-manual').style.display = 'block';
+  trackEvent('codi_manual_obert');
+}
+
+function tancarCodiManual() {
+  document.getElementById('modal-codi-manual').style.display = 'none';
+}
+
+async function enviarCodiManual() {
+  const camp = document.getElementById('codi-manual-input');
+  const codi = camp.value.trim().toUpperCase();
+  if (!codi) return;
+  const balisa = BALISES.find(b => b.gimcana && b.codi === codi);
+  if (!balisa) {
+    mostrarToast('Codi no reconegut.', true);
+    return;
+  }
+  tancarCodiManual();
+  tancarEscaner();
+  await validarIAtorgarMedalla(balisa, true);
 }
 
 // ════════════════════════════════════════════════════════
@@ -2004,6 +2043,9 @@ window.tancarSuggeriments = tancarSuggeriments;
 window.mostrarMapaGimcana = mostrarMapaGimcana;
 window.tancarMapaGimcana = tancarMapaGimcana;
 window.enviarSuggeriment = enviarSuggeriment;
+window.obrirCodiManual = obrirCodiManual;
+window.tancarCodiManual = tancarCodiManual;
+window.enviarCodiManual = enviarCodiManual;
 window.tancarCelebracio = tancarCelebracio;
 window.actualitzarPunts = actualitzarPunts;
 window.actualitzarPuntsNivells = actualitzarPuntsNivells;
@@ -2416,7 +2458,7 @@ header {
   background: var(--fons);
   overflow-y: auto;
 }
-#modal-obre-safari, #modal-installacio, #modal-permis-camera, #modal-suggeriments {
+#modal-obre-safari, #modal-installacio, #modal-permis-camera, #modal-suggeriments, #modal-codi-manual {
   display: none;
   position: fixed; inset: 0; z-index: 210;
   background: var(--fons);
@@ -3020,7 +3062,20 @@ header {
 <!-- ══ PANTALLA ESCÀNER ══ -->
 <div id="pantalla-escaner">
   <div id="qr-reader"></div>
+  <button class="gimcana-calibra-btn" style="color:var(--crema)" onclick="obrirCodiManual()">⌨️ La càmera no funciona? Introdueix el codi</button>
   <button class="btn-tancar-scan" onclick="tancarEscaner()">✕ Cancel·lar</button>
+</div>
+
+<!-- ══ MODAL CODI MANUAL (alternativa al QR per als Capons) ══ -->
+<div id="modal-codi-manual" style="display:none">
+  <div class="intro-card">
+    <span class="intro-logo">⌨️</span>
+    <h1 class="intro-titol">Introdueix el codi</h1>
+    <p class="installacio-avis">Cada Capó té un codi de 4 lletres escrit al costat del seu QR. Només funciona si estàs físicament a prop seu.</p>
+    <input type="text" id="codi-manual-input" class="suggeriment-textarea" placeholder="Codi de 4 lletres" maxlength="8" autocapitalize="characters" style="text-align:center;font-size:1.4rem;letter-spacing:0.2em;text-transform:uppercase;min-height:auto;padding:1rem;">
+    <button class="btn-principal" id="codi-manual-enviar" onclick="enviarCodiManual()" style="margin-bottom:1rem">Comprova el codi</button>
+    <button class="btn-principal" onclick="tancarCodiManual()" style="background:transparent;border:1px solid rgba(255,255,255,0.15)">Tancar</button>
+  </div>
 </div>
 
 <!-- ══ PANTALLA GIMCANA DELS CAPONS ══ -->

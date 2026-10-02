@@ -729,36 +729,38 @@ async function enviarSuggeriment() {
 //  GPS que el QR, així que el codi no serveix de res si no s'és
 //  físicament a prop del Capó.
 // ════════════════════════════════════════════════════════
-const ALFABET_CODI = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-let codiManualLletres = ['A', 'A', 'A', 'A'];
-
-function renderCodiManual() {
-  codiManualLletres.forEach((lletra, i) => {
-    const el = document.getElementById('codi-lletra-' + i);
-    if (el) el.textContent = lletra;
-  });
-}
-
-function canviaLletraCodi(index, direccio) {
-  const idxActual = ALFABET_CODI.indexOf(codiManualLletres[index]);
-  const idxNou = (idxActual + direccio + ALFABET_CODI.length) % ALFABET_CODI.length;
-  codiManualLletres[index] = ALFABET_CODI[idxNou];
-  renderCodiManual();
-}
-
 function obrirCodiManual() {
-  codiManualLletres = ['A', 'A', 'A', 'A'];
-  renderCodiManual();
+  for (let i = 0; i < 4; i++) {
+    const casella = document.getElementById('codi-casella-' + i);
+    if (casella) casella.value = '';
+  }
   document.getElementById('modal-codi-manual').style.display = 'block';
   trackEvent('codi_manual_obert');
+  setTimeout(() => document.getElementById('codi-casella-0')?.focus(), 50);
 }
 
 function tancarCodiManual() {
   document.getElementById('modal-codi-manual').style.display = 'none';
 }
 
+function avancaCasella(input, index) {
+  input.value = input.value.toUpperCase();
+  if (input.value && index < 3) {
+    document.getElementById('codi-casella-' + (index + 1))?.focus();
+  }
+}
+
+function gestionaBackspaceCasella(e, index) {
+  if (e.key === 'Backspace' && !e.target.value && index > 0) {
+    document.getElementById('codi-casella-' + (index - 1))?.focus();
+  }
+}
+
 async function enviarCodiManual() {
-  const codi = codiManualLletres.join('');
+  let codi = '';
+  for (let i = 0; i < 4; i++) {
+    codi += (document.getElementById('codi-casella-' + i)?.value || '').toUpperCase();
+  }
   const balisa = BALISES.find(b => b.gimcana && b.codi === codi);
   if (!balisa) {
     mostrarToast('Codi no reconegut.', true);
@@ -2059,7 +2061,8 @@ window.mostrarMapaGimcana = mostrarMapaGimcana;
 window.tancarMapaGimcana = tancarMapaGimcana;
 window.enviarSuggeriment = enviarSuggeriment;
 window.obrirCodiManual = obrirCodiManual;
-window.canviaLletraCodi = canviaLletraCodi;
+window.avancaCasella = avancaCasella;
+window.gestionaBackspaceCasella = gestionaBackspaceCasella;
 window.tancarCodiManual = tancarCodiManual;
 window.enviarCodiManual = enviarCodiManual;
 window.tancarCelebracio = tancarCelebracio;
@@ -2502,18 +2505,14 @@ header {
   color: var(--or);
   margin-bottom: 1.2rem;
 }
-.codi-manual-rodetes { display: flex; justify-content: center; gap: 0.6rem; margin: 1.4rem 0 1.8rem; }
-.codi-manual-rodeta { display: flex; flex-direction: column; align-items: center; gap: 0.5rem; }
-.codi-manual-rodeta button {
-  background: var(--bosc-clar); color: var(--crema); border: 1px solid rgba(212,168,67,0.4);
-  border-radius: 8px; width: 44px; height: 36px; font-size: 1rem; cursor: pointer;
-}
-.codi-manual-rodeta button:active { background: var(--or); color: #16240F; }
-.codi-manual-lletra {
-  width: 50px; height: 62px; display: flex; align-items: center; justify-content: center;
+.codi-manual-caselles { display: flex; justify-content: center; gap: 0.7rem; margin: 1.4rem 0 1.8rem; }
+.codi-manual-casella {
+  width: 54px; height: 64px; text-align: center;
   background: rgba(0,0,0,0.25); border: 2px solid var(--or); border-radius: 10px;
   font-family: 'Fraunces', serif; font-size: 1.9rem; font-weight: 700; color: var(--or);
+  text-transform: uppercase; caret-color: var(--or);
 }
+.codi-manual-casella:focus { outline: none; border-color: var(--crema); background: rgba(212,168,67,0.12); }
 .installacio-pas-num {
   flex-shrink: 0; width: 1.6rem; height: 1.6rem; border-radius: 50%;
   background: var(--or); color: #16240F; font-weight: 700; font-size: 0.85rem;
@@ -3100,27 +3099,11 @@ header {
     <span class="intro-logo">🔐</span>
     <h1 class="intro-titol">Obre el pany del Capó</h1>
     <p class="installacio-avis">Cada Capó té un codi de 4 lletres escrit al costat del seu QR. Només funciona si estàs físicament a prop seu.</p>
-    <div class="codi-manual-rodetes">
-      <div class="codi-manual-rodeta">
-        <button onclick="canviaLletraCodi(0,1)">▲</button>
-        <div class="codi-manual-lletra" id="codi-lletra-0">A</div>
-        <button onclick="canviaLletraCodi(0,-1)">▼</button>
-      </div>
-      <div class="codi-manual-rodeta">
-        <button onclick="canviaLletraCodi(1,1)">▲</button>
-        <div class="codi-manual-lletra" id="codi-lletra-1">A</div>
-        <button onclick="canviaLletraCodi(1,-1)">▼</button>
-      </div>
-      <div class="codi-manual-rodeta">
-        <button onclick="canviaLletraCodi(2,1)">▲</button>
-        <div class="codi-manual-lletra" id="codi-lletra-2">A</div>
-        <button onclick="canviaLletraCodi(2,-1)">▼</button>
-      </div>
-      <div class="codi-manual-rodeta">
-        <button onclick="canviaLletraCodi(3,1)">▲</button>
-        <div class="codi-manual-lletra" id="codi-lletra-3">A</div>
-        <button onclick="canviaLletraCodi(3,-1)">▼</button>
-      </div>
+    <div class="codi-manual-caselles">
+      <input class="codi-manual-casella" id="codi-casella-0" type="text" inputmode="text" maxlength="1" autocapitalize="characters" autocomplete="off" oninput="avancaCasella(this,0)" onkeydown="gestionaBackspaceCasella(event,0)">
+      <input class="codi-manual-casella" id="codi-casella-1" type="text" inputmode="text" maxlength="1" autocapitalize="characters" autocomplete="off" oninput="avancaCasella(this,1)" onkeydown="gestionaBackspaceCasella(event,1)">
+      <input class="codi-manual-casella" id="codi-casella-2" type="text" inputmode="text" maxlength="1" autocapitalize="characters" autocomplete="off" oninput="avancaCasella(this,2)" onkeydown="gestionaBackspaceCasella(event,2)">
+      <input class="codi-manual-casella" id="codi-casella-3" type="text" inputmode="text" maxlength="1" autocapitalize="characters" autocomplete="off" oninput="avancaCasella(this,3)" onkeydown="gestionaBackspaceCasella(event,3)">
     </div>
     <button class="btn-principal" id="codi-manual-enviar" onclick="enviarCodiManual()" style="margin-bottom:1rem">🔓 Obre el pany</button>
     <button class="btn-principal" onclick="tancarCodiManual()" style="background:transparent;border:1px solid rgba(255,255,255,0.15)">Tancar</button>

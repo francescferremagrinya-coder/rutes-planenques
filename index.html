@@ -530,7 +530,8 @@ function obrirRutaDetall(clau) {
   const properamentEl = document.getElementById('ruta-detall-properament');
   document.getElementById('ruta-detall-cartes-btn').style.display = clau === 'capona' ? 'block' : 'none';
   btnCta.disabled = false;
-  if (r.actiu === false) {
+  // Els admins es poden saltar el bloqueig "properament" per provar la ruta abans que estigui activa per a tothom
+  if (r.actiu === false && !esAdmin) {
     properamentEl.textContent = "🚧 Aquesta ruta encara no està activa. Estem enllestint les insígnies físiques del camí — molt aviat hi podràs jugar!";
     properamentEl.style.display = 'block';
     btnCta.textContent = 'Properament disponible';
@@ -548,6 +549,9 @@ function obrirRutaDetall(clau) {
       btnCta.textContent = '📷 Escanejar QR';
       btnCta.onclick = () => { tancarRutaDetall(); iniciarEscaner(); };
       notaQr.textContent = "🏅 Quan arribis físicament al lloc, escaneja el QR que hi trobaràs per aconseguir la insígnia d'aquesta ruta.";
+    }
+    if (r.actiu === false && esAdmin) {
+      notaQr.textContent += ' ⚠️ Admin: encara no activa per a la resta d\'usuaris.';
     }
   }
 

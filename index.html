@@ -297,6 +297,18 @@ const BALISES = [
     pista: "Zzz, zzz, zzz... estic adormit,\nhe arribat al final ben rendit!\n\nBusca'm en un racó ben amagat,\non la llum del sol no hi ha arribat.\n\nSóc l'últim Capó que has de trobar,\nperò parla fluixet... que vull descansar!",
     conte: "Has trobat el Capó Dormilega, el darrer de tots! Als dies de molta calor, era habitual que els pagesos s'aturessin a fer la migdiada a l'ombra d'una barraca abans de tornar a la feina. Amb tots els Capons retrobats, la família torna a estar completa — gràcies per fer-los costat!",
     waypoints: [{lat:41.3585458, lng:1.3425304}]
+  },
+  {
+    // Medalla final de la gimcana — NO s'escaneja amb QR, s'atorga automàticament
+    // en trobar els 8 Capons (per això no té "token" ni "lat/lng/radi").
+    id: "CAPO_EXPLORADOR",
+    nom: "Capó Explorador",
+    icon: "🏆",
+    color: "#D4A843",
+    punts: 660,
+    categoria: "Gimcana · Ruta dels Capons",
+    descripcio: "La medalla que reuneix tota la família Capona, aconseguida en trobar els 8 Capons",
+    imatge: "medalles/capo-explorador.jpg"
   }
 ];
 
@@ -512,6 +524,7 @@ function obrirRutaDetall(clau) {
   const btnCta = document.getElementById('ruta-detall-cta');
   const notaQr = document.getElementById('ruta-detall-nota-qr');
   const properamentEl = document.getElementById('ruta-detall-properament');
+  document.getElementById('ruta-detall-cartes-btn').style.display = clau === 'capona' ? 'block' : 'none';
   btnCta.disabled = false;
   if (r.actiu === false) {
     properamentEl.textContent = "🚧 Aquesta ruta encara no està activa. Estem enllestint les insígnies físiques del camí — molt aviat hi podràs jugar!";
@@ -682,6 +695,7 @@ async function assegurarPerfil(user) {
       foto: user.photoURL,
       email: user.email,
       medalles: [],
+      caponsTrobats: [],
       punts: 0,
       introVista: false,
       avisResponsabilitatVist: false,
@@ -1225,13 +1239,16 @@ async function processarQR(text) {
 }
 
 async function validarIAtorgarMedalla(balisa, verificarGPS) {
-  // Comprovar si ja té la medalla
+  // Comprovar si ja té la medalla (els Capons de la gimcana es guarden a part,
+  // a "caponsTrobats", perquè no compten com a medalla fins a trobar-los tots)
   const ref = doc(db, 'usuaris', usuariActual.uid);
   const snap = await getDoc(ref);
   const dades = snap.data();
-  const jaObtinguda = (dades.medalles || []).find(m => m.id === balisa.id);
+  const jaObtinguda = balisa.gimcana
+    ? (dades.caponsTrobats || []).find(m => m.id === balisa.id)
+    : (dades.medalles || []).find(m => m.id === balisa.id);
   if (jaObtinguda) {
-    mostrarToast(`Ja tens la medalla de ${balisa.nom}! 🏅`);
+    mostrarToast(balisa.gimcana ? `Ja tens la carta de ${balisa.nom}! 📖` : `Ja tens la medalla de ${balisa.nom}! 🏅`);
     return;
   }
 
@@ -1266,32 +1283,113 @@ async function validarIAtorgarMedalla(balisa, verificarGPS) {
     mostrarToast('📡 Admin: comprovació GPS saltada.');
   }
 
-  // ✅ Atorgar medalla
-  await updateDoc(ref, {
-    medalles: arrayUnion({
-      id: balisa.id,
-      nom: balisa.nom,
-      data: new Date(),
-      punts: balisa.punts
-    }),
-    punts: (dades.punts || 0) + balisa.punts
-  });
+  // ✅ Atorgar — els Capons de la gimcana només desbloquegen la seva carta
+  // (caponsTrobats, sense punts); la resta de balises atorguen medalla + punts com sempre
+  if (balisa.gimcana) {
+    await updateDoc(ref, {
+      caponsTrobats: arrayUnion({ id: balisa.id, nom: balisa.nom, data: new Date() })
+    });
+  } else {
+    await updateDoc(ref, {
+      medalles: arrayUnion({
+        id: balisa.id,
+        nom: balisa.nom,
+        data: new Date(),
+        punts: balisa.punts
+      }),
+      punts: (dades.punts || 0) + balisa.punts
+    });
+  }
 
   trackEvent('medalla_aconseguida', { balisa_id: balisa.id, balisa_nom: balisa.nom, punts: balisa.punts });
   if (balisa.gimcana && !(await properCapoGimcana())) {
     trackEvent('gimcana_completada');
+    await atorgarMedallaFinalGimcana();
   }
 
   mostrarCelebracio(balisa);
 }
+
+// Un cop trobats els 8 Capons, atorga la medalla real "Capó Explorador"
+// (aquesta sí que compta com a medalla i suma punts al rànquing)
+async function atorgarMedallaFinalGimcana() {
+  const capoFinal = BALISES.find(b => b.id === 'CAPO_EXPLORADOR');
+  if (!capoFinal || !usuariActual) return;
+  const ref = doc(db, 'usuaris', usuariActual.uid);
+  const snap = await getDoc(ref);
+  const dades = snap.data();
+  if ((dades.medalles || []).find(m => m.id === capoFinal.id)) return;
+
+  await updateDoc(ref, {
+    medalles: arrayUnion({
+      id: capoFinal.id,
+      nom: capoFinal.nom,
+      data: new Date(),
+      punts: capoFinal.punts
+    }),
+    punts: (dades.punts || 0) + capoFinal.punts
+  });
+  trackEvent('medalla_aconseguida', { balisa_id: capoFinal.id, balisa_nom: capoFinal.nom, punts: capoFinal.punts });
+}
+
+// ════════════════════════════════════════════════════════
+//  LES MEVES CARTES DELS CAPONS — consulta en qualsevol moment les cartes
+//  ja desbloquejades (no compten com a medalla, només la final hi compta)
+// ════════════════════════════════════════════════════════
+async function mostrarCartesCapons() {
+  if (!usuariActual) { mostrarToast('Inicia sessió per veure les teves cartes.', true); return; }
+  document.getElementById('modal-cartes-capons').style.display = 'block';
+  document.getElementById('cartes-capons-llista').innerHTML = '<p class="installacio-avis">Carregant…</p>';
+  try {
+    const snap = await getDoc(doc(db, 'usuaris', usuariActual.uid));
+    renderCartesCapons(snap.data()?.caponsTrobats || []);
+  } catch (e) {
+    document.getElementById('cartes-capons-llista').innerHTML = '<p class="installacio-avis">No s\'han pogut carregar les cartes.</p>';
+  }
+}
+
+function renderCartesCapons(trobats) {
+  const capons = gimcanaCapons();
+  document.getElementById('cartes-capons-resum').textContent = `${trobats.length}/${capons.length} Capons trobats`;
+  document.getElementById('cartes-capons-llista').innerHTML = capons.map(c => {
+    const ob = trobats.find(t => t.id === c.id);
+    if (ob) {
+      return `
+        <div class="carta-capo obtinguda">
+          <img class="carta-capo-img" src="${c.imatge}" alt="${c.nom}" onerror="this.style.display='none'">
+          <div class="carta-capo-cos">
+            <p class="carta-capo-nom">${c.nom}</p>
+            <p class="carta-capo-text">${c.conte || ''}</p>
+          </div>
+        </div>`;
+    }
+    return `
+        <div class="carta-capo bloquejada">
+          <div class="carta-capo-img carta-capo-silueta">?</div>
+          <div class="carta-capo-cos">
+            <p class="carta-capo-nom">Per descobrir</p>
+          </div>
+        </div>`;
+  }).join('');
+}
+
+function tancarCartesCapons() {
+  document.getElementById('modal-cartes-capons').style.display = 'none';
+}
+window.mostrarCartesCapons = mostrarCartesCapons;
+window.tancarCartesCapons = tancarCartesCapons;
 
 // ════════════════════════════════════════════════════════
 //  CELEBRACIÓ — pantalla d'enhorabona en obtenir una medalla
 // ════════════════════════════════════════════════════════
 async function mostrarCelebracio(balisa) {
   tocarSoCelebracio();
+  document.getElementById('celebracio-sub').textContent = balisa.gimcana ? 'Has trobat una carta nova' : 'Has aconseguit una medalla';
   document.getElementById('celebracio-nom').textContent = balisa.nom;
-  document.getElementById('celebracio-punts').textContent = `+${balisa.punts} pts`;
+  const puntsEl = document.getElementById('celebracio-punts');
+  // Els Capons de la gimcana no donen punts individualment — només la medalla final Capó Explorador
+  puntsEl.style.display = balisa.gimcana ? 'none' : 'block';
+  puntsEl.textContent = `+${balisa.punts} pts`;
 
   const imgEl = document.getElementById('celebracio-img');
   const iconFbEl = document.getElementById('celebracio-icon-fb');
@@ -1325,8 +1423,13 @@ async function mostrarCelebracio(balisa) {
       btnEl.textContent = 'Segueix buscant';
       btnEl.onclick = () => { tancarCelebracio(); mostrarPantalla('gimcana'); comencaRadarGimcana(); };
     } else {
-      btnEl.textContent = 'Genial!';
-      btnEl.onclick = () => { tancarCelebracio(); };
+      // Últim Capó trobat: en tancar, encadenem la celebració de la medalla final
+      btnEl.textContent = 'Veure la medalla final 🏆';
+      btnEl.onclick = () => {
+        tancarCelebracio();
+        const capoFinal = BALISES.find(b => b.id === 'CAPO_EXPLORADOR');
+        if (capoFinal) setTimeout(() => mostrarCelebracio(capoFinal), 400);
+      };
     }
   } else {
     btnEl.textContent = 'Genial!';
@@ -1550,8 +1653,8 @@ function tocarSoForaCami() {
 async function properCapoGimcana() {
   if (!usuariActual) return null;
   const snap = await getDoc(doc(db, 'usuaris', usuariActual.uid));
-  const medalles = snap.data()?.medalles || [];
-  return gimcanaCapons().find(c => !medalles.some(m => m.id === c.id)) || null;
+  const trobats = snap.data()?.caponsTrobats || [];
+  return gimcanaCapons().find(c => !trobats.some(m => m.id === c.id)) || null;
 }
 
 // Mitjana entre dos angles seguint sempre el camí més curt (evita el salt
@@ -1848,23 +1951,25 @@ function debugCapoAnterior() {
 // per poder repetir les proves de camp sense haver de tocar Firestore a mà.
 async function resetCaponsPropis() {
   if (!esAdmin || !usuariActual) return;
-  if (!confirm('Segur que vols esborrar les TEVES medalles dels Capons? Això no afecta la resta de medalles ni altres usuaris.')) return;
+  if (!confirm('Segur que vols esborrar les TEVES cartes dels Capons (i la medalla final, si la tens)? Això no afecta la resta de medalles ni altres usuaris.')) return;
 
   const ref = doc(db, 'usuaris', usuariActual.uid);
   const snap = await getDoc(ref);
   const dades = snap.data();
   const medalles = dades.medalles || [];
 
-  const idsCapons = new Set(gimcanaCapons().map(c => c.id));
-  const puntsPerdits = medalles.filter(m => idsCapons.has(m.id)).reduce((s, m) => s + (m.punts || 0), 0);
-  const medallesRestants = medalles.filter(m => !idsCapons.has(m.id));
+  // La medalla final "Capó Explorador" es treu de "medalles" (i els seus punts del total);
+  // les cartes dels Capons es trobaven a part, a "caponsTrobats"
+  const puntsPerduts = medalles.filter(m => m.id === 'CAPO_EXPLORADOR').reduce((s, m) => s + (m.punts || 0), 0);
+  const medallesRestants = medalles.filter(m => m.id !== 'CAPO_EXPLORADOR');
 
   await updateDoc(ref, {
     medalles: medallesRestants,
-    punts: Math.max(0, (dades.punts || 0) - puntsPerdits)
+    caponsTrobats: [],
+    punts: Math.max(0, (dades.punts || 0) - puntsPerduts)
   });
 
-  mostrarToast('Medalles dels Capons esborrades. Ja pots tornar a provar la gimcana! 🔄');
+  mostrarToast('Cartes dels Capons esborrades. Ja pots tornar a provar la gimcana! 🔄');
   carregarPerfil();
 }
 window.resetCaponsPropis = resetCaponsPropis;
@@ -1905,6 +2010,51 @@ async function recalcularPuntuacionsGlobals() {
   mostrarAdmin();
 }
 window.recalcularPuntuacionsGlobals = recalcularPuntuacionsGlobals;
+
+// Migració única: mou els Capons que algú ja tingués a "medalles" (sistema antic)
+// cap a "caponsTrobats" (ja no compten com a medalla individual ni sumen punts),
+// i atorga la medalla final "Capó Explorador" a qui ja els tingués tots els 8.
+async function migrarCaponsAMedallaFinal() {
+  if (!esAdmin) return;
+  if (!confirm('Això mourà els Capons que la gent ja hagi trobat de "medalles" a "caponsTrobats" (deixaran de comptar com a medalla individual) i atorgarà la medalla final "Capó Explorador" a qui ja els tingui tots. Vols continuar?')) return;
+
+  const idsCapons = new Set(gimcanaCapons().map(c => c.id));
+  const capoFinal = BALISES.find(b => b.id === 'CAPO_EXPLORADOR');
+  const totsUsuaris = await getDocs(collection(db, 'usuaris'));
+  let migrats = 0;
+
+  for (const d of totsUsuaris.docs) {
+    const dades = d.data();
+    const medalles = dades.medalles || [];
+    const caponsAMedalles = medalles.filter(m => idsCapons.has(m.id));
+    if (!caponsAMedalles.length) continue;
+
+    const caponsTrobatsExistents = dades.caponsTrobats || [];
+    const idsJaTrobats = new Set(caponsTrobatsExistents.map(c => c.id));
+    const nousCaponsTrobats = [
+      ...caponsTrobatsExistents,
+      ...caponsAMedalles.filter(m => !idsJaTrobats.has(m.id)).map(m => ({ id: m.id, nom: m.nom, data: m.data }))
+    ];
+
+    let medallesRestants = medalles.filter(m => !idsCapons.has(m.id));
+    const teTotsElsCapons = [...idsCapons].every(id => nousCaponsTrobats.some(c => c.id === id));
+    if (teTotsElsCapons && capoFinal && !medallesRestants.some(m => m.id === capoFinal.id)) {
+      medallesRestants = [...medallesRestants, { id: capoFinal.id, nom: capoFinal.nom, data: new Date(), punts: capoFinal.punts }];
+    }
+
+    const nouTotal = medallesRestants.reduce((s, m) => s + (m.punts || 0), 0);
+    await updateDoc(doc(db, 'usuaris', d.id), {
+      medalles: medallesRestants,
+      caponsTrobats: nousCaponsTrobats,
+      punts: nouTotal
+    });
+    migrats++;
+  }
+
+  mostrarToast(`✅ Migració feta per a ${migrats} usuaris.`);
+  mostrarAdmin();
+}
+window.migrarCaponsAMedallaFinal = migrarCaponsAMedallaFinal;
 
 async function mostrarAdmin() {
   if (!esAdmin) return;
@@ -2514,7 +2664,7 @@ header {
   background: var(--fons);
   overflow-y: auto;
 }
-#modal-obre-safari, #modal-installacio, #modal-permis-camera, #modal-suggeriments, #modal-codi-manual {
+#modal-obre-safari, #modal-installacio, #modal-permis-camera, #modal-suggeriments, #modal-codi-manual, #modal-cartes-capons {
   display: none;
   position: fixed; inset: 0; z-index: 210;
   background: var(--fons);
@@ -2797,6 +2947,25 @@ header {
 .celebracio-punts { color: var(--or); font-weight: 700; font-size: 0.95rem; margin-bottom: 1.6rem; }
 .celebracio-conte { color: var(--crema); font-size: 0.85rem; line-height: 1.5; text-align: left; background: rgba(255,255,255,0.05); border-radius: 10px; padding: 0.8rem; margin-bottom: 1.2rem; }
 
+/* Les meves cartes dels Capons */
+.carta-capo {
+  display: flex; gap: 0.9rem; align-items: flex-start; text-align: left;
+  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 14px; padding: 0.8rem; margin-bottom: 0.8rem;
+}
+.carta-capo-img {
+  width: 64px; height: 64px; object-fit: cover; border-radius: 10px;
+  flex-shrink: 0; background: rgba(0,0,0,0.2);
+}
+.carta-capo-silueta {
+  display: flex; align-items: center; justify-content: center;
+  color: var(--pedra); font-size: 1.4rem; font-weight: 700;
+  background: rgba(255,255,255,0.06);
+}
+.carta-capo-nom { font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 700; margin: 0 0 0.3rem; }
+.carta-capo.bloquejada .carta-capo-nom { color: var(--pedra); }
+.carta-capo-text { font-size: 0.82rem; line-height: 1.5; color: var(--crema); margin: 0; opacity: 0.9; }
+
 /* ── Gimcana dels Capons ── */
 #pantalla-gimcana { position: fixed; inset: 0; background: var(--fons); z-index: 100; overflow-y: auto; padding: 4.5rem 1.2rem 3rem; }
 .gimcana-secc { text-align: center; }
@@ -2974,6 +3143,17 @@ header {
   </div>
 </div>
 
+<!-- ══ MODAL LES MEVES CARTES DELS CAPONS ══ -->
+<div id="modal-cartes-capons" style="display:none">
+  <div class="intro-card" style="max-width:480px">
+    <span class="intro-logo">📖</span>
+    <h1 class="intro-titol">Les cartes dels Capons</h1>
+    <p class="installacio-avis" id="cartes-capons-resum" style="text-align:center">0/8 Capons trobats</p>
+    <div id="cartes-capons-llista"></div>
+    <button class="btn-principal" onclick="tancarCartesCapons()" style="background:transparent;border:1px solid rgba(255,255,255,0.15)">Tancar</button>
+  </div>
+</div>
+
 <!-- ══ MODAL INSTAL·LACIÓ ══ -->
 <div id="modal-installacio" style="display:none">
   <div class="intro-card">
@@ -3060,9 +3240,10 @@ header {
       <h3>🎯 Forçar pista d'un Capó (prova)</h3>
       <div id="admin-gimcana-force" class="admin-gimcana-force"></div>
       <h3>🔄 Reiniciar proves</h3>
-      <button class="admin-force-btn" onclick="resetCaponsPropis()">Esborra les MEVES medalles dels Capons</button>
+      <button class="admin-force-btn" onclick="resetCaponsPropis()">Esborra les MEVES cartes dels Capons</button>
       <h3>🔢 Puntuacions</h3>
       <button class="admin-force-btn" onclick="recalcularPuntuacionsGlobals()">Actualitza els punts de TOTHOM als valors actuals</button>
+      <button class="admin-force-btn" onclick="migrarCaponsAMedallaFinal()">Migra els Capons antics a la medalla final (executar un sol cop)</button>
       <h3>✉️ Suggeriments</h3>
       <div id="admin-suggeriments-llista" class="admin-usuaris-llista"></div>
       <h3>QRs del sistema nou</h3>
@@ -3261,6 +3442,7 @@ header {
       </a>
       <button class="btn-principal" id="ruta-detall-cta" onclick="tancarRutaDetall(); iniciarEscaner()">📷 Escanejar QR</button>
       <p class="ruta-detall-nota-qr" id="ruta-detall-nota-qr">🏅 Quan arribis físicament al lloc, escaneja el QR que hi trobaràs per aconseguir la insígnia d'aquesta ruta.</p>
+      <button class="btn-secundari-gimcana" id="ruta-detall-cartes-btn" onclick="mostrarCartesCapons()" style="display:none">📖 Les meves cartes dels Capons</button>
     </div>
     <div class="ruta-detall-article" id="ruta-detall-article"></div>
   </div>
@@ -3272,7 +3454,7 @@ header {
 <div id="modal-celebracio" onclick="tancarCelebracio()">
   <div class="celebracio-card" onclick="event.stopPropagation()">
     <p class="celebracio-titol">🎉 Enhorabona!</p>
-    <p class="celebracio-sub">Has aconseguit una medalla</p>
+    <p class="celebracio-sub" id="celebracio-sub">Has aconseguit una medalla</p>
     <img id="celebracio-img" class="celebracio-img" src="" alt="">
     <span id="celebracio-icon-fb" class="celebracio-icon-fb" style="display:none"></span>
     <p class="celebracio-nom" id="celebracio-nom">—</p>

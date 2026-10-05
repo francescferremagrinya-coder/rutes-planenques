@@ -507,11 +507,14 @@ function obrirRutaDetall(clau) {
     avisEl.style.display = 'none';
   }
   const btnWikiloc = document.getElementById('ruta-detall-wikiloc');
+  const trackAvisEl = document.getElementById('ruta-detall-track-avis');
   if (r.wikiloc) {
     btnWikiloc.href = r.wikiloc;
     btnWikiloc.style.display = 'flex';
+    trackAvisEl.style.display = 'block';
   } else {
     btnWikiloc.style.display = 'none';
+    trackAvisEl.style.display = 'none';
   }
 
   const btnFoto360 = document.getElementById('ruta-detall-foto360');
@@ -2767,6 +2770,16 @@ header {
   cursor: not-allowed;
 }
 .ruta-detall-botons { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.8rem; }
+.ruta-detall-track-avis {
+  background: rgba(212,168,67,0.12);
+  border: 1px solid rgba(212,168,67,0.4);
+  border-radius: 10px;
+  padding: 0.7rem 0.9rem;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--crema);
+  margin: -0.2rem 0 0.2rem;
+}
 .ruta-detall-nota-qr {
   font-size: 0.75rem; color: var(--pedra); line-height: 1.5;
   text-align: center; padding: 0 0.5rem;
@@ -3438,6 +3451,7 @@ header {
       <a class="btn-wikiloc" id="ruta-detall-wikiloc" href="#" target="_blank" rel="noopener">
         <span>▶</span> Obrir a Wikiloc
       </a>
+      <p class="ruta-detall-track-avis" id="ruta-detall-track-avis" style="display:none">🧭 Recomanem seguir el track de Wikiloc (obre'l o descarrega'l al mòbil) durant tot el recorregut: en alguns trams és fàcil perdre's si no el segueixes.</p>
       <a class="btn-foto360" id="ruta-detall-foto360" href="#" target="_blank" rel="noopener" style="display:none">
         <span>🔭</span> Veure foto 360°
       </a>

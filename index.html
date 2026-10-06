@@ -16,8 +16,8 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getFirestore, doc, getDoc, setDoc, updateDoc, collection,
-  getDocs, onSnapshot, serverTimestamp, arrayUnion, query, orderBy }
+import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection,
+  getDocs, onSnapshot, serverTimestamp, arrayUnion, query, orderBy, where }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { getAnalytics, logEvent, isSupported as analyticsSuportada }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js';
@@ -568,13 +568,125 @@ function obrirRutaDetall(clau) {
   }
   document.getElementById('ruta-detall-article').innerHTML = html;
 
+  escoltarComentarisRuta(clau);
+
   document.getElementById('pantalla-ruta-detall').style.display = 'block';
   document.getElementById('pantalla-ruta-detall').scrollTop = 0;
 }
 
 function tancarRutaDetall() {
   document.getElementById('pantalla-ruta-detall').style.display = 'none';
+  if (comentarisUnsub) { comentarisUnsub(); comentarisUnsub = null; }
+  comentarisRutaActual = null;
 }
+
+// ════════════════════════════════════════════════════════
+//  MUR DE COMENTARIS PER RUTA — només pot escriure-hi qui ja té
+//  alguna de les insígnies d'aquella ruta (prova que hi ha anat de debò),
+//  però els comentaris són visibles per a tothom des de la fitxa de la ruta
+// ════════════════════════════════════════════════════════
+const RUTA_BALISES = {
+  moro: ['B01'],
+  pinyaseka: ['B02'],
+  miqueletsBarretet: ['B03', 'B04'],
+  cogullo: ['B05', 'B06'],
+  capona: ['CAP01', 'CAP02', 'CAP03', 'CAP04', 'CAP05', 'CAP06', 'CAP07', 'CAP08']
+};
+
+let comentarisUnsub = null;
+let comentarisRutaActual = null;
+
+async function potComentarRuta(clau) {
+  if (!usuariActual) return false;
+  const ids = RUTA_BALISES[clau];
+  if (!ids) return false;
+  const snap = await getDoc(doc(db, 'usuaris', usuariActual.uid));
+  const dades = snap.data() || {};
+  const medalles = dades.medalles || [];
+  const caponsTrobats = dades.caponsTrobats || [];
+  return ids.some(id => medalles.some(m => m.id === id) || caponsTrobats.some(m => m.id === id));
+}
+
+async function escoltarComentarisRuta(clau) {
+  comentarisRutaActual = clau;
+  if (comentarisUnsub) { comentarisUnsub(); comentarisUnsub = null; }
+
+  const formWrap = document.getElementById('ruta-detall-comentari-form');
+  const bloquejatEl = document.getElementById('ruta-detall-comentari-bloquejat');
+  const potComentar = await potComentarRuta(clau);
+  formWrap.style.display = potComentar ? 'block' : 'none';
+  bloquejatEl.style.display = potComentar ? 'none' : 'block';
+  document.getElementById('ruta-detall-comentari-text').value = '';
+
+  const q = query(collection(db, 'comentaris'), where('rutaClau', '==', clau));
+  comentarisUnsub = onSnapshot(q, (snap) => {
+    const comentaris = [];
+    snap.forEach(d => comentaris.push({ id: d.id, ...d.data() }));
+    comentaris.sort((a, b) => {
+      const da = a.creat?.toDate ? a.creat.toDate() : new Date(0);
+      const db_ = b.creat?.toDate ? b.creat.toDate() : new Date(0);
+      return db_ - da;
+    });
+    renderComentarisRuta(comentaris);
+  });
+}
+
+function renderComentarisRuta(comentaris) {
+  const cont = document.getElementById('ruta-detall-comentaris-llista');
+  const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+
+  if (!comentaris.length) {
+    cont.innerHTML = '<p class="comentari-buit">Encara no hi ha cap comentari. Sigues el primer a deixar-ne un!</p>';
+    return;
+  }
+  cont.innerHTML = comentaris.map(c => `
+    <div class="comentari-item">
+      <img class="comentari-foto" src="${c.foto || ''}" alt="" onerror="this.style.display='none'">
+      <div class="comentari-cos">
+        <p class="comentari-nom">${escapeHtml(c.nom || 'Anònim')}
+          <span class="comentari-data">${formatData(c.creat?.toDate?.())}</span>
+        </p>
+        <p class="comentari-text">${escapeHtml(c.text)}</p>
+        ${esAdmin ? `<button class="comentari-esborra" onclick="esborrarComentariRuta('${c.id}')">Esborra</button>` : ''}
+      </div>
+    </div>
+  `).join('');
+}
+
+async function enviarComentariRuta() {
+  const camp = document.getElementById('ruta-detall-comentari-text');
+  const text = camp.value.trim();
+  if (!text || !comentarisRutaActual || !usuariActual) return;
+  const btn = document.getElementById('ruta-detall-comentari-enviar');
+  btn.disabled = true;
+  try {
+    const ref = doc(collection(db, 'comentaris'));
+    await setDoc(ref, {
+      rutaClau: comentarisRutaActual,
+      uid: usuariActual.uid,
+      nom: usuariActual.displayName,
+      foto: usuariActual.photoURL,
+      text: text.slice(0, 280),
+      creat: serverTimestamp()
+    });
+    camp.value = '';
+    trackEvent('comentari_ruta_enviat', { ruta: comentarisRutaActual });
+  } catch (e) {
+    mostrarToast('No s\'ha pogut enviar el comentari. Torna-ho a provar.', true);
+  } finally {
+    btn.disabled = false;
+  }
+}
+window.enviarComentariRuta = enviarComentariRuta;
+
+async function esborrarComentariRuta(id) {
+  if (!esAdmin) return;
+  if (!confirm('Segur que vols esborrar aquest comentari?')) return;
+  await deleteDoc(doc(db, 'comentaris', id));
+}
+window.esborrarComentariRuta = esborrarComentariRuta;
 
 // ════════════════════════════════════════════════════════
 //  🔐 ADMIN — UIDs de Google dels administradors
@@ -2816,6 +2928,26 @@ header {
   font-style: italic; color: var(--pedra); font-size: 0.85rem;
 }
 
+/* Mur de comentaris per ruta */
+.ruta-detall-comentaris { margin-top: 2.2rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1.5rem; }
+.comentari-item {
+  display: flex; gap: 0.7rem; align-items: flex-start;
+  background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px; padding: 0.8rem; margin-bottom: 0.7rem;
+}
+.comentari-foto { width: 40px; height: 40px; border-radius: 50%; flex-shrink: 0; object-fit: cover; }
+.comentari-nom { font-size: 0.85rem; font-weight: 700; color: var(--crema); margin: 0 0 0.2rem; }
+.comentari-data { font-size: 0.72rem; font-weight: 400; color: var(--pedra); margin-left: 0.3rem; }
+.comentari-text { font-size: 0.85rem; line-height: 1.5; color: var(--crema); margin: 0; opacity: 0.92; }
+.comentari-buit { font-size: 0.85rem; color: var(--pedra); font-style: italic; }
+.comentari-bloquejat { font-size: 0.82rem; color: var(--pedra); text-align: center; margin-top: 0.8rem; }
+.comentari-esborra {
+  background: none; border: none; color: #C0524A; font-size: 0.72rem;
+  cursor: pointer; padding: 0.3rem 0 0; font-family: 'Space Grotesk', sans-serif;
+}
+#ruta-detall-comentari-form { margin-top: 1rem; }
+#ruta-detall-comentari-form .suggeriment-textarea { margin-bottom: 0.7rem; }
+
 /* Premi */
 #premi-bloc {
   display: none; margin: 1.5rem 1.2rem;
@@ -3463,6 +3595,17 @@ header {
       <button class="btn-secundari-gimcana" id="ruta-detall-cartes-btn" onclick="mostrarCartesCapons()" style="display:none">📖 Les meves cartes dels Capons</button>
     </div>
     <div class="ruta-detall-article" id="ruta-detall-article"></div>
+
+    <div class="ruta-detall-comentaris">
+      <p class="seccio-label">Comentaris dels exploradors</p>
+      <div id="ruta-detall-comentaris-llista"></div>
+      <div id="ruta-detall-comentari-form" style="display:none">
+        <textarea id="ruta-detall-comentari-text" class="suggeriment-textarea" maxlength="280"
+          placeholder="Explica com et va anar la ruta..." rows="3"></textarea>
+        <button class="btn-principal" id="ruta-detall-comentari-enviar" onclick="enviarComentariRuta()">Publica el comentari</button>
+      </div>
+      <p class="comentari-bloquejat" id="ruta-detall-comentari-bloquejat">🔒 Aconsegueix la insígnia d'aquesta ruta per poder deixar-hi el teu comentari.</p>
+    </div>
   </div>
 </div>
 

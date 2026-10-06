@@ -611,6 +611,9 @@ async function escoltarComentarisRuta(clau) {
   comentarisRutaActual = clau;
   if (comentarisUnsub) { comentarisUnsub(); comentarisUnsub = null; }
 
+  document.getElementById('comentaris-cos').style.display = 'none';
+  document.getElementById('comentaris-toggle-icona').textContent = '›';
+
   const formWrap = document.getElementById('ruta-detall-comentari-form');
   const bloquejatEl = document.getElementById('ruta-detall-comentari-bloquejat');
   const potComentar = await potComentarRuta(clau);
@@ -644,11 +647,25 @@ async function escoltarComentarisRuta(clau) {
   });
 }
 
+function toggleComentarisRuta() {
+  const cos = document.getElementById('comentaris-cos');
+  const icona = document.getElementById('comentaris-toggle-icona');
+  const obert = cos.style.display === 'block';
+  cos.style.display = obert ? 'none' : 'block';
+  icona.textContent = obert ? '›' : '‹';
+}
+window.toggleComentarisRuta = toggleComentarisRuta;
+
 function renderComentarisRuta(comentaris) {
   const cont = document.getElementById('ruta-detall-comentaris-llista');
   const escapeHtml = s => String(s ?? '').replace(/[&<>"']/g, c => ({
     '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
   }[c]));
+
+  const titolEl = document.getElementById('comentaris-toggle-titol');
+  titolEl.textContent = comentaris.length
+    ? `💬 Comentaris dels exploradors (${comentaris.length})`
+    : '💬 Comentaris dels exploradors';
 
   if (!comentaris.length) {
     cont.innerHTML = '<p class="comentari-buit">Encara no hi ha cap comentari. Sigues el primer a deixar-ne un!</p>';
@@ -2942,7 +2959,15 @@ header {
 }
 
 /* Mur de comentaris per ruta */
-.ruta-detall-comentaris { margin-bottom: 1.8rem; padding-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.ruta-detall-comentaris { margin-bottom: 1.4rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.comentaris-toggle {
+  width: 100%; display: flex; align-items: center; justify-content: space-between;
+  background: none; border: none; padding: 0.3rem 0; cursor: pointer;
+  font-family: 'Space Grotesk', sans-serif; font-size: 0.82rem; font-weight: 700;
+  color: var(--pedra); text-transform: uppercase; letter-spacing: 0.04em;
+}
+.comentaris-toggle-icona { font-size: 1.1rem; color: var(--or); transition: transform 0.2s; }
+#comentaris-cos { margin-top: 0.8rem; }
 .comentari-item {
   display: flex; gap: 0.7rem; align-items: flex-start;
   background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
@@ -3597,14 +3622,19 @@ header {
     <p class="ruta-detall-properament" id="ruta-detall-properament" style="display:none"></p>
 
     <div class="ruta-detall-comentaris">
-      <p class="seccio-label">Comentaris dels exploradors</p>
-      <div id="ruta-detall-comentaris-llista"></div>
-      <div id="ruta-detall-comentari-form" style="display:none">
-        <textarea id="ruta-detall-comentari-text" class="suggeriment-textarea" maxlength="280"
-          placeholder="Explica com et va anar la ruta..." rows="3"></textarea>
-        <button class="btn-principal" id="ruta-detall-comentari-enviar" onclick="enviarComentariRuta()">Publica el comentari</button>
+      <button class="comentaris-toggle" onclick="toggleComentarisRuta()">
+        <span id="comentaris-toggle-titol">💬 Comentaris dels exploradors</span>
+        <span class="comentaris-toggle-icona" id="comentaris-toggle-icona">›</span>
+      </button>
+      <div id="comentaris-cos" style="display:none">
+        <div id="ruta-detall-comentaris-llista"></div>
+        <div id="ruta-detall-comentari-form" style="display:none">
+          <textarea id="ruta-detall-comentari-text" class="suggeriment-textarea" maxlength="280"
+            placeholder="Explica com et va anar la ruta..." rows="3"></textarea>
+          <button class="btn-principal" id="ruta-detall-comentari-enviar" onclick="enviarComentariRuta()">Publica el comentari</button>
+        </div>
+        <p class="comentari-bloquejat" id="ruta-detall-comentari-bloquejat">🔒 Aconsegueix la insígnia d'aquesta ruta per poder deixar-hi el teu comentari.</p>
       </div>
-      <p class="comentari-bloquejat" id="ruta-detall-comentari-bloquejat">🔒 Aconsegueix la insígnia d'aquesta ruta per poder deixar-hi el teu comentari.</p>
     </div>
 
     <div class="ruta-detall-botons">

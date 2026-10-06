@@ -19,14 +19,20 @@ Hosting via GitHub Actions en fer push a `main`).
   sense pressa — retomar quan es vulgui.
 
 - **Ruta 5 (idea): mitja marató de muntanya pels tres castells** (nom
-  provisional "Castle Race" o similar, a concretar). Surt de Fontscaldetes
-  i encadena les ruïnes de tres castells relativament propers: Selmella,
-  Saburella i Vallespinosa. Funcionament IDÈNTIC a la resta de rutes de
-  l'app (autoguiada, QR al punt, insígnia digital, track de Wikiloc) — no
-  és una cursa organitzada amb inscripcions ni cronometratge. La diferència
-  és el públic objectiu: pel seu recorregut/llargada és apta també per a
-  corredors de muntanya i caminadors de marxes de resistència, no només
-  excursionisme tranquil com la resta.
+  provisional "Castle Race" o similar, a concretar). Comença i acaba a
+  Fontscaldetes (poble abandonat), baixa fins al Torrent de Rupit (indret
+  poc conegut) i d'allà enllaça els tres castells: Selmella, Saburella i
+  Vallespinosa (aquest últim al bonic poble homònim). Funcionament IDÈNTIC
+  a la resta de rutes de l'app (autoguiada, QR al punt, insígnia digital,
+  track de Wikiloc) — no és una cursa organitzada amb inscripcions ni
+  cronometratge. La diferència és el públic objectiu: pel seu recorregut/
+  llargada és apta també per a corredors de muntanya i caminadors de
+  marxes de resistència, no només excursionisme tranquil com la resta.
+  Detall pendent de decidir: hi ha un tram d'1-2 km de pista rural
+  asfaltada (dins d'un entorn bonic, no carretera amb trànsit) — valorat
+  com a acceptable per no ser llarg ni perillós, però queda per decidir
+  si es busca variant per corriol o simplement s'assumeix i es descriu
+  tal qual a la ruta.
   ⚠️ Pendent de verificar: no està confirmat que els tres castells siguin
   tots d'època de la Reconquesta — Vallespinosa i Selmella sí que hi
   encaixen (segles XI-XII, repoblament de la Conca de Barberà), però

@@ -18,15 +18,25 @@ Hosting via GitHub Actions en fer push a `main`).
   Seka, Barretet i Cogulló (ja es té el de la gimcana). Decidit a mitges,
   sense pressa — retomar quan es vulgui.
 
-- **Ruta 5 (idea): mitja marató de muntanya — "Castells de la Reconquesta"**
-  (nom provisional). Surt de Fontscaldetes i encadena les ruïnes de tres
-  castells relativament propers: Selmella, Saburella i Vallespinosa.
-  Concepte: relacionar-ho temàticament amb els castells/torres de la
-  Reconquesta, pensat per atraure corredors de muntanya i caminadors de
-  marxes de resistència (no excursionisme tranquil com la resta de rutes —
-  públic més esportiu). Track de referència (Suunto Route Planner):
+- **Ruta 5 (idea): mitja marató de muntanya pels tres castells** (nom
+  provisional "Castle Race" o similar, a concretar). Surt de Fontscaldetes
+  i encadena les ruïnes de tres castells relativament propers: Selmella,
+  Saburella i Vallespinosa. Funcionament IDÈNTIC a la resta de rutes de
+  l'app (autoguiada, QR al punt, insígnia digital, track de Wikiloc) — no
+  és una cursa organitzada amb inscripcions ni cronometratge. La diferència
+  és el públic objectiu: pel seu recorregut/llargada és apta també per a
+  corredors de muntanya i caminadors de marxes de resistència, no només
+  excursionisme tranquil com la resta.
+  ⚠️ Pendent de verificar: no està confirmat que els tres castells siguin
+  tots d'època de la Reconquesta — Vallespinosa i Selmella sí que hi
+  encaixen (segles XI-XII, repoblament de la Conca de Barberà), però
+  Saburella és dubtós. Per això es descarta fer-ne una afirmació històrica
+  concreta al nom/marca; un nom genèric tipus "Castle Race" evita haver
+  de confirmar-ho (el reclam és el repte esportiu, no la datació exacta).
+  Track de referència (Suunto Route Planner):
   https://routeplanner.suunto.com/?route=mitja-marat-de-muntanya-castle-race-1791309317655&style=satellite&heatmap=running
   Encara sense desenvolupar — falta decidir nom definitiu, aconseguir el
-  GPX exportat, redactar la història/context de cada castell, i veure com
-  encaixa amb el format de medalles/insígnies actual (potser calgui una
-  insígnia pròpia per castell, a l'estil Ruta 4).
+  GPX exportat, redactar la història/context de cada castell (amb les
+  dades verificades), i veure com encaixa amb el format de medalles/
+  insígnies actual (potser calgui una insígnia pròpia per castell, a
+  l'estil Ruta 4).

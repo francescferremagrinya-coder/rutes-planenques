@@ -3035,7 +3035,7 @@ header {
 }
 .icona-btn-simbol svg { display: block; }
 .icona-btn-etiqueta { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.02em; }
-.icona-wikiloc { background: linear-gradient(160deg, rgba(255,107,0,0.2), rgba(255,107,0,0.05)); border-color: rgba(255,107,0,0.45); color: #FF8A3D; }
+.icona-wikiloc { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.14); color: var(--crema); }
 .icona-360 { background: linear-gradient(160deg, rgba(123,181,200,0.2), rgba(123,181,200,0.05)); border-color: rgba(123,181,200,0.45); color: var(--cel); }
 .icona-avis { background: linear-gradient(160deg, rgba(192,82,74,0.22), rgba(192,82,74,0.05)); border-color: rgba(192,82,74,0.45); color: #F29189; }
 .icona-info { background: linear-gradient(160deg, rgba(212,168,67,0.22), rgba(212,168,67,0.05)); border-color: rgba(212,168,67,0.45); color: var(--or); }
@@ -3780,7 +3780,14 @@ header {
     <div class="ruta-detall-icones">
       <a class="icona-btn icona-wikiloc" id="ruta-detall-wikiloc" href="#" target="_blank" rel="noopener" style="display:none">
         <span class="icona-btn-simbol">
-          <svg viewBox="0 0 24 24" width="24" height="24"><rect width="24" height="24" rx="6" fill="#FF6B00"/><path d="M4 17 L8 9 L11 14 L14 7 L17 13 L20 8" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <svg viewBox="0 0 24 24" width="24" height="24">
+            <defs><clipPath id="wikiloc-clip"><circle cx="12" cy="12" r="12"/></clipPath></defs>
+            <g clip-path="url(#wikiloc-clip)">
+              <rect width="24" height="24" fill="#5A9C3F"/>
+              <path d="M16,-2 C4,7 22,12 10,26" fill="none" stroke="white" stroke-width="8" stroke-linecap="round"/>
+              <path d="M16,-2 C4,7 22,12 10,26" fill="none" stroke="#F9A826" stroke-width="6" stroke-linecap="round"/>
+            </g>
+          </svg>
         </span>
         <span class="icona-btn-etiqueta">Wikiloc</span>
       </a>

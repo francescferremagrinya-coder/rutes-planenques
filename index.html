@@ -3003,52 +3003,58 @@ header {
 .ruta-detall-rank {
   display: none; align-items: center; gap: 0.3rem;
   font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em;
-  padding: 0.3rem 0.7rem; border-radius: 20px; margin-bottom: 0.9rem;
+  padding: 0.3rem 0.7rem; border-radius: 4px; margin-bottom: 0.9rem;
 }
 .ruta-detall-rank.facil { background: rgba(61,138,87,0.18); border: 1px solid rgba(61,138,87,0.5); color: #7FD99A; }
 .ruta-detall-rank.moderada { background: rgba(212,168,67,0.18); border: 1px solid rgba(212,168,67,0.5); color: var(--or); }
 .ruta-detall-rank.exigent { background: rgba(192,82,74,0.18); border: 1px solid rgba(192,82,74,0.5); color: #F29189; }
+/* Estadístiques i icones com una sola franja integrada a la fitxa,
+   amb separadors fins enlloc de targetes/píndoles flotants independents */
 .ruta-detall-stats {
-  display: flex; gap: 0.5rem; margin-bottom: 1.1rem;
+  display: flex; margin-bottom: 0.9rem; border-radius: 6px;
+  border: 1px solid rgba(212,168,67,0.22);
+  background: rgba(212,168,67,0.04);
 }
 .ruta-detall-stats .stat-chip {
-  flex: 1; text-align: center; border-radius: 14px;
-  background: linear-gradient(160deg, rgba(212,168,67,0.14), rgba(212,168,67,0.04));
-  border: 1px solid rgba(212,168,67,0.3);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 12px rgba(0,0,0,0.15);
-  padding: 0.7rem 0.4rem;
+  flex: 1; text-align: center; padding: 0.65rem 0.4rem;
+  border-right: 1px solid rgba(212,168,67,0.18);
 }
-.ruta-detall-stats .stat-chip-icona { display: block; font-size: 1.1rem; margin-bottom: 0.1rem; }
+.ruta-detall-stats .stat-chip:last-child { border-right: none; }
+.ruta-detall-stats .stat-chip-icona { display: block; font-size: 1rem; margin-bottom: 0.1rem; opacity: 0.85; }
 .ruta-detall-stats .stat-chip-valor {
   display: block; font-family: 'Fraunces', serif; font-weight: 700;
   font-size: 1.05rem; color: var(--or); line-height: 1.2;
 }
 .ruta-detall-stats .stat-chip-etiqueta {
-  display: block; font-size: 0.62rem; color: var(--pedra);
+  display: block; font-size: 0.6rem; color: var(--pedra);
   letter-spacing: 0.05em; margin-top: 0.15rem;
 }
-.ruta-detall-icones { display: flex; gap: 0.6rem; margin-bottom: 1rem; flex-wrap: wrap; }
-.icona-btn {
-  flex: 1; min-width: 72px; flex-direction: column; gap: 0.25rem;
-  display: flex; align-items: center; justify-content: center;
-  text-decoration: none; cursor: pointer; border-radius: 14px;
-  padding: 0.6rem 0.4rem; font-family: inherit;
-  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12);
-  color: var(--crema);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
-  transition: transform 0.12s, box-shadow 0.12s;
+.ruta-detall-icones {
+  display: flex; margin-bottom: 1.1rem; border-radius: 6px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.02);
 }
-.icona-btn:active { transform: scale(0.93); }
+.icona-btn {
+  flex: 1; flex-direction: column; gap: 0.25rem;
+  display: flex; align-items: center; justify-content: center;
+  text-decoration: none; cursor: pointer;
+  padding: 0.6rem 0.3rem; font-family: inherit;
+  background: none; border: none; border-right: 1px solid rgba(255,255,255,0.1);
+  color: var(--crema);
+  transition: background 0.12s;
+}
+.icona-btn:last-child { border-right: none; }
+.icona-btn:active { background: rgba(255,255,255,0.06); }
 .icona-btn-simbol {
   display: flex; align-items: center; justify-content: center;
   filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3));
 }
 .icona-btn-simbol svg { display: block; }
 .icona-btn-etiqueta { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.02em; }
-.icona-wikiloc { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.14); color: var(--crema); }
-.icona-360 { background: linear-gradient(160deg, rgba(123,181,200,0.2), rgba(123,181,200,0.05)); border-color: rgba(123,181,200,0.45); color: var(--cel); }
-.icona-avis { background: linear-gradient(160deg, rgba(192,82,74,0.22), rgba(192,82,74,0.05)); border-color: rgba(192,82,74,0.45); color: #F29189; }
-.icona-info { background: linear-gradient(160deg, rgba(212,168,67,0.22), rgba(212,168,67,0.05)); border-color: rgba(212,168,67,0.45); color: var(--or); }
+.icona-wikiloc { color: var(--crema); }
+.icona-360 { color: var(--cel); }
+.icona-avis { color: #F29189; }
+.icona-info { color: var(--or); }
 .ruta-detall-avis {
   background: rgba(192,82,74,0.15);
   border: 1px solid rgba(192,82,74,0.5);

@@ -331,6 +331,7 @@ const RUTES_INFO = {
   moro: {
     titol: "La Cova del Moro",
     subtitol: "Un racó llegendari sota el Replà",
+    intro: "Una cova amagada que molts han buscat i pocs han trobat. T'atreveixes a seguir-ne el rastre?",
     dificultat: 'moderada',
     stats: [
       { valor: '6,7 km', etiqueta: 'DISTÀNCIA' },
@@ -374,6 +375,7 @@ const RUTES_INFO = {
   pinyaseka: {
     titol: "Sender Pinya Seka",
     subtitol: "Crestejant entre l'Alt Camp i la Conca",
+    intro: "Una carena oberta a cop de constància, amb vistes que paguen cada pas del camí.",
     dificultat: 'moderada',
     stats: [
       { valor: '10,00 km', etiqueta: 'DISTÀNCIA' },
@@ -408,6 +410,7 @@ const RUTES_INFO = {
   miqueletsBarretet: {
     titol: "Cova dels Miquelets i cresta del Barretet",
     subtitol: "Història i grimpada al peu del Coll de Cabra",
+    intro: "Història de resistència sota terra i una cresta aèria que posa a prova els valents.",
     dificultat: 'exigent',
     stats: [
       { valor: '7,3 km', etiqueta: 'DISTÀNCIA' },
@@ -446,6 +449,7 @@ const RUTES_INFO = {
   cogullo: {
     titol: "Muntet del Blat, Carrer de Cavallers i el Cogulló",
     subtitol: "Una ruta aventurera entre carenes i barrancs",
+    intro: "Carenes solitàries, un avenc de pel·lícula i les millors vistes del territori t'esperen.",
     actiu: true,
     dificultat: 'exigent',
     stats: [
@@ -492,6 +496,7 @@ const RUTES_INFO = {
   capona: {
     titol: "La Ruta dels Capons",
     subtitol: "Una gimcana familiar entre les barraques de pedra seca",
+    intro: "Una família de pedra escampada pel territori espera que la retrobis, Capó a Capó.",
     stats: [
       { valor: 'Curta i plana', etiqueta: 'RECORREGUT' },
       { valor: 'Totes les edats', etiqueta: 'PER A QUI' }
@@ -523,10 +528,33 @@ function obrirRutaDetall(clau) {
   document.getElementById('ruta-detall-hero').style.backgroundImage = `url('${r.imatge}')`;
   document.getElementById('ruta-detall-titol').textContent = r.titol;
   document.getElementById('ruta-detall-subtitol').textContent = r.subtitol;
+  const introEl = document.getElementById('ruta-detall-intro');
+  introEl.textContent = r.intro || '';
+  introEl.style.display = r.intro ? 'block' : 'none';
 
+  const DIFICULTAT_INFO = {
+    facil: { icona: '🟢', etiqueta: 'FÀCIL' },
+    moderada: { icona: '🟡', etiqueta: 'MODERADA' },
+    exigent: { icona: '🔴', etiqueta: 'EXIGENT' }
+  };
+  const rankEl = document.getElementById('ruta-detall-rank');
+  const dif = DIFICULTAT_INFO[r.dificultat];
+  if (dif) {
+    rankEl.className = `ruta-detall-rank ${r.dificultat}`;
+    rankEl.textContent = `${dif.icona} ${dif.etiqueta}`;
+    rankEl.style.display = 'inline-flex';
+  } else {
+    rankEl.style.display = 'none';
+  }
+
+  const STAT_ICONES = {
+    'DISTÀNCIA': '📏', 'DESNIVELL': '⬆️', 'DURADA': '⏱️',
+    'RECORREGUT': '🚶', 'PER A QUI': '👨‍👩‍👧‍👦'
+  };
   const statsEl = document.getElementById('ruta-detall-stats');
   statsEl.innerHTML = (r.stats || []).map(s => `
     <div class="stat-chip">
+      <span class="stat-chip-icona">${STAT_ICONES[s.etiqueta] || '✦'}</span>
       <span class="stat-chip-valor">${s.valor}</span>
       <span class="stat-chip-etiqueta">${s.etiqueta}</span>
     </div>
@@ -2946,17 +2974,41 @@ header {
   content: ''; position: absolute; inset: 0;
   background: linear-gradient(180deg, rgba(26,46,29,0) 40%, var(--fons) 100%);
 }
-.ruta-detall-cos { padding: 1.5rem 1.3rem 3rem; margin-top: -2.5rem; position: relative; }
-.ruta-detall-titol { font-family: 'Fraunces', serif; font-size: 1.7rem; font-weight: 700; margin-bottom: 0.2rem; }
-.ruta-detall-subtitol { color: var(--pedra); font-style: italic; font-size: 0.9rem; margin-bottom: 1.3rem; }
+.ruta-detall-cos {
+  padding: 1.5rem 1.3rem 3rem; margin-top: -2.5rem; position: relative;
+  background: radial-gradient(ellipse 120% 40% at 50% 0%, rgba(212,168,67,0.1), transparent 70%);
+}
+.ruta-detall-titol {
+  font-family: 'Fraunces', serif; font-size: 1.8rem; font-weight: 700; margin-bottom: 0.2rem;
+  text-shadow: 0 2px 16px rgba(212,168,67,0.25);
+}
+.ruta-detall-subtitol { color: var(--pedra); font-style: italic; font-size: 0.9rem; margin-bottom: 0.7rem; }
+.ruta-detall-intro {
+  font-size: 0.92rem; line-height: 1.6; color: var(--crema);
+  border-left: 3px solid var(--or);
+  background: linear-gradient(90deg, rgba(212,168,67,0.1), transparent 80%);
+  padding: 0.6rem 0 0.6rem 0.9rem; margin-bottom: 1.1rem;
+  display: none;
+}
+.ruta-detall-rank {
+  display: none; align-items: center; gap: 0.3rem;
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em;
+  padding: 0.3rem 0.7rem; border-radius: 20px; margin-bottom: 0.9rem;
+}
+.ruta-detall-rank.facil { background: rgba(61,138,87,0.18); border: 1px solid rgba(61,138,87,0.5); color: #7FD99A; }
+.ruta-detall-rank.moderada { background: rgba(212,168,67,0.18); border: 1px solid rgba(212,168,67,0.5); color: var(--or); }
+.ruta-detall-rank.exigent { background: rgba(192,82,74,0.18); border: 1px solid rgba(192,82,74,0.5); color: #F29189; }
 .ruta-detall-stats {
   display: flex; gap: 0.5rem; margin-bottom: 1.1rem;
 }
 .ruta-detall-stats .stat-chip {
-  flex: 1; text-align: center; border-radius: 12px;
-  background: rgba(212,168,67,0.08); border: 1px solid rgba(212,168,67,0.25);
-  padding: 0.6rem 0.4rem;
+  flex: 1; text-align: center; border-radius: 14px;
+  background: linear-gradient(160deg, rgba(212,168,67,0.14), rgba(212,168,67,0.04));
+  border: 1px solid rgba(212,168,67,0.3);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 12px rgba(0,0,0,0.15);
+  padding: 0.7rem 0.4rem;
 }
+.ruta-detall-stats .stat-chip-icona { display: block; font-size: 1.1rem; margin-bottom: 0.1rem; }
 .ruta-detall-stats .stat-chip-valor {
   display: block; font-family: 'Fraunces', serif; font-weight: 700;
   font-size: 1.05rem; color: var(--or); line-height: 1.2;
@@ -2970,16 +3022,19 @@ header {
   flex: 1; min-width: 72px; flex-direction: column; gap: 0.25rem;
   display: flex; align-items: center; justify-content: center;
   text-decoration: none; cursor: pointer; border-radius: 14px;
-  padding: 0.55rem 0.4rem; font-family: inherit;
+  padding: 0.6rem 0.4rem; font-family: inherit;
   background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12);
   color: var(--crema);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+  transition: transform 0.12s, box-shadow 0.12s;
 }
-.icona-btn-simbol { font-size: 1.2rem; line-height: 1; }
+.icona-btn:active { transform: scale(0.93); }
+.icona-btn-simbol { font-size: 1.25rem; line-height: 1; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3)); }
 .icona-btn-etiqueta { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.02em; }
-.icona-wikiloc { background: rgba(255,107,0,0.12); border-color: rgba(255,107,0,0.4); color: #FF6B00; }
-.icona-360 { background: rgba(123,181,200,0.12); border-color: rgba(123,181,200,0.4); color: var(--cel); }
-.icona-avis { background: rgba(192,82,74,0.12); border-color: rgba(192,82,74,0.4); color: #E08C84; }
-.icona-info { background: rgba(212,168,67,0.12); border-color: rgba(212,168,67,0.4); color: var(--or); }
+.icona-wikiloc { background: linear-gradient(160deg, rgba(255,107,0,0.2), rgba(255,107,0,0.05)); border-color: rgba(255,107,0,0.45); color: #FF8A3D; }
+.icona-360 { background: linear-gradient(160deg, rgba(123,181,200,0.2), rgba(123,181,200,0.05)); border-color: rgba(123,181,200,0.45); color: var(--cel); }
+.icona-avis { background: linear-gradient(160deg, rgba(192,82,74,0.22), rgba(192,82,74,0.05)); border-color: rgba(192,82,74,0.45); color: #F29189; }
+.icona-info { background: linear-gradient(160deg, rgba(212,168,67,0.22), rgba(212,168,67,0.05)); border-color: rgba(212,168,67,0.45); color: var(--or); }
 .ruta-detall-avis {
   background: rgba(192,82,74,0.15);
   border: 1px solid rgba(192,82,74,0.5);
@@ -3005,6 +3060,9 @@ header {
   cursor: not-allowed;
 }
 .ruta-detall-botons { display: flex; flex-direction: column; gap: 0.6rem; margin-bottom: 1.8rem; }
+.ruta-detall-botons #ruta-detall-cta {
+  box-shadow: 0 6px 20px rgba(61,138,87,0.35), inset 0 1px 0 rgba(255,255,255,0.15);
+}
 .ruta-detall-track-avis {
   background: rgba(212,168,67,0.12);
   border: 1px solid rgba(212,168,67,0.4);
@@ -3709,8 +3767,10 @@ header {
   <div class="ruta-detall-cos">
     <h1 class="ruta-detall-titol" id="ruta-detall-titol">—</h1>
     <p class="ruta-detall-subtitol" id="ruta-detall-subtitol"></p>
+    <p class="ruta-detall-intro" id="ruta-detall-intro"></p>
     <p class="ruta-detall-properament" id="ruta-detall-properament" style="display:none"></p>
 
+    <span class="ruta-detall-rank" id="ruta-detall-rank" style="display:none"></span>
     <div class="ruta-detall-stats" id="ruta-detall-stats"></div>
 
     <div class="ruta-detall-icones">

@@ -528,37 +528,6 @@ function obrirRutaDetall(clau) {
   document.getElementById('ruta-detall-hero').style.backgroundImage = `url('${r.imatge}')`;
   document.getElementById('ruta-detall-titol').textContent = r.titol;
   document.getElementById('ruta-detall-subtitol').textContent = r.subtitol;
-  const introEl = document.getElementById('ruta-detall-intro');
-  introEl.textContent = r.intro || '';
-  introEl.style.display = r.intro ? 'block' : 'none';
-
-  const DIFICULTAT_INFO = {
-    facil: { icona: '🟢', etiqueta: 'FÀCIL' },
-    moderada: { icona: '🟡', etiqueta: 'MODERADA' },
-    exigent: { icona: '🔴', etiqueta: 'EXIGENT' }
-  };
-  const rankEl = document.getElementById('ruta-detall-rank');
-  const dif = DIFICULTAT_INFO[r.dificultat];
-  if (dif) {
-    rankEl.className = `ruta-detall-rank ${r.dificultat}`;
-    rankEl.textContent = `${dif.icona} ${dif.etiqueta}`;
-    rankEl.style.display = 'inline-flex';
-  } else {
-    rankEl.style.display = 'none';
-  }
-
-  const STAT_ICONES = {
-    'DISTÀNCIA': '📏', 'DESNIVELL': '⬆️', 'DURADA': '⏱️',
-    'RECORREGUT': '🚶', 'PER A QUI': '👨‍👩‍👧‍👦'
-  };
-  const statsEl = document.getElementById('ruta-detall-stats');
-  statsEl.innerHTML = (r.stats || []).map(s => `
-    <div class="stat-chip">
-      <span class="stat-chip-icona">${STAT_ICONES[s.etiqueta] || '✦'}</span>
-      <span class="stat-chip-valor">${s.valor}</span>
-      <span class="stat-chip-etiqueta">${s.etiqueta}</span>
-    </div>
-  `).join('');
 
   // Avís de seguretat i recomanació de Wikiloc: ara es mostren com a icones
   // compactes que es despleguen en tocar-les, enlloc d'un bloc de text sempre visible
@@ -627,7 +596,14 @@ function obrirRutaDetall(clau) {
     ? `<h3 class="ruta-detall-seccio">${p.slice(3)}</h3>`
     : `<p>${p}</p>`;
 
-  let html = r.paragrafs.map(paraOSeccio).join('');
+  // Es mostra sempre el primer paràgraf com a tast; la resta queda plegat
+  // darrere el botó "Llegeix la història completa"
+  const paragrafsRestants = r.paragrafs.slice();
+  const previewIdx = paragrafsRestants.findIndex(p => !p.startsWith('## '));
+  const textPreview = previewIdx >= 0 ? paragrafsRestants.splice(previewIdx, 1)[0] : '';
+  document.getElementById('ruta-detall-article-preview').innerHTML = textPreview ? `<p>${textPreview}</p>` : '';
+
+  let html = paragrafsRestants.map(paraOSeccio).join('');
   if (r.llegenda?.length) {
     html += '<blockquote>' + r.llegenda.map(p => `<p>${p}</p>`).join('') + '</blockquote>';
   }
@@ -636,7 +612,7 @@ function obrirRutaDetall(clau) {
   }
   document.getElementById('ruta-detall-article').innerHTML = html;
   document.getElementById('ruta-detall-article').style.display = 'none';
-  document.getElementById('article-toggle-icona').textContent = '›';
+  document.getElementById('article-toggle-btn').textContent = '📖 Llegeix la història completa ›';
 
   escoltarComentarisRuta(clau);
 
@@ -659,10 +635,10 @@ window.toggleRutaInfo = toggleRutaInfo;
 
 function toggleArticleRuta() {
   const cos = document.getElementById('ruta-detall-article');
-  const icona = document.getElementById('article-toggle-icona');
+  const btn = document.getElementById('article-toggle-btn');
   const obert = cos.style.display === 'block';
   cos.style.display = obert ? 'none' : 'block';
-  icona.textContent = obert ? '›' : '‹';
+  btn.textContent = obert ? '📖 Llegeix la història completa ›' : '📖 Amaga la història ‹';
 }
 window.toggleArticleRuta = toggleArticleRuta;
 
@@ -2992,69 +2968,29 @@ header {
   font-family: 'Fraunces', serif; font-size: 1.8rem; font-weight: 700; margin-bottom: 0.2rem;
   text-shadow: 0 2px 16px rgba(212,168,67,0.25);
 }
-.ruta-detall-subtitol { color: var(--pedra); font-style: italic; font-size: 0.9rem; margin-bottom: 0.7rem; }
-.ruta-detall-intro {
-  font-size: 0.92rem; line-height: 1.6; color: var(--crema);
-  border-left: 3px solid var(--or);
-  background: linear-gradient(90deg, rgba(212,168,67,0.1), transparent 80%);
-  padding: 0.6rem 0 0.6rem 0.9rem; margin-bottom: 1.1rem;
-  display: none;
-}
-.ruta-detall-rank {
-  display: none; align-items: center; gap: 0.3rem;
-  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.06em;
-  padding: 0.3rem 0.7rem; border-radius: 4px; margin-bottom: 0.9rem;
-}
-.ruta-detall-rank.facil { background: rgba(61,138,87,0.18); border: 1px solid rgba(61,138,87,0.5); color: #7FD99A; }
-.ruta-detall-rank.moderada { background: rgba(212,168,67,0.18); border: 1px solid rgba(212,168,67,0.5); color: var(--or); }
-.ruta-detall-rank.exigent { background: rgba(192,82,74,0.18); border: 1px solid rgba(192,82,74,0.5); color: #F29189; }
-/* Estadístiques i icones com una sola franja integrada a la fitxa,
-   amb separadors fins enlloc de targetes/píndoles flotants independents */
-.ruta-detall-stats {
-  display: flex; margin-bottom: 0.9rem; border-radius: 6px;
-  border: 1px solid rgba(212,168,67,0.22);
-  background: rgba(212,168,67,0.04);
-}
-.ruta-detall-stats .stat-chip {
-  flex: 1; text-align: center; padding: 0.65rem 0.4rem;
-  border-right: 1px solid rgba(212,168,67,0.18);
-}
-.ruta-detall-stats .stat-chip:last-child { border-right: none; }
-.ruta-detall-stats .stat-chip-icona { display: block; font-size: 1rem; margin-bottom: 0.1rem; opacity: 0.85; }
-.ruta-detall-stats .stat-chip-valor {
-  display: block; font-family: 'Fraunces', serif; font-weight: 700;
-  font-size: 1.05rem; color: var(--or); line-height: 1.2;
-}
-.ruta-detall-stats .stat-chip-etiqueta {
-  display: block; font-size: 0.6rem; color: var(--pedra);
-  letter-spacing: 0.05em; margin-top: 0.15rem;
-}
-.ruta-detall-icones {
-  display: flex; margin-bottom: 1.1rem; border-radius: 6px;
-  border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(255,255,255,0.02);
-}
+.ruta-detall-subtitol { color: var(--pedra); font-style: italic; font-size: 0.9rem; margin-bottom: 1.3rem; }
+.ruta-detall-icones { display: flex; gap: 0.6rem; margin-bottom: 1rem; flex-wrap: wrap; }
 .icona-btn {
-  flex: 1; flex-direction: column; gap: 0.25rem;
+  flex: 1; min-width: 72px; flex-direction: column; gap: 0.25rem;
   display: flex; align-items: center; justify-content: center;
-  text-decoration: none; cursor: pointer;
-  padding: 0.6rem 0.3rem; font-family: inherit;
-  background: none; border: none; border-right: 1px solid rgba(255,255,255,0.1);
+  text-decoration: none; cursor: pointer; border-radius: 14px;
+  padding: 0.6rem 0.4rem; font-family: inherit;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12);
   color: var(--crema);
-  transition: background 0.12s;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+  transition: transform 0.12s, box-shadow 0.12s;
 }
-.icona-btn:last-child { border-right: none; }
-.icona-btn:active { background: rgba(255,255,255,0.06); }
+.icona-btn:active { transform: scale(0.93); }
 .icona-btn-simbol {
   display: flex; align-items: center; justify-content: center;
   filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3));
 }
 .icona-btn-simbol svg { display: block; }
 .icona-btn-etiqueta { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.02em; }
-.icona-wikiloc { color: var(--crema); }
-.icona-360 { color: var(--cel); }
-.icona-avis { color: #F29189; }
-.icona-info { color: var(--or); }
+.icona-wikiloc { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.14); color: var(--crema); }
+.icona-360 { background: linear-gradient(160deg, rgba(123,181,200,0.2), rgba(123,181,200,0.05)); border-color: rgba(123,181,200,0.45); color: var(--cel); }
+.icona-avis { background: linear-gradient(160deg, rgba(192,82,74,0.22), rgba(192,82,74,0.05)); border-color: rgba(192,82,74,0.45); color: #F29189; }
+.icona-info { background: linear-gradient(160deg, rgba(212,168,67,0.22), rgba(212,168,67,0.05)); border-color: rgba(212,168,67,0.45); color: var(--or); }
 .ruta-detall-avis {
   background: rgba(192,82,74,0.15);
   border: 1px solid rgba(192,82,74,0.5);
@@ -3787,11 +3723,7 @@ header {
   <div class="ruta-detall-cos">
     <h1 class="ruta-detall-titol" id="ruta-detall-titol">—</h1>
     <p class="ruta-detall-subtitol" id="ruta-detall-subtitol"></p>
-    <p class="ruta-detall-intro" id="ruta-detall-intro"></p>
     <p class="ruta-detall-properament" id="ruta-detall-properament" style="display:none"></p>
-
-    <span class="ruta-detall-rank" id="ruta-detall-rank" style="display:none"></span>
-    <div class="ruta-detall-stats" id="ruta-detall-stats"></div>
 
     <div class="ruta-detall-icones">
       <a class="icona-btn icona-wikiloc" id="ruta-detall-wikiloc" href="#" target="_blank" rel="noopener" style="display:none">
@@ -3836,11 +3768,9 @@ header {
     </div>
 
     <div class="ruta-detall-article-wrap">
-      <button class="comentaris-toggle" onclick="toggleArticleRuta()">
-        <span id="article-toggle-titol">📖 Llegeix la història completa</span>
-        <span class="comentaris-toggle-icona" id="article-toggle-icona">›</span>
-      </button>
+      <div class="ruta-detall-article" id="ruta-detall-article-preview"></div>
       <div class="ruta-detall-article" id="ruta-detall-article" style="display:none"></div>
+      <button class="btn-historia" id="article-toggle-btn" onclick="toggleArticleRuta()">📖 Llegeix la història completa ›</button>
     </div>
 
     <div class="ruta-detall-comentaris">

@@ -33,6 +33,11 @@ Hosting via GitHub Actions en fer push a `main`).
   com a acceptable per no ser llarg ni perillós, però queda per decidir
   si es busca variant per corriol o simplement s'assumeix i es descriu
   tal qual a la ruta.
+  Idea afegida: cronòmetre personal dins l'app per aquesta ruta (inici en
+  escanejar el primer QR o botó "Comença", final en escanejar l'últim/
+  tornar a Fontscaldetes, temps desat a Firestore amb rànquing de millors
+  temps d'aquesta ruta). Deixar clar que és un temps personal auto-
+  cronometrat pel mòbil, no un cronometratge oficial de cursa.
   ⚠️ Pendent de verificar: no està confirmat que els tres castells siguin
   tots d'època de la Reconquesta — Vallespinosa i Selmella sí que hi
   encaixen (segles XI-XII, repoblament de la Conca de Barberà), però

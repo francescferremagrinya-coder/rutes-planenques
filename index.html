@@ -2233,6 +2233,30 @@ async function recalcularPuntuacionsGlobals() {
 }
 window.recalcularPuntuacionsGlobals = recalcularPuntuacionsGlobals;
 
+// Treu els correus de qui té com a mínim una medalla (o un Capó trobat), per
+// poder enviar-los un correu convidant-los a deixar una ressenya. No enviem
+// res des de l'app: només et facilitem la llista perquè la facis servir
+// amb el teu gestor de correu (p. ex. en BCC).
+async function copiaCorreusAmbMedalla() {
+  if (!esAdmin) return;
+  const totsUsuaris = await getDocs(collection(db, 'usuaris'));
+  const correus = [];
+  totsUsuaris.forEach(d => {
+    const u = d.data();
+    const teMedalla = (u.medalles?.length > 0) || (u.caponsTrobats?.length > 0);
+    if (teMedalla && u.email) correus.push(u.email);
+  });
+
+  const text = correus.join(', ');
+  try {
+    await navigator.clipboard.writeText(text);
+    mostrarToast(`✅ ${correus.length} correus copiats al porta-retalls.`);
+  } catch {
+    prompt(`${correus.length} correus (copia'ls manualment):`, text);
+  }
+}
+window.copiaCorreusAmbMedalla = copiaCorreusAmbMedalla;
+
 // Migració única: mou els Capons que algú ja tingués a "medalles" (sistema antic)
 // cap a "caponsTrobats" (ja no compten com a medalla individual ni sumen punts),
 // i atorga la medalla final "Capó Explorador" a qui ja els tingués tots els 8.
@@ -3537,6 +3561,8 @@ header {
       <h3>🔢 Puntuacions</h3>
       <button class="admin-force-btn" onclick="recalcularPuntuacionsGlobals()">Actualitza els punts de TOTHOM als valors actuals</button>
       <button class="admin-force-btn" onclick="migrarCaponsAMedallaFinal()">Migra els Capons antics a la medalla final (executar un sol cop)</button>
+      <h3>📧 Correus</h3>
+      <button class="admin-force-btn" onclick="copiaCorreusAmbMedalla()">Copia els correus de qui té alguna medalla</button>
       <h3>✉️ Suggeriments</h3>
       <div id="admin-suggeriments-llista" class="admin-usuaris-llista"></div>
       <h3>QRs del sistema nou</h3>

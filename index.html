@@ -3029,7 +3029,11 @@ header {
   transition: transform 0.12s, box-shadow 0.12s;
 }
 .icona-btn:active { transform: scale(0.93); }
-.icona-btn-simbol { font-size: 1.25rem; line-height: 1; filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3)); }
+.icona-btn-simbol {
+  display: flex; align-items: center; justify-content: center;
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3));
+}
+.icona-btn-simbol svg { display: block; }
 .icona-btn-etiqueta { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.02em; }
 .icona-wikiloc { background: linear-gradient(160deg, rgba(255,107,0,0.2), rgba(255,107,0,0.05)); border-color: rgba(255,107,0,0.45); color: #FF8A3D; }
 .icona-360 { background: linear-gradient(160deg, rgba(123,181,200,0.2), rgba(123,181,200,0.05)); border-color: rgba(123,181,200,0.45); color: var(--cel); }
@@ -3775,16 +3779,28 @@ header {
 
     <div class="ruta-detall-icones">
       <a class="icona-btn icona-wikiloc" id="ruta-detall-wikiloc" href="#" target="_blank" rel="noopener" style="display:none">
-        <span class="icona-btn-simbol">▶</span><span class="icona-btn-etiqueta">Wikiloc</span>
+        <span class="icona-btn-simbol">
+          <svg viewBox="0 0 24 24" width="24" height="24"><rect width="24" height="24" rx="6" fill="#FF6B00"/><path d="M4 17 L8 9 L11 14 L14 7 L17 13 L20 8" stroke="white" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+        <span class="icona-btn-etiqueta">Wikiloc</span>
       </a>
       <a class="icona-btn icona-360" id="ruta-detall-foto360" href="#" target="_blank" rel="noopener" style="display:none">
-        <span class="icona-btn-simbol">🔭</span><span class="icona-btn-etiqueta">360°</span>
+        <span class="icona-btn-simbol">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7"><ellipse cx="12" cy="12" rx="9.2" ry="4.3"/><circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/><path d="M4.2 14.3a9.2 4.3 0 0 0 15.6 0" stroke-linecap="round"/></svg>
+        </span>
+        <span class="icona-btn-etiqueta">360°</span>
       </a>
       <button class="icona-btn icona-avis" id="ruta-detall-avis-btn" onclick="toggleRutaInfo('ruta-detall-avis')" style="display:none">
-        <span class="icona-btn-simbol">⚠️</span><span class="icona-btn-etiqueta">Avís</span>
+        <span class="icona-btn-simbol">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 3.5 L21.5 20 H2.5 Z"/><line x1="12" y1="9.3" x2="12" y2="14.3" stroke-linecap="round"/><circle cx="12" cy="17" r="0.95" fill="currentColor" stroke="none"/></svg>
+        </span>
+        <span class="icona-btn-etiqueta">Avís</span>
       </button>
       <button class="icona-btn icona-info" id="ruta-detall-info-btn" onclick="toggleRutaInfo('ruta-detall-track-avis')" style="display:none">
-        <span class="icona-btn-simbol">🧭</span><span class="icona-btn-etiqueta">Consell</span>
+        <span class="icona-btn-simbol">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="12" cy="12" r="9"/><path d="M15.3 8.7 L10.6 10.6 L8.7 15.3 L13.4 13.4 Z" fill="currentColor" stroke="none"/></svg>
+        </span>
+        <span class="icona-btn-etiqueta">Consell</span>
       </button>
     </div>
     <p class="ruta-detall-avis" id="ruta-detall-avis" style="display:none"></p>

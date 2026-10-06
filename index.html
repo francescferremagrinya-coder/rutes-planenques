@@ -499,22 +499,29 @@ function obrirRutaDetall(clau) {
   document.getElementById('ruta-detall-hero').style.backgroundImage = `url('${r.imatge}')`;
   document.getElementById('ruta-detall-titol').textContent = r.titol;
   document.getElementById('ruta-detall-subtitol').textContent = r.subtitol;
+  // Avís de seguretat i recomanació de Wikiloc: ara es mostren com a icones
+  // compactes que es despleguen en tocar-les, enlloc d'un bloc de text sempre visible
   const avisEl = document.getElementById('ruta-detall-avis');
+  const avisBtn = document.getElementById('ruta-detall-avis-btn');
+  avisEl.style.display = 'none';
   if (r.avisSeguretat) {
     avisEl.textContent = r.avisSeguretat;
-    avisEl.style.display = 'block';
+    avisBtn.style.display = 'flex';
   } else {
-    avisEl.style.display = 'none';
+    avisBtn.style.display = 'none';
   }
+
   const btnWikiloc = document.getElementById('ruta-detall-wikiloc');
   const trackAvisEl = document.getElementById('ruta-detall-track-avis');
+  const infoBtn = document.getElementById('ruta-detall-info-btn');
+  trackAvisEl.style.display = 'none';
   if (r.wikiloc) {
     btnWikiloc.href = r.wikiloc;
     btnWikiloc.style.display = 'flex';
-    trackAvisEl.style.display = 'block';
+    infoBtn.style.display = 'flex';
   } else {
     btnWikiloc.style.display = 'none';
-    trackAvisEl.style.display = 'none';
+    infoBtn.style.display = 'none';
   }
 
   const btnFoto360 = document.getElementById('ruta-detall-foto360');
@@ -567,6 +574,8 @@ function obrirRutaDetall(clau) {
     html += r.paragrafsFinal.map(p => `<p>${p}</p>`).join('');
   }
   document.getElementById('ruta-detall-article').innerHTML = html;
+  document.getElementById('ruta-detall-article').style.display = 'none';
+  document.getElementById('article-toggle-icona').textContent = '›';
 
   escoltarComentarisRuta(clau);
 
@@ -579,6 +588,22 @@ function tancarRutaDetall() {
   if (comentarisUnsub) { comentarisUnsub(); comentarisUnsub = null; }
   comentarisRutaActual = null;
 }
+
+// Desplegables genèrics de la fitxa de ruta (avís, recomanació de Wikiloc, article)
+function toggleRutaInfo(elId) {
+  const el = document.getElementById(elId);
+  el.style.display = el.style.display === 'block' ? 'none' : 'block';
+}
+window.toggleRutaInfo = toggleRutaInfo;
+
+function toggleArticleRuta() {
+  const cos = document.getElementById('ruta-detall-article');
+  const icona = document.getElementById('article-toggle-icona');
+  const obert = cos.style.display === 'block';
+  cos.style.display = obert ? 'none' : 'block';
+  icona.textContent = obert ? '›' : '‹';
+}
+window.toggleArticleRuta = toggleArticleRuta;
 
 // ════════════════════════════════════════════════════════
 //  MUR DE COMENTARIS PER RUTA — només pot escriure-hi qui ja té
@@ -2891,6 +2916,14 @@ header {
 .ruta-detall-cos { padding: 1.5rem 1.3rem 3rem; margin-top: -2.5rem; position: relative; }
 .ruta-detall-titol { font-family: 'Fraunces', serif; font-size: 1.7rem; font-weight: 700; margin-bottom: 0.2rem; }
 .ruta-detall-subtitol { color: var(--pedra); font-style: italic; font-size: 0.9rem; margin-bottom: 1.3rem; }
+.ruta-detall-icones { display: flex; gap: 0.6rem; margin-bottom: 0.9rem; }
+.icona-btn {
+  width: 44px; height: 44px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; text-decoration: none; cursor: pointer;
+  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15);
+  color: var(--crema); font-family: inherit; padding: 0;
+}
 .ruta-detall-avis {
   background: rgba(192,82,74,0.15);
   border: 1px solid rgba(192,82,74,0.5);
@@ -2924,8 +2957,10 @@ header {
   font-size: 0.8rem;
   line-height: 1.45;
   color: var(--crema);
-  margin: -0.2rem 0 0.2rem;
+  margin: 0 0 1rem;
 }
+.ruta-detall-article-wrap { margin-bottom: 1.4rem; padding-bottom: 1rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
+.ruta-detall-article-wrap .ruta-detall-article { margin-top: 0.8rem; }
 .ruta-detall-nota-qr {
   font-size: 0.75rem; color: var(--pedra); line-height: 1.5;
   text-align: center; padding: 0 0.5rem;
@@ -3618,8 +3653,30 @@ header {
   <div class="ruta-detall-cos">
     <h1 class="ruta-detall-titol" id="ruta-detall-titol">—</h1>
     <p class="ruta-detall-subtitol" id="ruta-detall-subtitol"></p>
-    <p class="ruta-detall-avis" id="ruta-detall-avis" style="display:none"></p>
     <p class="ruta-detall-properament" id="ruta-detall-properament" style="display:none"></p>
+
+    <div class="ruta-detall-icones">
+      <a class="icona-btn" id="ruta-detall-wikiloc" href="#" target="_blank" rel="noopener" title="Obrir a Wikiloc" style="display:none">▶</a>
+      <a class="icona-btn" id="ruta-detall-foto360" href="#" target="_blank" rel="noopener" title="Foto 360°" style="display:none">🔭</a>
+      <button class="icona-btn" id="ruta-detall-avis-btn" onclick="toggleRutaInfo('ruta-detall-avis')" title="Avís de seguretat" style="display:none">⚠️</button>
+      <button class="icona-btn" id="ruta-detall-info-btn" onclick="toggleRutaInfo('ruta-detall-track-avis')" title="Recomanacions" style="display:none">🧭</button>
+    </div>
+    <p class="ruta-detall-avis" id="ruta-detall-avis" style="display:none"></p>
+    <p class="ruta-detall-track-avis" id="ruta-detall-track-avis" style="display:none">🧭 Recomanem seguir el track de Wikiloc (obre'l o descarrega'l al teu dispositiu de seguiment) durant tot el recorregut: en alguns trams és fàcil perdre's si no el segueixes.</p>
+
+    <div class="ruta-detall-botons">
+      <button class="btn-principal" id="ruta-detall-cta" onclick="tancarRutaDetall(); iniciarEscaner()">📷 Escanejar QR</button>
+      <p class="ruta-detall-nota-qr" id="ruta-detall-nota-qr">🏅 Quan arribis físicament al lloc, escaneja el QR que hi trobaràs per aconseguir la insígnia d'aquesta ruta.</p>
+      <button class="btn-secundari-gimcana" id="ruta-detall-cartes-btn" onclick="mostrarCartesCapons()" style="display:none">📖 Les meves cartes dels Capons</button>
+    </div>
+
+    <div class="ruta-detall-article-wrap">
+      <button class="comentaris-toggle" onclick="toggleArticleRuta()">
+        <span id="article-toggle-titol">📖 Llegeix la història completa</span>
+        <span class="comentaris-toggle-icona" id="article-toggle-icona">›</span>
+      </button>
+      <div class="ruta-detall-article" id="ruta-detall-article" style="display:none"></div>
+    </div>
 
     <div class="ruta-detall-comentaris">
       <button class="comentaris-toggle" onclick="toggleComentarisRuta()">
@@ -3636,20 +3693,6 @@ header {
         <p class="comentari-bloquejat" id="ruta-detall-comentari-bloquejat">🔒 Aconsegueix la insígnia d'aquesta ruta per poder deixar-hi el teu comentari.</p>
       </div>
     </div>
-
-    <div class="ruta-detall-botons">
-      <a class="btn-wikiloc" id="ruta-detall-wikiloc" href="#" target="_blank" rel="noopener">
-        <span>▶</span> Obrir a Wikiloc
-      </a>
-      <p class="ruta-detall-track-avis" id="ruta-detall-track-avis" style="display:none">🧭 Recomanem seguir el track de Wikiloc (obre'l o descarrega'l al teu dispositiu de seguiment) durant tot el recorregut: en alguns trams és fàcil perdre's si no el segueixes.</p>
-      <a class="btn-foto360" id="ruta-detall-foto360" href="#" target="_blank" rel="noopener" style="display:none">
-        <span>🔭</span> Veure foto 360°
-      </a>
-      <button class="btn-principal" id="ruta-detall-cta" onclick="tancarRutaDetall(); iniciarEscaner()">📷 Escanejar QR</button>
-      <p class="ruta-detall-nota-qr" id="ruta-detall-nota-qr">🏅 Quan arribis físicament al lloc, escaneja el QR que hi trobaràs per aconseguir la insígnia d'aquesta ruta.</p>
-      <button class="btn-secundari-gimcana" id="ruta-detall-cartes-btn" onclick="mostrarCartesCapons()" style="display:none">📖 Les meves cartes dels Capons</button>
-    </div>
-    <div class="ruta-detall-article" id="ruta-detall-article"></div>
   </div>
 </div>
 

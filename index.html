@@ -725,8 +725,10 @@ async function escoltarComentarisRuta(clau) {
     const comentaris = [];
     snap.forEach(d => comentaris.push({ id: d.id, ...d.data() }));
     comentaris.sort((a, b) => {
-      const da = a.creat?.toDate ? a.creat.toDate() : new Date(0);
-      const db_ = b.creat?.toDate ? b.creat.toDate() : new Date(0);
+      // Un comentari acabat d'enviar encara no té "creat" confirmat pel servidor
+      // (serverTimestamp pendent): el tractem com el més recent, no com el més antic
+      const da = a.creat?.toDate ? a.creat.toDate() : new Date();
+      const db_ = b.creat?.toDate ? b.creat.toDate() : new Date();
       return db_ - da;
     });
     renderComentarisRuta(comentaris);
@@ -774,7 +776,9 @@ function renderComentarisRuta(comentaris) {
 async function enviarComentariRuta() {
   const camp = document.getElementById('ruta-detall-comentari-text');
   const text = camp.value.trim();
-  if (!text || !comentarisRutaActual || !usuariActual) return;
+  if (!text) { mostrarToast('Escriu algun text abans de publicar.', true); return; }
+  if (!usuariActual) { mostrarToast('Inicia sessió per poder comentar.', true); return; }
+  if (!comentarisRutaActual) { mostrarToast('Torna a obrir la ruta i prova-ho de nou.', true); return; }
   const btn = document.getElementById('ruta-detall-comentari-enviar');
   btn.disabled = true;
   try {
@@ -788,9 +792,14 @@ async function enviarComentariRuta() {
       creat: serverTimestamp()
     });
     camp.value = '';
+    mostrarToast('✅ Comentari publicat!');
+    // Despleguem la secció perquè es vegi el comentari acabat de publicar
+    document.getElementById('comentaris-cos').style.display = 'block';
+    document.getElementById('comentaris-toggle-icona').textContent = '‹';
     trackEvent('comentari_ruta_enviat', { ruta: comentarisRutaActual });
   } catch (e) {
-    mostrarToast('No s\'ha pogut enviar el comentari. Torna-ho a provar.', true);
+    console.error('Error enviant comentari:', e);
+    mostrarToast('⚠️ No s\'ha pogut enviar: ' + (e?.message || e), true);
   } finally {
     btn.disabled = false;
   }

@@ -332,6 +332,11 @@ const RUTES_INFO = {
     titol: "La Cova del Moro",
     subtitol: "Un racó llegendari sota el Replà",
     dificultat: 'moderada',
+    stats: [
+      { valor: '6,7 km', etiqueta: 'DISTÀNCIA' },
+      { valor: '392 m', etiqueta: 'DESNIVELL' },
+      { valor: '49 min', etiqueta: 'DURADA' }
+    ],
     avisSeguretat: "⚠️ El primer tram té bastant pendent i pot relliscar una mica. Al final cal fer una petita grimpada (amb corda) i passar per un pas estret entre roques per arribar-hi. Porteu frontal per entrar a la cova, i aneu amb compte de no fer-vos cap cop al cap en entrar-hi. Recomanada per a gent acostumada a caminar per entorns de muntanya.",
     imatge: FOTO_COVA_MORO,
     wikiloc: "https://loc.wiki/t/241386671",
@@ -370,6 +375,11 @@ const RUTES_INFO = {
     titol: "Sender Pinya Seka",
     subtitol: "Crestejant entre l'Alt Camp i la Conca",
     dificultat: 'moderada',
+    stats: [
+      { valor: '10,00 km', etiqueta: 'DISTÀNCIA' },
+      { valor: '418 m', etiqueta: 'DESNIVELL' },
+      { valor: '3h 18min', etiqueta: 'DURADA' }
+    ],
     avisSeguretat: "⚠️ Hi ha blocs de pedra i petites grimpades, i alguns trams passen a tocar del caire de la cinglera amb exposició al buit. Cal extremar la precaució en aquests punts. La vegetació és espessa en molts trams: recomanem portar pantalons llargs per protegir-vos de les esgarrinxades.",
     imatge: "rutes/pinya-seka.JPG",
     wikiloc: "https://loc.wiki/t/251784397",
@@ -399,6 +409,11 @@ const RUTES_INFO = {
     titol: "Cova dels Miquelets i cresta del Barretet",
     subtitol: "Història i grimpada al peu del Coll de Cabra",
     dificultat: 'exigent',
+    stats: [
+      { valor: '7,3 km', etiqueta: 'DISTÀNCIA' },
+      { valor: '410 m', etiqueta: 'DESNIVELL' },
+      { valor: '2h 30min', etiqueta: 'DURADA' }
+    ],
     avisSeguretat: "⚠️ Aquesta ruta té dues parts ben diferenciades. Fins a la Cova dels Miquelets el camí és assequible, apte fins i tot per a nens ja una mica més grans (a partir dels 7-8 anys). A partir d'aquí, però, la cresta del Barretet exigeix utilitzar les mans en diversos punts i té trams aeris amb exposició real: NO és apta per a nens, ni per a persones amb vertigen o sense experiència en terrenys de muntanya. Si aneu amb canalla, feu només fins a la cova i torneu.",
     imatge: "rutes/el-barretet.JPG",
     wikiloc: "https://loc.wiki/t/268673465",
@@ -433,6 +448,11 @@ const RUTES_INFO = {
     subtitol: "Una ruta aventurera entre carenes i barrancs",
     actiu: true,
     dificultat: 'exigent',
+    stats: [
+      { valor: '16,15 km', etiqueta: 'DISTÀNCIA' },
+      { valor: '600 m', etiqueta: 'DESNIVELL' },
+      { valor: '2h 47min', etiqueta: 'DURADA' }
+    ],
     avisSeguretat: "⚠️ Ruta exigent físicament, amb trams tècnics (cordes i cadenes) per superar desnivells i una grimpada assistida. Cal bon calçat i estar acostumat a caminar per terreny irregular amb desnivell.",
     imatge: "rutes/roc-cogullo.JPG",
     wikiloc: "https://loc.wiki/t/284201544?wa=sc",
@@ -472,6 +492,10 @@ const RUTES_INFO = {
   capona: {
     titol: "La Ruta dels Capons",
     subtitol: "Una gimcana familiar entre les barraques de pedra seca",
+    stats: [
+      { valor: 'Curta i plana', etiqueta: 'RECORREGUT' },
+      { valor: 'Totes les edats', etiqueta: 'PER A QUI' }
+    ],
     imatge: "medalles/portada-capona.jpg",
     paragrafs: [
       "Fa molts anys, a la masia de la Capona, una de les més importants del Pla, hi vivien uns petits éssers de pedra que ajudaven en tot el que calia. Amb el temps, la masia es va anar abandonant... i els seus habitants, els Capons, es van escampar per totes les barraques de pedra seca que hi ha pels volts, amagant-se dins de les pedres que tant bé coneixien.",
@@ -499,6 +523,15 @@ function obrirRutaDetall(clau) {
   document.getElementById('ruta-detall-hero').style.backgroundImage = `url('${r.imatge}')`;
   document.getElementById('ruta-detall-titol').textContent = r.titol;
   document.getElementById('ruta-detall-subtitol').textContent = r.subtitol;
+
+  const statsEl = document.getElementById('ruta-detall-stats');
+  statsEl.innerHTML = (r.stats || []).map(s => `
+    <div class="stat-chip">
+      <span class="stat-chip-valor">${s.valor}</span>
+      <span class="stat-chip-etiqueta">${s.etiqueta}</span>
+    </div>
+  `).join('');
+
   // Avís de seguretat i recomanació de Wikiloc: ara es mostren com a icones
   // compactes que es despleguen en tocar-les, enlloc d'un bloc de text sempre visible
   const avisEl = document.getElementById('ruta-detall-avis');
@@ -2916,14 +2949,37 @@ header {
 .ruta-detall-cos { padding: 1.5rem 1.3rem 3rem; margin-top: -2.5rem; position: relative; }
 .ruta-detall-titol { font-family: 'Fraunces', serif; font-size: 1.7rem; font-weight: 700; margin-bottom: 0.2rem; }
 .ruta-detall-subtitol { color: var(--pedra); font-style: italic; font-size: 0.9rem; margin-bottom: 1.3rem; }
-.ruta-detall-icones { display: flex; gap: 0.6rem; margin-bottom: 0.9rem; }
-.icona-btn {
-  width: 44px; height: 44px; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 1.1rem; text-decoration: none; cursor: pointer;
-  background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.15);
-  color: var(--crema); font-family: inherit; padding: 0;
+.ruta-detall-stats {
+  display: flex; gap: 0.5rem; margin-bottom: 1.1rem;
 }
+.ruta-detall-stats .stat-chip {
+  flex: 1; text-align: center; border-radius: 12px;
+  background: rgba(212,168,67,0.08); border: 1px solid rgba(212,168,67,0.25);
+  padding: 0.6rem 0.4rem;
+}
+.ruta-detall-stats .stat-chip-valor {
+  display: block; font-family: 'Fraunces', serif; font-weight: 700;
+  font-size: 1.05rem; color: var(--or); line-height: 1.2;
+}
+.ruta-detall-stats .stat-chip-etiqueta {
+  display: block; font-size: 0.62rem; color: var(--pedra);
+  letter-spacing: 0.05em; margin-top: 0.15rem;
+}
+.ruta-detall-icones { display: flex; gap: 0.6rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.icona-btn {
+  flex: 1; min-width: 72px; flex-direction: column; gap: 0.25rem;
+  display: flex; align-items: center; justify-content: center;
+  text-decoration: none; cursor: pointer; border-radius: 14px;
+  padding: 0.55rem 0.4rem; font-family: inherit;
+  background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12);
+  color: var(--crema);
+}
+.icona-btn-simbol { font-size: 1.2rem; line-height: 1; }
+.icona-btn-etiqueta { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.02em; }
+.icona-wikiloc { background: rgba(255,107,0,0.12); border-color: rgba(255,107,0,0.4); color: #FF6B00; }
+.icona-360 { background: rgba(123,181,200,0.12); border-color: rgba(123,181,200,0.4); color: var(--cel); }
+.icona-avis { background: rgba(192,82,74,0.12); border-color: rgba(192,82,74,0.4); color: #E08C84; }
+.icona-info { background: rgba(212,168,67,0.12); border-color: rgba(212,168,67,0.4); color: var(--or); }
 .ruta-detall-avis {
   background: rgba(192,82,74,0.15);
   border: 1px solid rgba(192,82,74,0.5);
@@ -3655,11 +3711,21 @@ header {
     <p class="ruta-detall-subtitol" id="ruta-detall-subtitol"></p>
     <p class="ruta-detall-properament" id="ruta-detall-properament" style="display:none"></p>
 
+    <div class="ruta-detall-stats" id="ruta-detall-stats"></div>
+
     <div class="ruta-detall-icones">
-      <a class="icona-btn" id="ruta-detall-wikiloc" href="#" target="_blank" rel="noopener" title="Obrir a Wikiloc" style="display:none">▶</a>
-      <a class="icona-btn" id="ruta-detall-foto360" href="#" target="_blank" rel="noopener" title="Foto 360°" style="display:none">🔭</a>
-      <button class="icona-btn" id="ruta-detall-avis-btn" onclick="toggleRutaInfo('ruta-detall-avis')" title="Avís de seguretat" style="display:none">⚠️</button>
-      <button class="icona-btn" id="ruta-detall-info-btn" onclick="toggleRutaInfo('ruta-detall-track-avis')" title="Recomanacions" style="display:none">🧭</button>
+      <a class="icona-btn icona-wikiloc" id="ruta-detall-wikiloc" href="#" target="_blank" rel="noopener" style="display:none">
+        <span class="icona-btn-simbol">▶</span><span class="icona-btn-etiqueta">Wikiloc</span>
+      </a>
+      <a class="icona-btn icona-360" id="ruta-detall-foto360" href="#" target="_blank" rel="noopener" style="display:none">
+        <span class="icona-btn-simbol">🔭</span><span class="icona-btn-etiqueta">360°</span>
+      </a>
+      <button class="icona-btn icona-avis" id="ruta-detall-avis-btn" onclick="toggleRutaInfo('ruta-detall-avis')" style="display:none">
+        <span class="icona-btn-simbol">⚠️</span><span class="icona-btn-etiqueta">Avís</span>
+      </button>
+      <button class="icona-btn icona-info" id="ruta-detall-info-btn" onclick="toggleRutaInfo('ruta-detall-track-avis')" style="display:none">
+        <span class="icona-btn-simbol">🧭</span><span class="icona-btn-etiqueta">Consell</span>
+      </button>
     </div>
     <p class="ruta-detall-avis" id="ruta-detall-avis" style="display:none"></p>
     <p class="ruta-detall-track-avis" id="ruta-detall-track-avis" style="display:none">🧭 Recomanem seguir el track de Wikiloc (obre'l o descarrega'l al teu dispositiu de seguiment) durant tot el recorregut: en alguns trams és fàcil perdre's si no el segueixes.</p>

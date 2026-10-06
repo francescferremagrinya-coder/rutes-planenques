@@ -684,6 +684,7 @@ let comentarisRutaActual = null;
 
 async function potComentarRuta(clau) {
   if (!usuariActual) return false;
+  if (esAdmin) return true; // l'admin pot provar el mur de comentaris sense tenir la insígnia
   const ids = RUTA_BALISES[clau];
   if (!ids) return false;
   const snap = await getDoc(doc(db, 'usuaris', usuariActual.uid));

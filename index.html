@@ -618,6 +618,19 @@ async function escoltarComentarisRuta(clau) {
   bloquejatEl.style.display = potComentar ? 'none' : 'block';
   document.getElementById('ruta-detall-comentari-text').value = '';
 
+  // Si ja té la insígnia però encara no ha deixat cap comentari en aquesta ruta,
+  // li ho recordem amb un toast (només un cop, en obrir la fitxa de la ruta)
+  if (potComentar && usuariActual) {
+    try {
+      const propisQ = query(collection(db, 'comentaris'),
+        where('rutaClau', '==', clau), where('uid', '==', usuariActual.uid));
+      const propisSnap = await getDocs(propisQ);
+      if (propisSnap.empty) {
+        mostrarToast('👋 Ja tens la insígnia d\'aquesta ruta! Explica\'ns com et va més avall 👇');
+      }
+    } catch {}
+  }
+
   const q = query(collection(db, 'comentaris'), where('rutaClau', '==', clau));
   comentarisUnsub = onSnapshot(q, (snap) => {
     const comentaris = [];
@@ -2929,7 +2942,7 @@ header {
 }
 
 /* Mur de comentaris per ruta */
-.ruta-detall-comentaris { margin-top: 2.2rem; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 1.5rem; }
+.ruta-detall-comentaris { margin-bottom: 1.8rem; padding-bottom: 1.5rem; border-bottom: 1px solid rgba(255,255,255,0.1); }
 .comentari-item {
   display: flex; gap: 0.7rem; align-items: flex-start;
   background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
@@ -3582,6 +3595,18 @@ header {
     <p class="ruta-detall-subtitol" id="ruta-detall-subtitol"></p>
     <p class="ruta-detall-avis" id="ruta-detall-avis" style="display:none"></p>
     <p class="ruta-detall-properament" id="ruta-detall-properament" style="display:none"></p>
+
+    <div class="ruta-detall-comentaris">
+      <p class="seccio-label">Comentaris dels exploradors</p>
+      <div id="ruta-detall-comentaris-llista"></div>
+      <div id="ruta-detall-comentari-form" style="display:none">
+        <textarea id="ruta-detall-comentari-text" class="suggeriment-textarea" maxlength="280"
+          placeholder="Explica com et va anar la ruta..." rows="3"></textarea>
+        <button class="btn-principal" id="ruta-detall-comentari-enviar" onclick="enviarComentariRuta()">Publica el comentari</button>
+      </div>
+      <p class="comentari-bloquejat" id="ruta-detall-comentari-bloquejat">🔒 Aconsegueix la insígnia d'aquesta ruta per poder deixar-hi el teu comentari.</p>
+    </div>
+
     <div class="ruta-detall-botons">
       <a class="btn-wikiloc" id="ruta-detall-wikiloc" href="#" target="_blank" rel="noopener">
         <span>▶</span> Obrir a Wikiloc
@@ -3595,17 +3620,6 @@ header {
       <button class="btn-secundari-gimcana" id="ruta-detall-cartes-btn" onclick="mostrarCartesCapons()" style="display:none">📖 Les meves cartes dels Capons</button>
     </div>
     <div class="ruta-detall-article" id="ruta-detall-article"></div>
-
-    <div class="ruta-detall-comentaris">
-      <p class="seccio-label">Comentaris dels exploradors</p>
-      <div id="ruta-detall-comentaris-llista"></div>
-      <div id="ruta-detall-comentari-form" style="display:none">
-        <textarea id="ruta-detall-comentari-text" class="suggeriment-textarea" maxlength="280"
-          placeholder="Explica com et va anar la ruta..." rows="3"></textarea>
-        <button class="btn-principal" id="ruta-detall-comentari-enviar" onclick="enviarComentariRuta()">Publica el comentari</button>
-      </div>
-      <p class="comentari-bloquejat" id="ruta-detall-comentari-bloquejat">🔒 Aconsegueix la insígnia d'aquesta ruta per poder deixar-hi el teu comentari.</p>
-    </div>
   </div>
 </div>
 

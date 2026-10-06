@@ -1145,7 +1145,7 @@ function renderPerfil(dades) {
     if (ob) {
       // Medalla obtinguda — mostra imatge real (personalitzada amb el nom) o emoji de fallback
       div.innerHTML = `
-        <div class="medalla-img-wrap">
+        <div class="medalla-img-wrap" onclick="obrirMedallaGran('${b.id}')">
           ${b.imatge
             ? `<img class="medalla-img" id="medalla-img-${b.id}" src="${b.imatge}" alt="${b.nom}"
                onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
@@ -2455,6 +2455,25 @@ async function compartirMedalla(id) {
   else mostrarToast('El teu navegador no permet compartir directament.', true);
 }
 
+// Mostra la medalla en gran en tocar-la a la graella (reaprofita la imatge
+// ja personalitzada amb el nom, si s'ha pogut generar)
+function obrirMedallaGran(id) {
+  const balisa = BALISES.find(b => b.id === id);
+  if (!balisa) return;
+  const imgOrigen = document.getElementById('medalla-img-' + id);
+  const src = imgOrigen?.src || balisa.imatge;
+  if (!src) return;
+  document.getElementById('medalla-gran-img').src = src;
+  document.getElementById('medalla-gran-nom').textContent = balisa.nom;
+  document.getElementById('modal-medalla-gran').classList.add('visible');
+}
+window.obrirMedallaGran = obrirMedallaGran;
+
+function tancarMedallaGran() {
+  document.getElementById('modal-medalla-gran').classList.remove('visible');
+}
+window.tancarMedallaGran = tancarMedallaGran;
+
 let toastTimer;
 function mostrarToast(msg, error = false) {
   const el = document.getElementById('toast');
@@ -3226,6 +3245,26 @@ header {
   padding: 1.5rem;
 }
 #modal-celebracio.visible { display: flex; }
+
+/* Medalla en gran (en tocar-la a la graella) */
+#modal-medalla-gran {
+  display: none;
+  position: fixed; inset: 0; z-index: 205;
+  background: rgba(10,16,10,0.92);
+  flex-direction: column; align-items: center; justify-content: center;
+  gap: 1rem; padding: 2rem;
+}
+#modal-medalla-gran.visible { display: flex; }
+#modal-medalla-gran img {
+  max-width: min(90vw, 420px); max-height: 70vh;
+  object-fit: contain;
+  filter: drop-shadow(0 12px 40px rgba(0,0,0,0.5));
+}
+#modal-medalla-gran p {
+  font-family: 'Fraunces', serif; font-weight: 700; font-size: 1.1rem;
+  color: var(--crema); text-align: center;
+}
+.medalla-img-wrap:not(.bloq) { cursor: pointer; }
 .celebracio-card {
   max-width: 340px; width: 100%;
   background: linear-gradient(180deg, #24391f 0%, #16240f 100%);
@@ -3831,6 +3870,12 @@ header {
     <p class="celebracio-conte" id="celebracio-conte" style="display:none"></p>
     <button class="btn-principal" id="celebracio-btn" onclick="tancarCelebracio()">Genial!</button>
   </div>
+</div>
+
+<!-- ══ MEDALLA EN GRAN (en tocar-la a la graella) ══ -->
+<div id="modal-medalla-gran" onclick="tancarMedallaGran()">
+  <img id="medalla-gran-img" src="" alt="">
+  <p id="medalla-gran-nom"></p>
 </div>
 
 </body>

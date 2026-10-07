@@ -309,7 +309,8 @@ const BALISES = [
     categoria: "Gimcana · Ruta dels Capons",
     descripcio: "La medalla que reuneix tota la família Capona, aconseguida en trobar els 8 Capons",
     imatge: "medalles/capo-explorador.jpg",
-    nomCaixa: { xPct: 0.515, yPct: 0.86, mida: 0.042, color: '#3D2417' }
+    nomCaixa: { xPct: 0.515, yPct: 0.86, mida: 0.042, color: '#3D2417' },
+    oculta: true // de moment no es mostra a la graella de medalles (ni bloquejada)
   }
 ];
 
@@ -1121,7 +1122,7 @@ async function carregarPerfil() {
 function renderPerfil(dades) {
   const medalles = dades.medalles || [];
   const punts = dades.punts || 0;
-  const balisesVisibles = BALISES.filter(b => !b.gimcana);
+  const balisesVisibles = BALISES.filter(b => !b.gimcana && (!b.oculta || esAdmin));
   const total = balisesVisibles.length;
   const obtingudes = medalles.filter(m => balisesVisibles.some(b => b.id === m.id)).length;
 
@@ -1295,8 +1296,8 @@ function escoltarRanking() {
     let pos = 1;
     snap.forEach(d => {
       const u = d.data();
-      const idsGimcana = BALISES.filter(b => b.gimcana).map(b => b.id);
-      const medalles = (u.medalles || []).filter(m => !idsGimcana.includes(m.id)).length;
+      const idsNoComptables = BALISES.filter(b => b.gimcana || b.oculta).map(b => b.id);
+      const medalles = (u.medalles || []).filter(m => !idsNoComptables.includes(m.id)).length;
       if (medalles === 0) return; // no mostris usuaris sense cap medalla
       if (ADMINS.includes(d.id) || RANKING_EXCLOSOS_EMAIL.includes(u.email)) return;
       const div = document.createElement('div');

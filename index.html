@@ -2339,6 +2339,44 @@ async function copiaCorreusAmbMedalla() {
 }
 window.copiaCorreusAmbMedalla = copiaCorreusAmbMedalla;
 
+// Atorga una medalla (o Capó) a mà a algú pel seu correu — per a quan hi ha
+// anat de debò però l'escaneig no s'ha pogut validar (p. ex. sense cobertura).
+async function atorgaMedallaManual() {
+  if (!esAdmin) return;
+  const email = document.getElementById('admin-medalla-email').value.trim();
+  const balisaId = document.getElementById('admin-medalla-balisa').value;
+  const balisa = BALISES.find(b => b.id === balisaId);
+  if (!email || !balisa) { mostrarToast('Posa un correu vàlid.', true); return; }
+
+  const q = query(collection(db, 'usuaris'), where('email', '==', email));
+  const resultat = await getDocs(q);
+  if (resultat.empty) { mostrarToast(`No trobo cap usuari amb el correu ${email}.`, true); return; }
+
+  const docUsuari = resultat.docs[0];
+  const dades = docUsuari.data();
+  const ref = doc(db, 'usuaris', docUsuari.id);
+
+  if (balisa.gimcana) {
+    if ((dades.caponsTrobats || []).find(m => m.id === balisa.id)) {
+      mostrarToast(`${dades.nom || email} ja tenia la carta de ${balisa.nom}.`); return;
+    }
+    await updateDoc(ref, {
+      caponsTrobats: arrayUnion({ id: balisa.id, nom: balisa.nom, data: new Date() })
+    });
+  } else {
+    if ((dades.medalles || []).find(m => m.id === balisa.id)) {
+      mostrarToast(`${dades.nom || email} ja tenia la medalla de ${balisa.nom}.`); return;
+    }
+    await updateDoc(ref, {
+      medalles: arrayUnion({ id: balisa.id, nom: balisa.nom, data: new Date(), punts: balisa.punts }),
+      punts: (dades.punts || 0) + balisa.punts
+    });
+  }
+  mostrarToast(`✅ Medalla de ${balisa.nom} atorgada a ${dades.nom || email}.`);
+  document.getElementById('admin-medalla-email').value = '';
+}
+window.atorgaMedallaManual = atorgaMedallaManual;
+
 // Migració única: mou els Capons que algú ja tingués a "medalles" (sistema antic)
 // cap a "caponsTrobats" (ja no compten com a medalla individual ni sumen punts),
 // i atorga la medalla final "Capó Explorador" a qui ja els tingués tots els 8.
@@ -2395,6 +2433,13 @@ async function mostrarAdmin() {
   forceContainer.innerHTML = gimcanaCapons().map(c => `
     <button class="admin-force-btn" onclick="forcarPistaGimcana('${c.id}')">${c.icon} ${c.nom}</button>
   `).join('');
+
+  // Llista de balises per a l'atorgament manual de medalles
+  const selectorBalisa = document.getElementById('admin-medalla-balisa');
+  if (selectorBalisa && !selectorBalisa.dataset.omplert) {
+    selectorBalisa.innerHTML = BALISES.map(b => `<option value="${b.id}">${b.nom}</option>`).join('');
+    selectorBalisa.dataset.omplert = '1';
+  }
 
   // Genera QRs per les balises noves
   const container = document.getElementById('admin-qrs');
@@ -3682,6 +3727,11 @@ header {
       <h3>🔢 Puntuacions</h3>
       <button class="admin-force-btn" onclick="recalcularPuntuacionsGlobals()">Actualitza els punts de TOTHOM als valors actuals</button>
       <button class="admin-force-btn" onclick="migrarCaponsAMedallaFinal()">Migra els Capons antics a la medalla final (executar un sol cop)</button>
+      <h3>🎁 Atorgar medalla manualment</h3>
+      <p class="admin-usuari-medalles">Per quan algú hi ha anat de debò però l'escaneig no s'ha pogut validar (p. ex. sense cobertura).</p>
+      <input type="email" id="admin-medalla-email" class="suggeriment-textarea" placeholder="Correu de la persona" style="margin-bottom:0.6rem">
+      <select id="admin-medalla-balisa" class="suggeriment-textarea" style="margin-bottom:0.6rem"></select>
+      <button class="admin-force-btn" onclick="atorgaMedallaManual()">Atorga-la</button>
       <h3>📧 Correus</h3>
       <button class="admin-force-btn" onclick="copiaCorreusAmbMedalla()">Copia els correus de qui té alguna medalla</button>
       <h3>✉️ Suggeriments</h3>

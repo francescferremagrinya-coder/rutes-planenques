@@ -1333,9 +1333,12 @@ function carregarHtml5Qrcode() {
   });
 }
 
-async function iniciarEscaner() {
+async function iniciarEscaner(esGimcana) {
   mostrarPantalla('escaner');
   trackEvent('escaner_obert');
+
+  const btnCodiManual = document.getElementById('btn-codi-manual-escaner');
+  if (btnCodiManual) btnCodiManual.style.display = esGimcana ? '' : 'none';
 
   try {
     const Html5Qrcode = await carregarHtml5Qrcode();
@@ -3829,7 +3832,7 @@ header {
 <!-- ══ PANTALLA ESCÀNER ══ -->
 <div id="pantalla-escaner">
   <div id="qr-reader"></div>
-  <button class="gimcana-calibra-btn" style="color:var(--crema)" onclick="obrirCodiManual()">⌨️ La càmera no funciona? Introdueix el codi</button>
+  <button class="gimcana-calibra-btn" id="btn-codi-manual-escaner" style="color:var(--crema);display:none" onclick="obrirCodiManual()">⌨️ La càmera no funciona? Introdueix el codi</button>
   <button class="btn-tancar-scan" onclick="tancarEscaner()">✕ Cancel·lar</button>
 </div>
 
@@ -3884,7 +3887,7 @@ header {
     <div id="gimcana-pista-card" style="display:none">
       <p class="gimcana-pista-titol">🔍 Ets a prop!</p>
       <p class="gimcana-pista-text" id="gimcana-pista-text"></p>
-      <button class="btn-principal" onclick="tancarGimcana(); iniciarEscaner()">📷 Escanejar el Capó</button>
+      <button class="btn-principal" onclick="tancarGimcana(); iniciarEscaner(true)">📷 Escanejar el Capó</button>
     </div>
   </div>
 

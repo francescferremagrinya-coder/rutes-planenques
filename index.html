@@ -1427,10 +1427,12 @@ function tancarEscaner() {
 async function processarQR(text) {
   mostrarToast('🔍 Processant QR...');
 
-  // 1. Detectar si és QR VELL (URL del forms)
+  // 1. Detectar si és QR VELL (URL del forms). Comprovem GPS igual que als QR
+  // nous: la URL és pública i es podria compartir/fotografiar, així que sense
+  // aquesta comprovació qualsevol podria "completar" la balisa sense haver-hi anat.
   const balisaVella = BALISES.find(b => b.url_forms && text.startsWith(b.url_forms));
   if (balisaVella) {
-    await validarIAtorgarMedalla(balisaVella, false);
+    await validarIAtorgarMedalla(balisaVella, true);
     return;
   }
 

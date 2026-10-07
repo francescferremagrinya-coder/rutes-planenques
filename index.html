@@ -838,6 +838,7 @@ onAuthStateChanged(auth, async (user) => {
     inicialitzarPuntsNivells();
     carregarPerfil();
     escoltarRanking();
+    processarCoaQRPendent();
   } else {
     mostrarLoginSenseSessio();
   }
@@ -1460,18 +1461,46 @@ async function processarQR(text) {
   mostrarToast('QR no reconegut al sistema.', true);
 }
 
-async function validarIAtorgarMedalla(balisa, verificarGPS) {
+// Si no hi ha connexió (freqüent en zones de muntanya), capturem el GPS ara
+// mateix (funciona sense dades mòbils) i deixem l'escaneig a la cua local per
+// completar-lo sol quan torni la cobertura — sense que calgui tornar al lloc.
+async function validarIAtorgarMedalla(balisa, verificarGPS, coordsPrecaptades) {
+  if (!navigator.onLine) {
+    let coords = coordsPrecaptades;
+    if (verificarGPS && !coords && !esAdmin) {
+      try {
+        const pos = await obtenirGPS();
+        coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
+      } catch {
+        mostrarToast('Cal permetre l\'accés al GPS per validar.', true);
+        return false;
+      }
+    }
+    afegeixACoaQR({ balisaId: balisa.id, verificarGPS, coords });
+    mostrarToast('📡 Sense connexió. Ho hem desat: es completarà sol quan tornis a tenir cobertura.');
+    return false;
+  }
+
   // Comprovar si ja té la medalla (els Capons de la gimcana es guarden a part,
   // a "caponsTrobats", perquè no compten com a medalla fins a trobar-los tots)
   const ref = doc(db, 'usuaris', usuariActual.uid);
-  const snap = await getDoc(ref);
+  let snap;
+  try {
+    snap = await getDoc(ref);
+  } catch (e) {
+    // Semblava que hi havia cobertura però la petició ha fallat (xarxa intermitent):
+    // ho desem igualment enlloc de deixar-ho perdre en silenci
+    afegeixACoaQR({ balisaId: balisa.id, verificarGPS, coords: coordsPrecaptades });
+    mostrarToast('📡 Sense connexió. Ho hem desat: es completarà sol quan tornis a tenir cobertura.');
+    return false;
+  }
   const dades = snap.data();
   const jaObtinguda = balisa.gimcana
     ? (dades.caponsTrobats || []).find(m => m.id === balisa.id)
     : (dades.medalles || []).find(m => m.id === balisa.id);
   if (jaObtinguda) {
     mostrarToast(balisa.gimcana ? `Ja tens la carta de ${balisa.nom}! 📖` : `Ja tens la medalla de ${balisa.nom}! 🏅`);
-    return;
+    return true;
   }
 
   // A la gimcana dels Capons, el QR només és vàlid si és el Capó que toca ara
@@ -1480,26 +1509,28 @@ async function validarIAtorgarMedalla(balisa, verificarGPS) {
     const proper = await properCapoGimcana();
     if (!proper || proper.id !== balisa.id) {
       mostrarToast('Aquest no és el Capó que estàs buscant ara. Segueix la pista!', true);
-      return;
+      return false;
     }
   }
 
-  // Verificació GPS (per QRs nous) — els admins es poden saltar la comprovació per fer proves
+  // Verificació GPS (per QRs nous) — els admins es poden saltar la comprovació per fer proves.
+  // Si ja teníem coordenades capturades (reintent des de la cua), les reutilitzem
+  // enlloc de tornar a demanar GPS, que podria donar la ubicació actual (p. ex. a casa).
   if (verificarGPS && !esAdmin) {
     mostrarToast('📡 Verificant ubicació GPS...');
     try {
-      const pos = await obtenirGPS();
+      const coords = coordsPrecaptades || (await obtenirGPS()).coords;
       const dist = calcularDistancia(
-        pos.coords.latitude, pos.coords.longitude,
+        coords.latitude, coords.longitude,
         balisa.lat, balisa.lng
       );
       if (dist > balisa.radi) {
         mostrarToast(`⚠️ Ets massa lluny (${Math.round(dist)}m). Has d'estar a ${balisa.radi}m.`, true);
-        return;
+        return false;
       }
     } catch (e) {
       mostrarToast('Cal permetre l\'accés al GPS per validar.', true);
-      return;
+      return false;
     }
   } else if (verificarGPS && esAdmin) {
     mostrarToast('📡 Admin: comprovació GPS saltada.');
@@ -1507,20 +1538,26 @@ async function validarIAtorgarMedalla(balisa, verificarGPS) {
 
   // ✅ Atorgar — els Capons de la gimcana només desbloquegen la seva carta
   // (caponsTrobats, sense punts); la resta de balises atorguen medalla + punts com sempre
-  if (balisa.gimcana) {
-    await updateDoc(ref, {
-      caponsTrobats: arrayUnion({ id: balisa.id, nom: balisa.nom, data: new Date() })
-    });
-  } else {
-    await updateDoc(ref, {
-      medalles: arrayUnion({
-        id: balisa.id,
-        nom: balisa.nom,
-        data: new Date(),
-        punts: balisa.punts
-      }),
-      punts: (dades.punts || 0) + balisa.punts
-    });
+  try {
+    if (balisa.gimcana) {
+      await updateDoc(ref, {
+        caponsTrobats: arrayUnion({ id: balisa.id, nom: balisa.nom, data: new Date() })
+      });
+    } else {
+      await updateDoc(ref, {
+        medalles: arrayUnion({
+          id: balisa.id,
+          nom: balisa.nom,
+          data: new Date(),
+          punts: balisa.punts
+        }),
+        punts: (dades.punts || 0) + balisa.punts
+      });
+    }
+  } catch (e) {
+    afegeixACoaQR({ balisaId: balisa.id, verificarGPS, coords: coordsPrecaptades });
+    mostrarToast('📡 Sense connexió. Ho hem desat: es completarà sol quan tornis a tenir cobertura.');
+    return false;
   }
 
   trackEvent('medalla_aconseguida', { balisa_id: balisa.id, balisa_nom: balisa.nom, punts: balisa.punts });
@@ -1530,7 +1567,50 @@ async function validarIAtorgarMedalla(balisa, verificarGPS) {
   }
 
   mostrarCelebracio(balisa);
+  return true;
 }
+
+// ════════════════════════════════════════════════════════
+//  COA D'ESCANEIGS PENDENTS — si no hi havia connexió al escanejar,
+//  es reintenta sol en recuperar-la (amb el GPS ja capturat al moment,
+//  no el d'ara), sense que l'usuari hagi de fer res ni tornar al lloc
+// ════════════════════════════════════════════════════════
+const COA_QR_KEY = 'rutesplanenques_coa_qr';
+
+function llegeixCoaQR() {
+  try { return JSON.parse(localStorage.getItem(COA_QR_KEY) || '[]'); } catch { return []; }
+}
+function escriuCoaQR(coa) {
+  try { localStorage.setItem(COA_QR_KEY, JSON.stringify(coa)); } catch {}
+}
+function afegeixACoaQR(item) {
+  const coa = llegeixCoaQR();
+  coa.push(item);
+  escriuCoaQR(coa);
+}
+
+let processantCoaQR = false;
+async function processarCoaQRPendent() {
+  if (processantCoaQR || !usuariActual || !navigator.onLine) return;
+  const coa = llegeixCoaQR();
+  if (!coa.length) return;
+  processantCoaQR = true;
+  const restant = [];
+  let validats = 0;
+  for (const item of coa) {
+    const balisa = BALISES.find(b => b.id === item.balisaId);
+    if (!balisa) continue; // balisa ja no existeix, descartem l'intent
+    const ok = await validarIAtorgarMedalla(balisa, item.verificarGPS, item.coords);
+    if (ok) validats++; else restant.push(item);
+  }
+  escriuCoaQR(restant);
+  processantCoaQR = false;
+  if (validats > 0) {
+    mostrarToast(`✅ S'${validats > 1 ? 'han' : 'ha'} validat ${validats} escaneig${validats > 1 ? 's' : ''} que tenies pendent${validats > 1 ? 's' : ''}!`);
+    carregarPerfil();
+  }
+}
+window.addEventListener('online', processarCoaQRPendent);
 
 // Un cop trobats els 8 Capons, atorga la medalla real "Capó Explorador"
 // (aquesta sí que compta com a medalla i suma punts al rànquing)

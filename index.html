@@ -1329,7 +1329,15 @@ async function iniciarEscaner(esGimcana) {
         return { width: mida, height: mida };
       }
     };
+    // html5-qrcode pot disparar aquest callback més d'un cop pel mateix codi
+    // (frames consecutius abans que stop() aturi realment la càmera); sense
+    // aquest guard, dues trucades gairebé simultànies poden fer tots dos la
+    // comprovació de "ja la té" abans que cap hagi escrit a Firestore encara,
+    // i acaben afegint la medalla duplicada.
+    let yaProcessant = false;
     const onLlegit = async (text) => {
+      if (yaProcessant) return;
+      yaProcessant = true;
       await escaner.stop();
       escaner = null;
       mostrarPantalla('joc');
@@ -2444,6 +2452,57 @@ async function recalcularPuntuacionsGlobals() {
   mostrarAdmin();
 }
 window.recalcularPuntuacionsGlobals = recalcularPuntuacionsGlobals;
+
+// Elimina medalles i Capons duplicats (mateix id repetit) que es van poder
+// crear per una lectura doble de l'escàner QR — html5-qrcode podia disparar
+// el callback d'èxit dues vegades pel mateix codi abans que stop() aturés
+// realment la càmera, i les dues trucades gairebé simultànies arribaven a
+// escriure la medalla per duplicat (ja corregit a iniciarEscaner, però cal
+// netejar el que ja hi havia a la base de dades).
+async function netejaMedallesDuplicades() {
+  if (!esAdmin) return;
+  if (!confirm('Això eliminarà medalles i Capons duplicats (per un mateix usuari) i recalcularà els punts de qui en tingui. Vols continuar?')) return;
+
+  const totsUsuaris = await getDocs(collection(db, 'usuaris'));
+  let usuarisNetejats = 0;
+  let entradesEliminades = 0;
+
+  for (const d of totsUsuaris.docs) {
+    const dades = d.data();
+    const medalles = dades.medalles || [];
+    const caponsTrobats = dades.caponsTrobats || [];
+
+    const idsVistos = new Set();
+    const medallesNetes = medalles.filter(m => {
+      if (idsVistos.has(m.id)) return false;
+      idsVistos.add(m.id);
+      return true;
+    });
+
+    const idsCaponsVistos = new Set();
+    const caponsNets = caponsTrobats.filter(c => {
+      if (idsCaponsVistos.has(c.id)) return false;
+      idsCaponsVistos.add(c.id);
+      return true;
+    });
+
+    const eliminades = (medalles.length - medallesNetes.length) + (caponsTrobats.length - caponsNets.length);
+    if (eliminades === 0) continue;
+
+    const nouTotal = medallesNetes.reduce((s, m) => s + (m.punts || 0), 0);
+    await updateDoc(doc(db, 'usuaris', d.id), {
+      medalles: medallesNetes,
+      caponsTrobats: caponsNets,
+      punts: nouTotal
+    });
+    usuarisNetejats++;
+    entradesEliminades += eliminades;
+  }
+
+  mostrarToast(`✅ Netejats ${entradesEliminades} duplicats en ${usuarisNetejats} usuaris.`);
+  mostrarAdmin();
+}
+window.netejaMedallesDuplicades = netejaMedallesDuplicades;
 
 // Treu els correus de qui té com a mínim una medalla (o un Capó trobat), per
 // poder enviar-los un correu convidant-los a deixar una ressenya. No enviem
@@ -3842,6 +3901,7 @@ header {
       <button class="admin-force-btn" onclick="resetCaponsPropis()">Esborra les MEVES cartes dels Capons</button>
       <h3>🔢 Puntuacions</h3>
       <button class="admin-force-btn" onclick="recalcularPuntuacionsGlobals()">Actualitza els punts de TOTHOM als valors actuals</button>
+      <button class="admin-force-btn" onclick="netejaMedallesDuplicades()">Neteja medalles i Capons duplicats</button>
       <button class="admin-force-btn" onclick="migrarCaponsAMedallaFinal()">Migra els Capons antics a la medalla final (executar un sol cop)</button>
       <h3>🎁 Atorgar medalla manualment</h3>
       <p class="admin-usuari-medalles">Per quan algú hi ha anat de debò però l'escaneig no s'ha pogut validar (p. ex. sense cobertura).</p>

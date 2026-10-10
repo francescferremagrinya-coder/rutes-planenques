@@ -1501,16 +1501,6 @@ async function validarIAtorgarMedalla(balisa, verificarGPS, coordsPrecaptades) {
     return true;
   }
 
-  // A la gimcana dels Capons, el QR només és vàlid si és el Capó que toca ara
-  // (evita que escanejar per error un QR d'un altre Capó el desbloquegi fora d'ordre)
-  if (balisa.gimcana) {
-    const proper = await properCapoGimcana();
-    if (!proper || proper.id !== balisa.id) {
-      mostrarToast('Aquest no és el Capó que estàs buscant ara. Segueix la pista!', true);
-      return false;
-    }
-  }
-
   // Verificació GPS (per QRs nous) — els admins es poden saltar la comprovació per fer proves.
   // Si ja teníem coordenades capturades (reintent des de la cua), les reutilitzem
   // enlloc de tornar a demanar GPS, que podria donar la ubicació actual (p. ex. a casa).
@@ -1981,27 +1971,41 @@ function projeccioATrajecte(lat, lng, trajecte) {
   return millor;
 }
 
-// Avança 'metres' trajecte amunt (cap a índexs creixents, l'ordre en què es
-// va enregistrar: pàrquing → Capó 1 → Capó 2 → ... → Capó 8) a partir del
-// punt (idx, t), sense sobrepassar el final de l'array.
-function avancaPelTrajecte(trajecte, idx, t, metres) {
+// Punt del trajecte a la posició contínua 'pos' (0 = primer punt enregistrat,
+// length-1 = últim).
+function puntAPosicioTrajecte(trajecte, pos) {
+  const idx = Math.max(0, Math.min(trajecte.length - 2, Math.floor(pos)));
+  const t = Math.max(0, Math.min(1, pos - idx));
   const a = trajecte[idx], b = trajecte[idx + 1];
-  let punt = { lat: a.lat + (b.lat - a.lat) * t, lng: a.lng + (b.lng - a.lng) * t };
-  let i = idx;
-  while (metres > 0 && i < trajecte.length - 1) {
-    const seg = trajecte[i + 1];
-    const distSeg = calcularDistancia(punt.lat, punt.lng, seg.lat, seg.lng);
+  return { lat: a.lat + (b.lat - a.lat) * t, lng: a.lng + (b.lng - a.lng) * t };
+}
+
+// Avança 'metres' pel trajecte a partir de la posició contínua 'pos', en la
+// direcció indicada (+1 cap a índexs creixents, -1 cap a decreixents), sense
+// sortir dels límits de l'array. Com que ara els Capons es poden trobar en
+// qualsevol ordre, cal poder avançar en totes dues direccions: si l'objectiu
+// queda "enrere" al trajecte (per exemple, un Capó anterior que encara no
+// s'ha trobat després d'haver-ne escanejat un de posterior), la fletxa ha de
+// poder guiar cap enrere i no només sempre cap endavant.
+function avancaPelTrajecte(trajecte, pos, metres, direccio) {
+  let actual = puntAPosicioTrajecte(trajecte, pos);
+  let p = pos;
+  while (metres > 0) {
+    const seguentIdx = direccio > 0 ? Math.floor(p) + 1 : Math.ceil(p) - 1;
+    if (seguentIdx < 0 || seguentIdx > trajecte.length - 1) break;
+    const seguent = trajecte[seguentIdx];
+    const distSeg = calcularDistancia(actual.lat, actual.lng, seguent.lat, seguent.lng);
     if (distSeg <= metres) {
       metres -= distSeg;
-      punt = seg;
-      i++;
+      actual = seguent;
+      p = seguentIdx;
     } else {
       const frac = distSeg === 0 ? 0 : metres / distSeg;
-      punt = { lat: punt.lat + (seg.lat - punt.lat) * frac, lng: punt.lng + (seg.lng - punt.lng) * frac };
+      actual = { lat: actual.lat + (seguent.lat - actual.lat) * frac, lng: actual.lng + (seguent.lng - actual.lng) * frac };
       metres = 0;
     }
   }
-  return punt;
+  return actual;
 }
 
 // Distància (en metres) on la fletxa deixa d'apuntar "seguint el camí" i
@@ -2016,8 +2020,13 @@ const GIMCANA_AVANÇ_FLETXA_M = 15;
 // directe a l'objectiu per acabar de precisar.
 function puntGuiaFletxa(lat, lng, objectiu, distObjectiu) {
   if (distObjectiu <= GIMCANA_LLINDAR_APUNTAR_DIRECTE_M) return objectiu;
-  const proj = projeccioATrajecte(lat, lng, gimcanaTrajecte());
-  return avancaPelTrajecte(gimcanaTrajecte(), proj.idx, proj.t, GIMCANA_AVANÇ_FLETXA_M);
+  const trajecte = gimcanaTrajecte();
+  const projUsuari = projeccioATrajecte(lat, lng, trajecte);
+  const projObjectiu = projeccioATrajecte(objectiu.lat, objectiu.lng, trajecte);
+  const posUsuari = projUsuari.idx + projUsuari.t;
+  const posObjectiu = projObjectiu.idx + projObjectiu.t;
+  const direccio = posObjectiu >= posUsuari ? 1 : -1;
+  return avancaPelTrajecte(trajecte, posUsuari, GIMCANA_AVANÇ_FLETXA_M, direccio);
 }
 
 // So d'avís (dues notes descendents, interval de tritó) quan et vas allunyant

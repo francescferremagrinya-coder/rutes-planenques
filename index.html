@@ -1766,6 +1766,9 @@ let gimcanaPistaMostrada = false;
 let gimcanaBruixolaAbsolutaActiva = false;
 let gimcanaDarrerAvisFora = 0;
 const GIMCANA_AVIS_FORA_INTERVAL_M = 10;
+// Per sota d'aquesta distància el marge d'error del GPS pot despistar més que
+// ajudar: s'amaga la brúixola i preval la pista de text.
+const GIMCANA_AMAGA_FLETXA_M = 10;
 let gimcanaWakeLock = null;
 
 // Evita que la pantalla s'apagui sola mentre es fa la gimcana, perquè els
@@ -2159,6 +2162,7 @@ async function comencaRadarGimcana() {
   document.getElementById('gimcana-radar').style.display = 'block';
   document.getElementById('gimcana-mapa').style.display = 'none';
   document.getElementById('gimcana-pista-card').style.display = 'none';
+  document.getElementById('gimcana-fletxa-zona').style.display = 'flex';
   gimcanaPistaMostrada = false;
   gimcanaDarrerAvisFora = 0;
   gimcanaFletxaRotacio = 0;
@@ -2182,6 +2186,7 @@ function iniciaTornadaParking() {
   document.getElementById('gimcana-radar').style.display = 'block';
   document.getElementById('gimcana-mapa').style.display = 'none';
   document.getElementById('gimcana-pista-card').style.display = 'none';
+  document.getElementById('gimcana-fletxa-zona').style.display = 'flex';
   document.getElementById('gimcana-progres').textContent = '🚗 Tornada cap al cotxe';
   document.getElementById('gimcana-radar-dist').textContent = '—';
   document.getElementById('gimcana-bafarada').textContent = 'Segueix la fletxa cap al pàrquing!';
@@ -2245,21 +2250,29 @@ function actualitzaRadarGimcana(coords) {
   document.getElementById('gimcana-radar-dist').textContent = Math.round(dFinal);
   document.getElementById('gimcana-bafarada').textContent = gimcanaTornant ? gimcanaMissatgeTornada(dFinal) : gimcanaMissatgeHost(dFinal);
 
-  const fletxa = document.getElementById('gimcana-fletxa');
-  if (gimcanaHeading !== null) {
-    // La fletxa no apunta en línia recta a l'objectiu, sinó seguint el
-    // trajecte real enregistrat (GIMCANA_TRAJECTE_GPX): si no, entre Capons
-    // pot assenyalar a través de marges, barrancs o altres obstacles que de
-    // debò calen voltar.
-    const puntGuia = puntGuiaFletxa(coords.latitude, coords.longitude, c, dFinal);
-    const rumb = gimcanaBearing(coords.latitude, coords.longitude, puntGuia.lat, puntGuia.lng);
-    const objectiuDeg = (rumb - gimcanaHeading + 360) % 360;
-    // Gira sempre pel camí més curt: si no ho féssim, en creuar el llindar
-    // 359°→0° la fletxa faria una volta sencera en comptes d'un petit gir,
-    // cosa que es percep com si anés lenta o es quedés endarrerida.
-    let diff = ((objectiuDeg - gimcanaFletxaRotacio) % 360 + 540) % 360 - 180;
-    gimcanaFletxaRotacio += diff;
-    fletxa.style.transform = `rotate(${gimcanaFletxaRotacio}deg)`;
+  const zonaFletxa = document.getElementById('gimcana-fletxa-zona');
+  if (dFinal < GIMCANA_AMAGA_FLETXA_M) {
+    // Massa a prop: el marge d'error del GPS fa que la fletxa pugui assenyalar
+    // qualsevol direcció sense sentit. Val més amagar-la i confiar en la pista.
+    zonaFletxa.style.display = 'none';
+  } else {
+    zonaFletxa.style.display = 'flex';
+    const fletxa = document.getElementById('gimcana-fletxa');
+    if (gimcanaHeading !== null) {
+      // La fletxa no apunta en línia recta a l'objectiu, sinó seguint el
+      // trajecte real enregistrat (GIMCANA_TRAJECTE_GPX): si no, entre Capons
+      // pot assenyalar a través de marges, barrancs o altres obstacles que de
+      // debò calen voltar.
+      const puntGuia = puntGuiaFletxa(coords.latitude, coords.longitude, c, dFinal);
+      const rumb = gimcanaBearing(coords.latitude, coords.longitude, puntGuia.lat, puntGuia.lng);
+      const objectiuDeg = (rumb - gimcanaHeading + 360) % 360;
+      // Gira sempre pel camí més curt: si no ho féssim, en creuar el llindar
+      // 359°→0° la fletxa faria una volta sencera en comptes d'un petit gir,
+      // cosa que es percep com si anés lenta o es quedés endarrerida.
+      let diff = ((objectiuDeg - gimcanaFletxaRotacio) % 360 + 540) % 360 - 180;
+      gimcanaFletxaRotacio += diff;
+      fletxa.style.transform = `rotate(${gimcanaFletxaRotacio}deg)`;
+    }
   }
 
   if (gimcanaTornant) {
@@ -3989,7 +4002,7 @@ header {
       <span class="gimcana-host-avatar">🧭</span>
       <div class="gimcana-bafarada" id="gimcana-bafarada">Segueix la fletxa!</div>
     </div>
-    <div class="gimcana-fletxa-zona">
+    <div class="gimcana-fletxa-zona" id="gimcana-fletxa-zona">
       <svg class="gimcana-fletxa" id="gimcana-fletxa" viewBox="0 0 100 100">
         <circle cx="50" cy="50" r="47" fill="none" stroke="#D4A843" stroke-width="1.6"/>
         <circle cx="50" cy="50" r="42" fill="none" stroke="#D4A843" stroke-width="0.6" opacity="0.7"/>

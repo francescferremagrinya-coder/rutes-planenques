@@ -2163,6 +2163,7 @@ async function comencaRadarGimcana() {
   document.getElementById('gimcana-mapa').style.display = 'none';
   document.getElementById('gimcana-pista-card').style.display = 'none';
   document.getElementById('gimcana-fletxa-zona').style.display = 'flex';
+  document.getElementById('btn-tornada-seguretat').style.display = 'block';
   gimcanaPistaMostrada = false;
   gimcanaDarrerAvisFora = 0;
   gimcanaFletxaRotacio = 0;
@@ -2172,8 +2173,19 @@ async function comencaRadarGimcana() {
   document.getElementById('gimcana-progres').textContent = `Capó ${idx + 1} de ${total}`;
 }
 
-// Un cop trobats tots els Capons: guia amb la mateixa fletxa, però cap al
-// pàrquing en comptes de cap a un Capó, seguint la resta del track GPX.
+// Botó de seguretat: permet tornar al pàrquing en qualsevol moment de la
+// cerca (no només un cop trobats tots els Capons), per si algú es cansa,
+// es fa tard o cal aturar la gimcana per qualsevol motiu.
+function confirmaTornadaSeguretat() {
+  if (!confirm('Segur que vols aturar la cerca dels Capons i tornar cap al cotxe?')) return;
+  trackEvent('gimcana_tornada_seguretat');
+  iniciaTornadaParking();
+}
+window.confirmaTornadaSeguretat = confirmaTornadaSeguretat;
+
+// Un cop trobats tots els Capons (o si s'activa la tornada de seguretat):
+// guia amb la mateixa fletxa, però cap al pàrquing en comptes de cap a un
+// Capó, seguint la resta del track GPX.
 function iniciaTornadaParking() {
   trackEvent('gimcana_tornada_iniciada');
   gimcanaTornant = true;
@@ -2187,6 +2199,7 @@ function iniciaTornadaParking() {
   document.getElementById('gimcana-mapa').style.display = 'none';
   document.getElementById('gimcana-pista-card').style.display = 'none';
   document.getElementById('gimcana-fletxa-zona').style.display = 'flex';
+  document.getElementById('btn-tornada-seguretat').style.display = 'none';
   document.getElementById('gimcana-progres').textContent = '🚗 Tornada cap al cotxe';
   document.getElementById('gimcana-radar-dist').textContent = '—';
   document.getElementById('gimcana-bafarada').textContent = 'Segueix la fletxa cap al pàrquing!';
@@ -3617,6 +3630,8 @@ header {
 }
 .gimcana-calibra-btn:hover { background: rgba(212,168,67,0.22); }
 .gimcana-calibra-btn:active { transform: scale(0.98); }
+.gimcana-btn-seguretat { background: rgba(192,82,74,0.12); color: #E8B9B5; border-color: #C0524A; }
+.gimcana-btn-seguretat:hover { background: rgba(192,82,74,0.22); }
 .gimcana-mapa-zona {
   position: relative; width: 100%; border-radius: 14px; overflow: hidden;
   margin-bottom: 1.5rem; border: 1px solid rgba(212,168,67,0.3);
@@ -4013,6 +4028,7 @@ header {
     <p class="gimcana-dist"><span id="gimcana-radar-dist">—</span> m</p>
     <p class="gimcana-brujola-status" id="gimcana-brujola-status"></p>
     <button class="gimcana-calibra-btn" onclick="mostrarMapaGimcana()">🗺️ Veure el mapa</button>
+    <button class="gimcana-calibra-btn gimcana-btn-seguretat" id="btn-tornada-seguretat" onclick="confirmaTornadaSeguretat()" style="display:none">🚨 Torna cap al cotxe</button>
 
     <div id="gimcana-pista-card" style="display:none">
       <p class="gimcana-pista-titol">🔍 Ets a prop!</p>

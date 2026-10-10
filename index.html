@@ -1955,6 +1955,72 @@ function distanciaAlTrajecte(lat, lng, trajecte) {
   return minDist;
 }
 
+// Igual que distanciaPuntASegment, però també retorna a quin punt exacte del
+// segment (0=A, 1=B) queda la projecció — ho necessitem per "enganxar" la
+// posició de l'usuari al trajecte i després avançar-hi a sobre.
+function projeccioASegment(lat, lng, lat1, lng1, lat2, lng2) {
+  const M_PER_GRAU_LAT = 111320;
+  const mPerGrauLng = 111320 * Math.cos(lat1 * Math.PI / 180);
+  const px = (lng - lng1) * mPerGrauLng, py = (lat - lat1) * M_PER_GRAU_LAT;
+  const bx = (lng2 - lng1) * mPerGrauLng, by = (lat2 - lat1) * M_PER_GRAU_LAT;
+  const bLenSq = bx * bx + by * by;
+  let t = bLenSq === 0 ? 0 : (px * bx + py * by) / bLenSq;
+  t = Math.max(0, Math.min(1, t));
+  const dx = px - t * bx, dy = py - t * by;
+  return { dist: Math.sqrt(dx * dx + dy * dy), t };
+}
+
+// Troba a quin segment del trajecte (índex + fracció t) queda més a prop la
+// posició de l'usuari.
+function projeccioATrajecte(lat, lng, trajecte) {
+  let millor = { idx: 0, t: 0, dist: Infinity };
+  for (let i = 0; i < trajecte.length - 1; i++) {
+    const a = trajecte[i], b = trajecte[i + 1];
+    const { dist, t } = projeccioASegment(lat, lng, a.lat, a.lng, b.lat, b.lng);
+    if (dist < millor.dist) millor = { idx: i, t, dist };
+  }
+  return millor;
+}
+
+// Avança 'metres' trajecte amunt (cap a índexs creixents, l'ordre en què es
+// va enregistrar: pàrquing → Capó 1 → Capó 2 → ... → Capó 8) a partir del
+// punt (idx, t), sense sobrepassar el final de l'array.
+function avancaPelTrajecte(trajecte, idx, t, metres) {
+  const a = trajecte[idx], b = trajecte[idx + 1];
+  let punt = { lat: a.lat + (b.lat - a.lat) * t, lng: a.lng + (b.lng - a.lng) * t };
+  let i = idx;
+  while (metres > 0 && i < trajecte.length - 1) {
+    const seg = trajecte[i + 1];
+    const distSeg = calcularDistancia(punt.lat, punt.lng, seg.lat, seg.lng);
+    if (distSeg <= metres) {
+      metres -= distSeg;
+      punt = seg;
+      i++;
+    } else {
+      const frac = distSeg === 0 ? 0 : metres / distSeg;
+      punt = { lat: punt.lat + (seg.lat - punt.lat) * frac, lng: punt.lng + (seg.lng - punt.lng) * frac };
+      metres = 0;
+    }
+  }
+  return punt;
+}
+
+// Distància (en metres) on la fletxa deixa d'apuntar "seguint el camí" i
+// torna a apuntar directe a l'objectiu — a prop de l'arribada és millor un
+// senyal precís que no pas un punt del trajecte que es pot quedar curt.
+const GIMCANA_LLINDAR_APUNTAR_DIRECTE_M = 25;
+const GIMCANA_AVANÇ_FLETXA_M = 15;
+
+// Punt cap on ha d'apuntar la fletxa: si encara queda lluny, segueix el
+// trajecte real (evita que apunti en línia recta travessant marges, barrancs
+// o altres obstacles que hi pugui haver pel mig); a prop del final, apunta
+// directe a l'objectiu per acabar de precisar.
+function puntGuiaFletxa(lat, lng, objectiu, distObjectiu) {
+  if (distObjectiu <= GIMCANA_LLINDAR_APUNTAR_DIRECTE_M) return objectiu;
+  const proj = projeccioATrajecte(lat, lng, gimcanaTrajecte());
+  return avancaPelTrajecte(gimcanaTrajecte(), proj.idx, proj.t, GIMCANA_AVANÇ_FLETXA_M);
+}
+
 // So d'avís (dues notes descendents, interval de tritó) quan et vas allunyant
 // del recorregut, amb ona triangular perquè es distingeixi clarament dels
 // sons de bona notícia però sense cansar si es repeteix sovint.
@@ -2160,19 +2226,26 @@ function actualitzaRadarGimcana(coords) {
   const waypoints = c.waypoints || [];
 
   let objectiu = c;
+  let distObjectiu = null;
   if (gimcanaWaypointIdx < waypoints.length) {
     objectiu = { lat: waypoints[gimcanaWaypointIdx].lat, lng: waypoints[gimcanaWaypointIdx].lng };
-    const dWp = calcularDistancia(coords.latitude, coords.longitude, objectiu.lat, objectiu.lng);
-    if (dWp <= 10) { gimcanaWaypointIdx++; actualitzaRadarGimcana(coords); return; }
+    distObjectiu = calcularDistancia(coords.latitude, coords.longitude, objectiu.lat, objectiu.lng);
+    if (distObjectiu <= 10) { gimcanaWaypointIdx++; actualitzaRadarGimcana(coords); return; }
   }
 
   const dFinal = calcularDistancia(coords.latitude, coords.longitude, c.lat, c.lng);
+  if (distObjectiu === null) distObjectiu = dFinal;
   document.getElementById('gimcana-radar-dist').textContent = Math.round(dFinal);
   document.getElementById('gimcana-bafarada').textContent = gimcanaMissatgeHost(dFinal);
 
   const fletxa = document.getElementById('gimcana-fletxa');
   if (gimcanaHeading !== null) {
-    const rumb = gimcanaBearing(coords.latitude, coords.longitude, objectiu.lat, objectiu.lng);
+    // La fletxa no apunta en línia recta a l'objectiu, sinó seguint el
+    // trajecte real enregistrat (GIMCANA_TRAJECTE_GPX): si no, entre Capons
+    // pot assenyalar a través de marges, barrancs o altres obstacles que de
+    // debò calen voltar.
+    const puntGuia = puntGuiaFletxa(coords.latitude, coords.longitude, objectiu, distObjectiu);
+    const rumb = gimcanaBearing(coords.latitude, coords.longitude, puntGuia.lat, puntGuia.lng);
     const objectiuDeg = (rumb - gimcanaHeading + 360) % 360;
     // Gira sempre pel camí més curt: si no ho féssim, en creuar el llindar
     // 359°→0° la fletxa faria una volta sencera en comptes d'un petit gir,

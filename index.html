@@ -1570,6 +1570,10 @@ async function validarIAtorgarMedalla(balisa, verificarGPS, coordsPrecaptades) {
   if (balisa.gimcana && !(await properCapoGimcana())) {
     trackEvent('gimcana_completada');
     await atorgarMedallaFinalGimcana();
+    // Ja no hi ha cap Capó més a buscar: aturem el GPS de fons que havíem
+    // deixat actiu en escanejar (si no, seguiria avisant de sortir del
+    // track encara que la gimcana ja estigui acabada).
+    aturaSeguimentGimcanaGPS();
   }
 
   mostrarCelebracio(balisa);
@@ -2194,12 +2198,22 @@ function actualitzaRadarGimcana(coords) {
   }
 }
 
-function tancarGimcana() {
+function aturaSeguimentGimcanaGPS() {
   if (gimcanaWatchId !== null) {
     navigator.geolocation.clearWatch(gimcanaWatchId);
     gimcanaWatchId = null;
   }
   alliberarWakeLock();
+}
+
+// aturaSeguiment=false (quan només anem a escanejar un QR) manté el GPS i
+// l'avís de sortir del track funcionant de fons — abans es tallava sempre,
+// i si l'usuari no tornava a prémer "Segueix buscant" de seguida, es quedava
+// sense cap seguiment mentre caminava cap al següent Capó.
+function tancarGimcana(aturaSeguiment = true) {
+  if (aturaSeguiment) {
+    aturaSeguimentGimcanaGPS();
+  }
   mostrarPantalla('joc');
 }
 
@@ -3888,7 +3902,7 @@ header {
     <div id="gimcana-pista-card" style="display:none">
       <p class="gimcana-pista-titol">🔍 Ets a prop!</p>
       <p class="gimcana-pista-text" id="gimcana-pista-text"></p>
-      <button class="btn-principal" onclick="tancarGimcana(); iniciarEscaner(true)">📷 Escanejar el Capó</button>
+      <button class="btn-principal" onclick="tancarGimcana(false); iniciarEscaner(true)">📷 Escanejar el Capó</button>
     </div>
   </div>
 

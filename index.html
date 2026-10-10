@@ -232,7 +232,7 @@ const BALISES = [
     descripcio: "Vetlla pel bestiar des del corral de pedra seca",
     imatge: "medalles/capo-pastor.jpg",
     lat: 41.3565886, lng: 1.3429254,
-    radi: 10,
+    radi: 20,
     token: "pstr9x14",
     codi: "PAST",
     gimcana: true,
@@ -1735,6 +1735,10 @@ async function mostrarCelebracio(balisa) {
         if (capoFinal) setTimeout(() => mostrarCelebracio(capoFinal), 400);
       };
     }
+  } else if (balisa.id === 'CAPO_EXPLORADOR') {
+    // Medalla final de la gimcana: en tancar, encadenem la tornada guiada cap al pàrquing
+    btnEl.textContent = '🚗 Torna cap al cotxe';
+    btnEl.onclick = () => { tancarCelebracio(); mostrarPantalla('gimcana'); iniciaTornadaParking(); };
   } else {
     btnEl.textContent = 'Genial!';
     btnEl.onclick = () => { tancarCelebracio(); };
@@ -1750,17 +1754,18 @@ function tancarCelebracio() {
 // ════════════════════════════════════════════════════════
 //  GIMCANA DELS CAPONS — radar i pistes
 // ════════════════════════════════════════════════════════
-const GIMCANA_PARKING = { lat: 41.3613185, lng: 1.3458540 };
+const GIMCANA_PARKING = { lat: 41.3613185, lng: 1.3458540, radi: 20 };
 let gimcanaWatchId = null;
 let gimcanaHeading = null;
 let gimcanaUltimesCoords = null;
 let gimcanaObjectiuActual = null;
+let gimcanaTornant = false; // true quan ja s'han trobat tots els Capons i s'està tornant cap al pàrquing
 let gimcanaBrujolaOk = false;
 let gimcanaFletxaRotacio = 0;
 let gimcanaPistaMostrada = false;
 let gimcanaBruixolaAbsolutaActiva = false;
 let gimcanaDarrerAvisFora = 0;
-const GIMCANA_AVIS_FORA_INTERVAL_M = 20;
+const GIMCANA_AVIS_FORA_INTERVAL_M = 10;
 let gimcanaWakeLock = null;
 
 // Evita que la pantalla s'apagui sola mentre es fa la gimcana, perquè els
@@ -2061,6 +2066,12 @@ function gimcanaMissatgeHost(d) {
   return "Molt a prop! Mira bé al teu voltant.";
 }
 
+function gimcanaMissatgeTornada(d) {
+  if (d > 100) return "Camí de tornada cap al cotxe, segueix la fletxa!";
+  if (d > 30) return "Ja hi ets a prop...";
+  return "Quasi al pàrquing!";
+}
+
 async function iniciarGimcana() {
   mostrarPantalla('gimcana');
   trackEvent('gimcana_iniciada');
@@ -2086,10 +2097,12 @@ async function iniciarGimcana() {
   }
 }
 
-async function comencaRadarGimcana() {
-  // El permís de brúixola d'iOS només es concedeix si es demana de manera
-  // immediata dins el mateix clic de l'usuari; si fem algun 'await' abans
-  // (Firestore, GPS...) Safari el denega en silenci i la brúixola mai s'activa.
+// Activa GPS + brúixola — compartit entre la cerca de Capons i la tornada
+// al pàrquing un cop trobats tots.
+// El permís de brúixola d'iOS només es concedeix si es demana de manera
+// immediata dins el mateix clic de l'usuari; si fem algun 'await' abans
+// (Firestore, GPS...) Safari el denega en silenci i la brúixola mai s'activa.
+function activarSeguimentIBrujolaGimcana() {
   const statusEl = document.getElementById('gimcana-brujola-status');
   gimcanaBrujolaOk = false;
   if (statusEl) statusEl.textContent = '🧭 Activant brúixola…';
@@ -2121,25 +2134,6 @@ async function comencaRadarGimcana() {
     }
   }, 4000);
 
-  const proper = await properCapoGimcana();
-  if (!proper) {
-    mostrarToast('Ja has trobat tots els Capons! 🏆');
-    tancarGimcana();
-    return;
-  }
-  gimcanaObjectiuActual = proper;
-
-  document.getElementById('gimcana-parking').style.display = 'none';
-  document.getElementById('gimcana-radar').style.display = 'block';
-  document.getElementById('gimcana-mapa').style.display = 'none';
-  document.getElementById('gimcana-pista-card').style.display = 'none';
-  gimcanaPistaMostrada = false;
-  gimcanaDarrerAvisFora = 0;
-
-  const total = gimcanaCapons().length;
-  const idx = gimcanaCapons().findIndex(c => c.id === proper.id);
-  document.getElementById('gimcana-progres').textContent = `Capó ${idx + 1} de ${total}`;
-
   if (gimcanaWatchId === null) {
     gimcanaWatchId = navigator.geolocation.watchPosition(
       pos => { gimcanaUltimesCoords = pos.coords; actualitzaRadarGimcana(pos.coords); },
@@ -2148,6 +2142,53 @@ async function comencaRadarGimcana() {
     );
   }
 }
+
+async function comencaRadarGimcana() {
+  activarSeguimentIBrujolaGimcana();
+
+  const proper = await properCapoGimcana();
+  if (!proper) {
+    mostrarToast('Ja has trobat tots els Capons! 🏆');
+    tancarGimcana();
+    return;
+  }
+  gimcanaTornant = false;
+  gimcanaObjectiuActual = proper;
+
+  document.getElementById('gimcana-parking').style.display = 'none';
+  document.getElementById('gimcana-radar').style.display = 'block';
+  document.getElementById('gimcana-mapa').style.display = 'none';
+  document.getElementById('gimcana-pista-card').style.display = 'none';
+  gimcanaPistaMostrada = false;
+  gimcanaDarrerAvisFora = 0;
+  gimcanaFletxaRotacio = 0;
+
+  const total = gimcanaCapons().length;
+  const idx = gimcanaCapons().findIndex(c => c.id === proper.id);
+  document.getElementById('gimcana-progres').textContent = `Capó ${idx + 1} de ${total}`;
+}
+
+// Un cop trobats tots els Capons: guia amb la mateixa fletxa, però cap al
+// pàrquing en comptes de cap a un Capó, seguint la resta del track GPX.
+function iniciaTornadaParking() {
+  trackEvent('gimcana_tornada_iniciada');
+  gimcanaTornant = true;
+  gimcanaObjectiuActual = GIMCANA_PARKING;
+  gimcanaFletxaRotacio = 0;
+  gimcanaDarrerAvisFora = 0;
+  gimcanaPistaMostrada = false;
+
+  document.getElementById('gimcana-parking').style.display = 'none';
+  document.getElementById('gimcana-radar').style.display = 'block';
+  document.getElementById('gimcana-mapa').style.display = 'none';
+  document.getElementById('gimcana-pista-card').style.display = 'none';
+  document.getElementById('gimcana-progres').textContent = '🚗 Tornada cap al cotxe';
+  document.getElementById('gimcana-radar-dist').textContent = '—';
+  document.getElementById('gimcana-bafarada').textContent = 'Segueix la fletxa cap al pàrquing!';
+
+  activarSeguimentIBrujolaGimcana();
+}
+window.iniciaTornadaParking = iniciaTornadaParking;
 
 // A Android es dispara sovint 'deviceorientation' A MÉS de 'deviceorientationabsolute'
 // per al mateix gir físic, amb valors lleugerament diferents. Un cop confirmem que
@@ -2202,7 +2243,7 @@ function actualitzaRadarGimcana(coords) {
 
   const dFinal = calcularDistancia(coords.latitude, coords.longitude, c.lat, c.lng);
   document.getElementById('gimcana-radar-dist').textContent = Math.round(dFinal);
-  document.getElementById('gimcana-bafarada').textContent = gimcanaMissatgeHost(dFinal);
+  document.getElementById('gimcana-bafarada').textContent = gimcanaTornant ? gimcanaMissatgeTornada(dFinal) : gimcanaMissatgeHost(dFinal);
 
   const fletxa = document.getElementById('gimcana-fletxa');
   if (gimcanaHeading !== null) {
@@ -2221,7 +2262,16 @@ function actualitzaRadarGimcana(coords) {
     fletxa.style.transform = `rotate(${gimcanaFletxaRotacio}deg)`;
   }
 
-  if (dFinal <= (c.radi || 25)) {
+  if (gimcanaTornant) {
+    if (dFinal <= (c.radi || 20)) {
+      gimcanaTornant = false;
+      trackEvent('gimcana_tornada_completada');
+      tocarSoCelebracio();
+      mostrarToast('🚗 Ja has arribat al pàrquing. Bona tornada a casa!');
+      tancarGimcana(true);
+      return;
+    }
+  } else if (dFinal <= (c.radi || 25)) {
     if (!gimcanaPistaMostrada) {
       gimcanaPistaMostrada = true;
       tocarSoPista();

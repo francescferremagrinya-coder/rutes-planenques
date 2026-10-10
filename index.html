@@ -1792,6 +1792,20 @@ document.addEventListener('visibilitychange', () => {
 //  SONS DE LA GIMCANA — generats amb Web Audio API, sense fitxers d'àudio
 // ════════════════════════════════════════════════════════
 
+// Un sol AudioContext reutilitzat per a tots els sons: crear-ne un de nou a
+// cada avís (per exemple, el de sortir del track, disparat des del GPS i no
+// d'un tap directe) sovint queda "suspended" als mòbils i no sona mai. Un
+// context compartit, represo en cada ús, es manté actiu un cop desbloquejat
+// pel primer tap real de la sessió.
+let audioCtxGimcana = null;
+function obtenirAudioCtxGimcana() {
+  if (!audioCtxGimcana) {
+    audioCtxGimcana = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtxGimcana.state === 'suspended') audioCtxGimcana.resume();
+  return audioCtxGimcana;
+}
+
 // Una nota amb timbre de campaneta (fonamental + harmònics suaus)
 function tocarNotaCampana(ctx, ara, freq, inici, durada, volum) {
   const guanyNota = ctx.createGain();
@@ -1831,7 +1845,7 @@ function tocarEspurneig(ctx, ara, inici, durada, volum) {
 // So de "revelació" (arpegi ascendent amb espurneig) quan apareix una pista
 function tocarSoPista() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = obtenirAudioCtxGimcana();
     const ara = ctx.currentTime;
     const notes = [523.25, 659.25, 783.99, 1046.50];
     const inicis = [0, 0.11, 0.22, 0.35];
@@ -1843,7 +1857,7 @@ function tocarSoPista() {
 // So de celebració (escala ascendent + acord sostingut + espurneig) en obrir una medalla
 function tocarSoCelebracio() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = obtenirAudioCtxGimcana();
     const ara = ctx.currentTime;
     const escala = [523.25, 587.33, 659.25, 698.46, 783.99, 1046.50, 1318.51];
     const inicis = [0, 0.09, 0.18, 0.27, 0.36, 0.46, 0.56];
@@ -1857,7 +1871,7 @@ function tocarSoCelebracio() {
 // So de "tornes al camí" (tres notes + acord curt + espurneig), després d'haver-se'n sortit
 function tocarSoTornadaCami() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = obtenirAudioCtxGimcana();
     const ara = ctx.currentTime;
     const notes = [392.00, 493.88, 587.33];
     const inicis = [0, 0.1, 0.2];
@@ -1946,7 +1960,7 @@ function distanciaAlTrajecte(lat, lng, trajecte) {
 // sons de bona notícia però sense cansar si es repeteix sovint.
 function tocarSoForaCami() {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = obtenirAudioCtxGimcana();
     const ara = ctx.currentTime;
     [[587.33, 0, 0.22, 0.28], [415.30, 0.20, 0.28, 0.30]].forEach(([freq, inici, durada, volum]) => {
       const osc = ctx.createOscillator();

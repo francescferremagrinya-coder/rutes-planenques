@@ -17,7 +17,7 @@ import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth, signInWithPopup, GoogleAuthProvider, signOut, onAuthStateChanged }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
 import { getFirestore, doc, getDoc, setDoc, updateDoc, deleteDoc, collection,
-  getDocs, onSnapshot, serverTimestamp, arrayUnion, query, orderBy, where }
+  getDocs, addDoc, onSnapshot, serverTimestamp, arrayUnion, query, orderBy, where }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 import { getAnalytics, logEvent, isSupported as analyticsSuportada }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-analytics.js';
@@ -813,6 +813,7 @@ onAuthStateChanged(auth, async (user) => {
     const potVeureCapona = MOSTRAR_RUTA_CAPONA || esAdmin || TESTERS_CAPONA.includes(user.email);
     document.getElementById('nivell-card-capona').style.display = potVeureCapona ? 'flex' : 'none';
     const { introVista, avisVist } = await assegurarPerfil(user);
+    aplicaMedallesPendents(user.uid, user.email).catch(() => {});
     introPendent = !introVista;
     if (!avisVist) {
       mostrarPantalla('avis-legal');
@@ -2604,16 +2605,66 @@ async function atorgaMedallaManualMassiva() {
     atorgades++;
   }
 
+  // Els que encara no tenen compte queden desats com a "pendents": quan
+  // facin login per primer cop, aplicaMedallesPendents() els hi atorga sola,
+  // sense que calgui tornar a prémer res des d'aquí.
+  for (const email of noTrobats) {
+    await addDoc(collection(db, 'medallesPendents'), {
+      email, balisaId: balisa.id, balisaNom: balisa.nom, creat: serverTimestamp()
+    });
+  }
+
   let resum = `✅ ${atorgades} medalles noves atorgades`;
   if (jaLaTenien) resum += `, ${jaLaTenien} ja la tenien`;
-  if (noTrobats.length) resum += `, ${noTrobats.length} encara sense compte a l'app`;
+  if (noTrobats.length) resum += `, ${noTrobats.length} desades pendents (s'atorgaran soles quan facin login)`;
   mostrarToast(resum + '.');
-  if (noTrobats.length) {
-    prompt('Aquests correus encara no tenen compte a l\'app (han d\'obrir-la un cop, encara que no escanegin res, abans de poder-los atorgar la medalla) — torna-ho a provar més tard amb aquests:', noTrobats.join(', '));
-  }
   document.getElementById('admin-medalla-email-massiu').value = '';
 }
 window.atorgaMedallaManualMassiva = atorgaMedallaManualMassiva;
+
+// Aplica medalles que s'haguessin atorgat manualment (vegeu
+// atorgaMedallaManualMassiva) a algú que encara no tenia compte a l'app en
+// aquell moment. Es comprova en cada login per si hi ha res pendent pel
+// correu d'aquest usuari.
+async function aplicaMedallesPendents(uid, email) {
+  if (!email) return;
+  const q = query(collection(db, 'medallesPendents'), where('email', '==', email));
+  const resultat = await getDocs(q);
+  if (resultat.empty) return;
+
+  const ref = doc(db, 'usuaris', uid);
+  const snap = await getDoc(ref);
+  const dades = snap.data();
+  let medalles = dades.medalles || [];
+  let caponsTrobats = dades.caponsTrobats || [];
+  let punts = dades.punts || 0;
+  let aplicades = 0;
+
+  for (const docPendent of resultat.docs) {
+    const p = docPendent.data();
+    const balisa = BALISES.find(b => b.id === p.balisaId);
+    if (balisa) {
+      if (balisa.gimcana) {
+        if (!caponsTrobats.find(m => m.id === balisa.id)) {
+          caponsTrobats = [...caponsTrobats, { id: balisa.id, nom: balisa.nom, data: new Date() }];
+          aplicades++;
+        }
+      } else if (!medalles.find(m => m.id === balisa.id)) {
+        medalles = [...medalles, { id: balisa.id, nom: balisa.nom, data: new Date(), punts: balisa.punts }];
+        punts += balisa.punts;
+        aplicades++;
+      }
+    }
+    await deleteDoc(docPendent.ref);
+  }
+
+  if (aplicades > 0) {
+    await updateDoc(ref, { medalles, caponsTrobats, punts });
+    mostrarToast(aplicades === 1
+      ? '🏅 Tens una medalla nova, atorgada per l\'organització!'
+      : `🏅 Tens ${aplicades} medalles noves, atorgades per l'organització!`);
+  }
+}
 
 // Migració única: mou els Capons que algú ja tingués a "medalles" (sistema antic)
 // cap a "caponsTrobats" (ja no compten com a medalla individual ni sumen punts),

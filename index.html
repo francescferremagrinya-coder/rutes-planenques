@@ -3026,7 +3026,7 @@ header {
   position: sticky; top: 0; z-index: 10;
   backdrop-filter: blur(8px);
 }
-.header-logo { font-size: 1.8rem; }
+.header-logo { width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; }
 .header-titol { font-family: 'Fraunces', serif; font-size: 1.2rem; font-weight: 700; flex: 1; }
 .header-titol span { display: block; font-size: 0.7rem; font-weight: 400; color: var(--pedra); font-style: italic; font-family: 'Space Grotesk', sans-serif; }
 #usuari-foto { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--bosc-clar); cursor: pointer; }
@@ -3172,6 +3172,7 @@ header {
 
 /* Medalles */
 .seccio-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--pedra); padding: 0 1.2rem; margin-bottom: 0.6rem; }
+.credits-footer { font-size: 0.7rem; color: var(--pedra); opacity: 0.6; text-align: center; padding: 1.5rem 1.2rem 1rem; line-height: 1.6; }
 .carrusel-hint {
   font-size: 0.72rem; color: var(--or); opacity: 0.75;
   padding: 0 1.2rem; margin-bottom: 0.5rem;
@@ -3945,7 +3946,7 @@ header {
 <!-- ══ PANTALLA JOC ══ -->
 <div id="pantalla-joc">
   <header>
-    <span class="header-logo">🧭</span>
+    <img class="header-logo" src="icons/icon-192.png" alt="Rutes Planenques">
     <div class="header-titol">
       Rutes Planenques
       <span>Rutes · Col·lecció · Ranking</span>
@@ -3988,6 +3989,8 @@ header {
     <p class="carrusel-hint">‹ Llisca per veure-les totes ›</p>
     <div class="medalles-grid" id="medalles-grid" onscroll="actualitzarPunts()"></div>
     <div class="carrusel-punts" id="carrusel-punts"></div>
+
+    <p class="credits-footer">Una iniciativa de Francesc Ferré<br>Impressions 3D: Joan Balañà i Roger Salcedo</p>
 
     <!-- Admin -->
     <button id="admin-btn" onclick="mostrarAdmin()">⚙ Panell d'admin — QRs i gestió</button>

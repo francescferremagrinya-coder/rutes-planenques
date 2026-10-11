@@ -3013,6 +3013,7 @@ body {
   min-height: 100vh;
   max-width: 500px;
   margin: 0 auto;
+  overflow-x: hidden;
 }
 
 /* ── HEADER ── */
@@ -3021,17 +3022,28 @@ header {
   padding: 1.5rem 1.2rem 1rem;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 0.6rem;
   border-bottom: 1px solid rgba(255,255,255,0.07);
   position: sticky; top: 0; z-index: 10;
   backdrop-filter: blur(8px);
 }
 .header-logo { width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0; }
-.header-titol { font-family: 'Fraunces', serif; font-size: 1.2rem; font-weight: 700; flex: 1; }
-.header-titol span { display: block; font-size: 0.7rem; font-weight: 400; color: var(--pedra); font-style: italic; font-family: 'Space Grotesk', sans-serif; }
-#usuari-foto { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--bosc-clar); cursor: pointer; }
-.btn-logout { background: none; border: none; color: var(--pedra); font-size: 0.75rem; cursor: pointer; padding: 0.3rem 0.6rem; border-radius: 6px; }
+.header-titol { font-family: 'Fraunces', serif; font-size: 1.2rem; font-weight: 700; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.header-titol span { display: block; font-size: 0.7rem; font-weight: 400; color: var(--pedra); font-style: italic; font-family: 'Space Grotesk', sans-serif; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#usuari-foto { width: 36px; height: 36px; border-radius: 50%; border: 2px solid var(--bosc-clar); cursor: pointer; flex-shrink: 0; }
+.btn-logout { background: none; border: none; color: var(--pedra); font-size: 0.75rem; cursor: pointer; padding: 0.3rem 0.5rem; border-radius: 6px; flex-shrink: 0; white-space: nowrap; }
 .btn-logout:hover { color: var(--crema); }
+
+@media (max-width: 400px) {
+  header { padding: 1.3rem 0.8rem 0.9rem; gap: 0.4rem; }
+  .header-logo { width: 28px; height: 28px; }
+  .header-titol { font-size: 1.02rem; }
+  .header-titol span { font-size: 0.64rem; }
+  #usuari-foto { width: 30px; height: 30px; }
+  .btn-info { width: 23px; height: 23px; margin-right: 0.15rem; }
+  a.btn-info { display: none; }
+  .btn-logout { font-size: 0.68rem; padding: 0.3rem 0.35rem; }
+}
 .btn-info {
   background: none; border: 1px solid rgba(255,255,255,0.15); color: var(--pedra);
   font-size: 0.75rem; cursor: pointer; width: 26px; height: 26px;

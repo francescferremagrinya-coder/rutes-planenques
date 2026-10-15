@@ -507,10 +507,8 @@ const RUTES_INFO = {
 };
 
 // La foto va incrustada com a text (base64) per evitar problemes de pujada del fitxer binari
-document.getElementById('nivell-card-moro').style.backgroundImage =
-  `linear-gradient(180deg, rgba(26,46,29,0.05) 45%, rgba(10,16,10,0.92) 100%), url('${FOTO_COVA_MORO}')`;
-document.getElementById('nivell-card-capona').style.backgroundImage =
-  `linear-gradient(180deg, rgba(26,46,29,0.05) 45%, rgba(10,16,10,0.92) 100%), url('${RUTES_INFO.capona.imatge}')`;
+document.getElementById('nivell-card-moro').style.backgroundImage = `url('${FOTO_COVA_MORO}')`;
+document.getElementById('nivell-card-capona').style.backgroundImage = `url('${RUTES_INFO.capona.imatge}')`;
 
 function obrirRutaDetall(clau) {
   const r = RUTES_INFO[clau];
@@ -3307,6 +3305,14 @@ header {
   cursor: pointer;
   border: 1px solid rgba(255,255,255,0.1);
 }
+.nivell-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(26,46,29,0.05) 45%, rgba(10,16,10,0.97) 100%);
+  pointer-events: none;
+}
 .nivell-etiqueta {
   position: absolute; top: 1.2rem; left: 1.2rem;
   background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
@@ -3594,7 +3600,7 @@ header {
 
 /* Botó escàner flotant */
 .btn-scan {
-  position: fixed; bottom: 0.6rem; left: 50%; transform: translateX(-50%);
+  position: fixed; bottom: 0.2rem; left: 50%; transform: translateX(-50%);
   background: var(--bosc-clar); color: var(--crema);
   border: none; border-radius: 40px;
   padding: 0.9rem 2.2rem; font-size: 1rem; font-weight: 700;
@@ -4051,8 +4057,7 @@ header {
     <div class="nivells-carrusel" id="nivells-carrusel" onscroll="actualitzarPuntsNivells()">
 
       <!-- Nivell 1: Cova del Moro (té pantalla pròpia) -->
-      <div class="nivell-card" id="nivell-card-moro" onclick="obrirRutaDetall('moro')"
-           style="background-image: linear-gradient(180deg, rgba(26,46,29,0.05) 45%, rgba(10,16,10,0.92) 100%)">
+      <div class="nivell-card" id="nivell-card-moro" onclick="obrirRutaDetall('moro')">
         <span class="nivell-etiqueta">Ruta 1</span>
         <span class="nivell-dificultat moderada">Moderada</span>
         <div class="nivell-info">
@@ -4064,7 +4069,7 @@ header {
 
       <!-- Nivell 2: Sender Pinya Seka -->
       <div class="nivell-card" onclick="obrirRutaDetall('pinyaseka')"
-           style="background-image: linear-gradient(180deg, rgba(26,46,29,0.05) 45%, rgba(10,16,10,0.92) 100%), url('rutes/pinya-seka.JPG')">
+           style="background-image: url('rutes/pinya-seka.JPG')">
         <span class="nivell-etiqueta">Ruta 2</span>
         <span class="nivell-dificultat moderada">Moderada</span>
         <div class="nivell-info">
@@ -4076,7 +4081,7 @@ header {
 
       <!-- Nivell 3: Miquelets + Barretet -->
       <div class="nivell-card" onclick="obrirRutaDetall('miqueletsBarretet')"
-           style="background-image: linear-gradient(180deg, rgba(26,46,29,0.05) 45%, rgba(10,16,10,0.92) 100%), url('rutes/el-barretet.JPG')">
+           style="background-image: url('rutes/el-barretet.JPG')">
         <span class="nivell-etiqueta">Ruta 3</span>
         <span class="nivell-dificultat exigent">⚠️ Tram final exigent</span>
         <div class="nivell-info">
@@ -4088,7 +4093,7 @@ header {
 
       <!-- Nivell 4: Muntet del Blat, Carrer de Cavallers i el Cogulló -->
       <div class="nivell-card" onclick="obrirRutaDetall('cogullo')"
-           style="background-image: linear-gradient(180deg, rgba(26,46,29,0.05) 45%, rgba(10,16,10,0.92) 100%), url('rutes/roc-cogullo.JPG')">
+           style="background-image: url('rutes/roc-cogullo.JPG')">
         <span class="nivell-etiqueta">Ruta 4</span>
         <span class="nivell-dificultat exigent">⚠️ Exigent</span>
         <div class="nivell-info">
@@ -4100,7 +4105,7 @@ header {
 
       <!-- Nivell 5: La Ruta dels Capons (gimcana) — amagada fins que MOSTRAR_RUTA_CAPONA sigui true -->
       <div class="nivell-card" id="nivell-card-capona" onclick="obrirRutaDetall('capona')"
-           style="display:none; background-image: linear-gradient(180deg, rgba(26,46,29,0.05) 45%, rgba(10,16,10,0.92) 100%)">
+           style="display:none">
         <span class="nivell-etiqueta">🎯 Gimcana familiar</span>
         <div class="nivell-info">
           <h2 class="nivell-nom">La Ruta dels Capons</h2>
@@ -4112,9 +4117,6 @@ header {
     </div>
     <div class="carrusel-punts" id="nivells-punts"></div>
 
-    <p style="font-size:0.68rem;color:rgba(168,152,128,0.4);text-align:center;padding:0.8rem 0 1rem">
-      Rutes publicades a Wikiloc per Francesc
-    </p>
     <p class="credits-footer">Una iniciativa de Francesc Ferré<br>Impressions 3D: Joan Balañà i Roger Salcedo</p>
   </div>
 

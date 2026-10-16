@@ -3206,6 +3206,7 @@ header {
   padding: 1.5rem 1.2rem 1rem; line-height: 1.7; cursor: pointer;
 }
 .credits-footer:hover { opacity: 1; color: var(--crema); }
+.credits-nom { text-decoration: underline; text-decoration-color: rgba(212,168,67,0.5); text-underline-offset: 3px; color: var(--or); font-weight: 700; }
 .sobre-contacte { display: flex; flex-direction: column; gap: 0.8rem; margin: 1.6rem 0; }
 .sobre-contacte a {
   display: flex; align-items: center; justify-content: center; gap: 0.6rem;
@@ -4059,7 +4060,7 @@ header {
     <div class="medalles-grid" id="medalles-grid" onscroll="actualitzarPunts()"></div>
     <div class="carrusel-punts" id="carrusel-punts"></div>
 
-    <button class="credits-footer" onclick="obrirSobre()">Una iniciativa de Francesc Ferré<br>Impressions 3D: Joan Balañà i Roger Salcedo</button>
+    <button class="credits-footer" onclick="obrirSobre()">Una iniciativa de <span class="credits-nom">Francesc Ferré ›</span><br>Impressions 3D: Joan Balañà i Roger Salcedo</button>
 
     <!-- Admin -->
     <button id="admin-btn" onclick="mostrarAdmin()">⚙ Panell d'admin — QRs i gestió</button>
@@ -4160,13 +4161,13 @@ header {
     </div>
     <div class="carrusel-punts" id="nivells-punts"></div>
 
-    <button class="credits-footer" onclick="obrirSobre()">Una iniciativa de Francesc Ferré<br>Impressions 3D: Joan Balañà i Roger Salcedo</button>
+    <button class="credits-footer" onclick="obrirSobre()">Una iniciativa de <span class="credits-nom">Francesc Ferré ›</span><br>Impressions 3D: Joan Balañà i Roger Salcedo</button>
   </div>
 
   <!-- TAB RANKING -->
   <div id="tab-ranking" style="display:none">
     <div id="ranking-llista"></div>
-    <button class="credits-footer" onclick="obrirSobre()">Una iniciativa de Francesc Ferré<br>Impressions 3D: Joan Balañà i Roger Salcedo</button>
+    <button class="credits-footer" onclick="obrirSobre()">Una iniciativa de <span class="credits-nom">Francesc Ferré ›</span><br>Impressions 3D: Joan Balañà i Roger Salcedo</button>
   </div>
 
   <!-- Botó escàner flotant -->

@@ -958,6 +958,16 @@ function tancarSuggeriments() {
   document.getElementById('modal-suggeriments').style.display = 'none';
 }
 
+function obrirSobre() {
+  document.getElementById('modal-sobre').style.display = 'block';
+  trackEvent('sobre_obert');
+}
+function tancarSobre() {
+  document.getElementById('modal-sobre').style.display = 'none';
+}
+window.obrirSobre = obrirSobre;
+window.tancarSobre = tancarSobre;
+
 async function enviarSuggeriment() {
   const camp = document.getElementById('suggeriment-text');
   const text = camp.value.trim();
@@ -3190,7 +3200,20 @@ header {
 
 /* Medalles */
 .seccio-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--pedra); padding: 0 1.2rem; margin-bottom: 0.6rem; }
-.credits-footer { font-size: 0.88rem; color: var(--pedra); opacity: 0.85; text-align: center; padding: 1.5rem 1.2rem 1rem; line-height: 1.7; }
+.credits-footer {
+  display: block; width: 100%; background: none; border: none; font-family: inherit;
+  font-size: 0.88rem; color: var(--pedra); opacity: 0.85; text-align: center;
+  padding: 1.5rem 1.2rem 1rem; line-height: 1.7; cursor: pointer;
+}
+.credits-footer:hover { opacity: 1; color: var(--crema); }
+.sobre-contacte { display: flex; flex-direction: column; gap: 0.8rem; margin: 1.6rem 0; }
+.sobre-contacte a {
+  display: flex; align-items: center; justify-content: center; gap: 0.6rem;
+  padding: 0.8rem; border-radius: 10px;
+  background: rgba(212,168,67,0.1); border: 1px solid rgba(212,168,67,0.2);
+  color: var(--crema); font-weight: 700; font-size: 0.9rem;
+}
+.sobre-contacte a:hover { background: rgba(212,168,67,0.18); }
 .carrusel-hint {
   font-size: 0.72rem; color: var(--or); opacity: 0.75;
   padding: 0 1.2rem; margin-bottom: 0.5rem;
@@ -3372,7 +3395,7 @@ header {
   background: var(--fons);
   overflow-y: auto;
 }
-#modal-obre-safari, #modal-installacio, #modal-permis-camera, #modal-suggeriments, #modal-codi-manual, #modal-cartes-capons {
+#modal-obre-safari, #modal-installacio, #modal-permis-camera, #modal-suggeriments, #modal-codi-manual, #modal-cartes-capons, #modal-sobre {
   display: none;
   position: fixed; inset: 0; z-index: 210;
   background: var(--fons);
@@ -3969,6 +3992,24 @@ header {
   </div>
 </div>
 
+<!-- ══ MODAL QUI HI HA DARRERE ══ -->
+<div id="modal-sobre" style="display:none">
+  <div class="intro-card">
+    <span class="intro-logo">🧭</span>
+    <h1 class="intro-titol">Qui hi ha darrere de Rutes Planenques</h1>
+    <p class="installacio-avis" style="text-align:left">
+      Hola! Soc en Francesc Ferré. Rutes Planenques és un projecte que he ideat, escrit i programat jo mateix: cada ruta, cada medalla i cada història que trobes aquí surt d'aquí. En Joan Balañà i en Roger Salcedo m'ajuden amb la impressió 3D de les figures dels Capons.
+      <br><br>
+      El vaig crear per conèixer millor el territori que trepitjo cada dia — i per convidar-hi altra gent a fer-ho amb mi. Si t'agrada la idea i creus que un model semblant podria funcionar al teu poble, comarca o espai, escriu-me. M'encantaria parlar-ne.
+    </p>
+    <div class="sobre-contacte">
+      <a href="https://www.instagram.com/rutesplanenques" target="_blank" rel="noopener">📷 @rutesplanenques</a>
+      <a href="mailto:laplanenca.rutes@gmail.com">✉️ laplanenca.rutes@gmail.com</a>
+    </div>
+    <button class="btn-principal" onclick="tancarSobre()" style="background:transparent;border:1px solid rgba(255,255,255,0.15)">Tancar</button>
+  </div>
+</div>
+
 <!-- ══ PANTALLA JOC ══ -->
 <div id="pantalla-joc">
   <header>
@@ -4016,7 +4057,7 @@ header {
     <div class="medalles-grid" id="medalles-grid" onscroll="actualitzarPunts()"></div>
     <div class="carrusel-punts" id="carrusel-punts"></div>
 
-    <p class="credits-footer">Una iniciativa de Francesc Ferré<br>Impressions 3D: Joan Balañà i Roger Salcedo</p>
+    <button class="credits-footer" onclick="obrirSobre()">Una iniciativa de Francesc Ferré<br>Impressions 3D: Joan Balañà i Roger Salcedo</button>
 
     <!-- Admin -->
     <button id="admin-btn" onclick="mostrarAdmin()">⚙ Panell d'admin — QRs i gestió</button>
@@ -4117,13 +4158,13 @@ header {
     </div>
     <div class="carrusel-punts" id="nivells-punts"></div>
 
-    <p class="credits-footer">Una iniciativa de Francesc Ferré<br>Impressions 3D: Joan Balañà i Roger Salcedo</p>
+    <button class="credits-footer" onclick="obrirSobre()">Una iniciativa de Francesc Ferré<br>Impressions 3D: Joan Balañà i Roger Salcedo</button>
   </div>
 
   <!-- TAB RANKING -->
   <div id="tab-ranking" style="display:none">
     <div id="ranking-llista"></div>
-    <p class="credits-footer">Una iniciativa de Francesc Ferré<br>Impressions 3D: Joan Balañà i Roger Salcedo</p>
+    <button class="credits-footer" onclick="obrirSobre()">Una iniciativa de Francesc Ferré<br>Impressions 3D: Joan Balañà i Roger Salcedo</button>
   </div>
 
   <!-- Botó escàner flotant -->

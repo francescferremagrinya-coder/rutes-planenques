@@ -1,0 +1,17 @@
+{
+  "projects": {
+    "default": "rutes-planenques"
+  },
+  "targets": {
+    "rutes-planenques": {
+      "hosting": {
+        "app": [
+          "rutes-planenques"
+        ],
+        "landing": [
+          "territoris-interactius"
+        ]
+      }
+    }
+  }
+}

@@ -123,6 +123,17 @@
   .btn-ghost { background: transparent; color: var(--ink); border-color: var(--line); }
   .btn-ghost:hover, .btn-primary:hover { filter: brightness(1.08); }
 
+  /* Il·lustració de traç — línies de mapa, ruta i ubicació */
+  .topo-card {
+    margin: 2.8rem 0 0.2rem;
+    border-radius: 20px; overflow: hidden;
+    border: 1px solid var(--line);
+    background: var(--bg-raised);
+    aspect-ratio: 16 / 9;
+  }
+  .topo-illustration { width: 100%; height: 100%; display: block; }
+  .topo-caption { text-align: center; font-size: 0.8rem; color: var(--ink-dim); margin: 0.8rem 0 0; }
+
   /* Vitrina d'insígnies — fila continguda, sense desbordament */
   .showcase {
     margin: 2.8rem 0 0.2rem;
@@ -253,21 +264,54 @@
 <section class="hero">
   <div class="hero-inner">
     <div class="brand-row">
-      <svg class="mark" viewBox="0 0 200 200">
-        <circle cx="100" cy="100" r="95" fill="none" stroke="#D4A843" stroke-width="2"/>
-        <circle cx="100" cy="100" r="86" fill="none" stroke="#D4A843" stroke-width="0.7" opacity="0.7"/>
-        <polygon points="146.5,53.5 118,100 146.5,146.5 100,118 53.5,146.5 82,100 53.5,53.5 100,82" fill="#A89880"/>
-        <polygon points="100,10 116.6,83.4 190,100 116.6,116.6 100,190 83.4,116.6 10,100 83.4,83.4" fill="#D4A843"/>
-        <circle cx="100" cy="100" r="13" fill="#15241A" stroke="#D4A843" stroke-width="1.6"/>
-        <circle cx="100" cy="100" r="3.8" fill="#7BB5C8"/>
+      <svg class="mark" viewBox="0 0 48 48" fill="none">
+        <path d="M6 36 C 10 24, 16 30, 19 22 S 24 10, 30 14 S 38 20, 42 10" stroke="#D4A843" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="0.1 6.2"/>
+        <circle cx="6" cy="36" r="3" fill="none" stroke="#D4A843" stroke-width="2.2"/>
+        <path d="M42 4.5c3.3 0 6 2.6 6 5.8 0 4.3-6 10.7-6 10.7S36 14.6 36 10.3c0-3.2 2.7-5.8 6-5.8z" fill="#D4A843"/>
+        <circle cx="42" cy="10" r="2.1" fill="#15241A"/>
       </svg>
       <div class="brand-mark">Traç</div>
     </div>
-    <div class="eyebrow hero-kicker"><span class="dash"></span>Projectes interactius de territori</div>
+    <div class="eyebrow hero-kicker"><span class="dash"></span>Rutes interactives</div>
     <p class="brand-byline">per Francesc Ferré · creador de Rutes Planenques</p>
 
     <h1>Una insígnia per cada racó que val la pena descobrir</h1>
     <p class="lede">Rutes Planenques és la prova que funciona: cada ruta amaga una o dues insígnies pròpies, i aconseguir-les — amb els punts i la posició al rànquing que et donen — és el que fa que la gent surti a buscar la història real del territori.</p>
+
+    <div class="topo-card" aria-hidden="true">
+      <svg class="topo-illustration" viewBox="0 0 800 440" preserveAspectRatio="xMidYMid slice">
+        <defs>
+          <pattern id="topoGrid" width="44" height="44" patternUnits="userSpaceOnUse">
+            <path d="M 44 0 L 0 0 0 44" fill="none" stroke="rgba(243,239,228,0.05)" stroke-width="1"/>
+          </pattern>
+        </defs>
+        <rect width="800" height="440" fill="url(#topoGrid)"/>
+        <g fill="none" stroke="rgba(243,239,228,0.22)" stroke-width="1.4">
+          <circle cx="660" cy="90" r="26"/>
+          <circle cx="660" cy="90" r="46"/>
+          <circle cx="660" cy="90" r="68"/>
+          <circle cx="660" cy="90" r="92"/>
+          <path d="M 10 380 Q 120 300 230 370 Q 300 420 400 370"/>
+          <path d="M -10 410 Q 130 340 250 405 Q 330 450 440 400"/>
+          <path d="M 20 350 Q 120 285 215 335"/>
+        </g>
+        <path d="M 110 150 C 160 220, 90 250, 150 310 S 310 300, 370 370 S 540 330, 620 210"
+              fill="none" stroke="#D4A843" stroke-width="2.6" stroke-dasharray="1 9" stroke-linecap="round"/>
+        <g transform="translate(110,150)">
+          <path d="M0,-26c8.3,0,15,6.3,15,14.1C15,0.4,0,17,0,17S-15,0.4-15-11.9C-15-19.7-8.3-26,0-26z" fill="#D4A843"/>
+          <circle cx="0" cy="-12" r="5" fill="#15241A"/>
+        </g>
+        <g transform="translate(370,370)">
+          <path d="M0,-26c8.3,0,15,6.3,15,14.1C15,0.4,0,17,0,17S-15,0.4-15-11.9C-15-19.7-8.3-26,0-26z" fill="#D4A843"/>
+          <circle cx="0" cy="-12" r="5" fill="#15241A"/>
+        </g>
+        <g transform="translate(620,210)">
+          <path d="M0,-26c8.3,0,15,6.3,15,14.1C15,0.4,0,17,0,17S-15,0.4-15-11.9C-15-19.7-8.3-26,0-26z" fill="#D4A843"/>
+          <circle cx="0" cy="-12" r="5" fill="#15241A"/>
+        </g>
+      </svg>
+    </div>
+    <p class="topo-caption">Cada ruta, cada balisa i cada medalla comparteixen el mateix traç gràfic.</p>
 
     <div class="showcase" aria-hidden="true">
       <div class="showcase-row">

@@ -102,10 +102,14 @@
   .video-card .mute-btn:active { transform: scale(0.94); }
 
   .hero-inner { padding-top: clamp(3.4rem, 9vw, 5.5rem); }
-  .hero-top { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 2.4rem; }
-  .hero-top .mark { width: 30px; height: 30px; flex-shrink: 0; }
-  .hero-top .name { font-family: var(--f-display); font-weight: 700; font-size: 1.05rem; }
-  .hero-top .name span { display: block; font-family: var(--f-body); font-weight: 500; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-dim); margin-top: 1px; }
+  /* Marca gran — logotip real, no una línia de crèdit */
+  .brand-row { display: flex; align-items: center; gap: clamp(0.5rem, 2vw, 0.9rem); margin-bottom: 0.5rem; }
+  .brand-row .mark { width: clamp(34px, 7vw, 54px); height: clamp(34px, 7vw, 54px); flex-shrink: 0; }
+  .brand-mark {
+    font-family: var(--f-body); font-weight: 700; text-transform: uppercase;
+    font-size: clamp(2.6rem, 9.5vw, 4.8rem); line-height: 1; letter-spacing: 0.01em; color: var(--ink);
+  }
+  .brand-byline { font-size: 0.82rem; color: var(--ink-dim); margin: 0.7em 0 2rem; }
   .hero h1 { margin-bottom: 0.7em; }
   .hero-cta { display: flex; gap: 0.9rem; flex-wrap: wrap; margin-top: 1.8rem; }
 
@@ -248,7 +252,7 @@
 
 <section class="hero">
   <div class="hero-inner">
-    <div class="hero-top">
+    <div class="brand-row">
       <svg class="mark" viewBox="0 0 200 200">
         <circle cx="100" cy="100" r="95" fill="none" stroke="#D4A843" stroke-width="2"/>
         <circle cx="100" cy="100" r="86" fill="none" stroke="#D4A843" stroke-width="0.7" opacity="0.7"/>
@@ -257,10 +261,11 @@
         <circle cx="100" cy="100" r="13" fill="#15241A" stroke="#D4A843" stroke-width="1.6"/>
         <circle cx="100" cy="100" r="3.8" fill="#7BB5C8"/>
       </svg>
-      <div class="name">Traç<span>per Francesc Ferré · creador de Rutes Planenques</span></div>
+      <div class="brand-mark">Traç</div>
     </div>
-
     <div class="eyebrow hero-kicker"><span class="dash"></span>Projectes interactius de territori</div>
+    <p class="brand-byline">per Francesc Ferré · creador de Rutes Planenques</p>
+
     <h1>Una insígnia per cada racó que val la pena descobrir</h1>
     <p class="lede">Rutes Planenques és la prova que funciona: cada ruta amaga una o dues insígnies pròpies, i aconseguir-les — amb els punts i la posició al rànquing que et donen — és el que fa que la gent surti a buscar la història real del territori.</p>
 

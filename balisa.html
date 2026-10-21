@@ -49,6 +49,15 @@ body::before {
   pointer-events: none;
 }
 
+/* Fons de la portada de La Ruta dels Capons, quan es troba un Capó */
+body.fons-capona::before {
+  background-image:
+    linear-gradient(180deg, rgba(26,46,29,0.78) 0%, rgba(26,46,29,0.94) 55%, var(--fons) 100%),
+    url('medalles/portada-capona.jpg');
+  background-size: cover;
+  background-position: center;
+}
+
 .contenidor {
   max-width: 400px;
   width: 100%;
@@ -292,7 +301,7 @@ body::before {
       <span class="balisa-icon" id="b-icon">🏅</span>
       <span class="balisa-badge">Nova!</span>
     </div>
-    <p class="titular">Has trobat una balisa</p>
+    <p class="titular" id="titular-trobada">Has trobat una balisa</p>
     <h1 class="balisa-nom" id="b-nom">—</h1>
     <p class="balisa-desc" id="b-desc">—</p>
     <span class="balisa-punts">⭐ <span id="b-punts">0</span> punts</span>
@@ -300,7 +309,7 @@ body::before {
     <div class="separador"></div>
 
     <!-- Explicació del joc per a usuaris nous -->
-    <div class="joc-explicacio">
+    <div class="joc-explicacio" id="explicacio-general">
       <h3>Rutes Planenques — com funciona?</h3>
       <div class="pas">
         <span class="pas-icon">📍</span>
@@ -314,6 +323,30 @@ body::before {
         <span class="pas-icon">🏆</span>
         <span>Quan les completes totes, <strong>guanyes un premi</strong>. Hi ha un ranking públic entre tots els participants.</span>
       </div>
+    </div>
+
+    <!-- Explicació específica de La Ruta dels Capons (gimcana) -->
+    <div class="joc-explicacio" id="explicacio-capona" style="display:none">
+      <h3>La Ruta dels Capons</h3>
+      <p style="font-size:0.85rem;color:var(--pedra);line-height:1.5;margin-bottom:0.8rem">
+        Una família de pedra escampada pel territori espera que la retrobis, Capó a Capó. És una gimcana familiar: curta, plana i a l'abast de totes les edats, entre les barraques de pedra seca del terme.
+      </p>
+      <div class="pas">
+        <span class="pas-icon">🅿️</span>
+        <span>La gimcana <strong>comença al pàrquing d'inici</strong>. Dirigeix-t'hi per començar a buscar els Capons.</span>
+      </div>
+      <div class="pas">
+        <span class="pas-icon">📲</span>
+        <span>Un cop allà, <strong>inicia sessió a l'app</strong> i un radar et guiarà pas a pas fins a cada Capó.</span>
+      </div>
+      <div class="pas">
+        <span class="pas-icon">🏆</span>
+        <span>Troba els <strong>8 Capons</strong> i la família Capona tornarà a estar completa.</span>
+      </div>
+      <a class="btn-secundari" id="parking-maps" target="_blank" rel="noopener"
+         style="display:flex;align-items:center;justify-content:center;gap:0.5rem;text-decoration:none;margin-top:0.8rem">
+        🗺️ Com arribar-hi al pàrquing
+      </a>
     </div>
 
     <!-- Botó instal·lar PWA (Android) -->
@@ -377,10 +410,33 @@ const BALISES = [
     url_forms: "https://forms.gle/2nGFKJ16v6TBzEFK7", token: "brrtt94xk" }
 ];
 
+// La Ruta dels Capons — gimcana familiar, ha de coincidir amb l'array de capons d'index.html
+const CAPONS = [
+  { id: "CAP01", token: "mrgtr7q2", nom: "Capó Margeter", icon: "🧱", punts: 80,
+    descripcio: "El constructor: aixecava les barraques sense morter ni ciment" },
+  { id: "CAP02", token: "blttr4k9", nom: "Capó Boletaire", icon: "🍄", punts: 80,
+    descripcio: "Viu entre bolets i penombra, endinsat en una de les barraques" },
+  { id: "CAP03", token: "vrmdr8h3", nom: "Capó Veremador", icon: "🍇", punts: 80,
+    descripcio: "El collidor de raïm, sempre a punt per celebrar la verema" },
+  { id: "CAP04", token: "apctr2m6", nom: "Capó Apicultor", icon: "🐝", punts: 80,
+    descripcio: "Cuida les abelles des d'un forat del marge de pedra" },
+  { id: "CAP05", token: "pstr9x14", nom: "Capó Pastor", icon: "🐑", punts: 80,
+    descripcio: "Vetlla pel bestiar des del corral de pedra seca" },
+  { id: "CAP06", token: "llpl5w28", nom: "Capó Llèpol", icon: "🍯", punts: 80,
+    descripcio: "Sempre amb la boca plena de dolços, amagat a l'ombra" },
+  { id: "CAP07", token: "assdg6t7", nom: "Capó Assedegat", icon: "💧", punts: 80,
+    descripcio: "Sempre té set, viu on es recollia l'aigua de pluja" },
+  { id: "CAP08", token: "drmlg3n5", nom: "Capó Dormilega", icon: "😴", punts: 100,
+    descripcio: "El darrer i més endormiscat de tots els Capons" }
+];
+
+const GIMCANA_PARKING = { lat: 41.3613185, lng: 1.3458540 };
+
 // ════════════════════════════════════════════════════════
 //  DETECTAR BALISA DES DE LA URL
 // ════════════════════════════════════════════════════════
 let balisaActual = null;
+let capoActual = null;
 let promptInstal·lacio = null;
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -392,11 +448,21 @@ window.addEventListener('DOMContentLoaded', () => {
   const formsUrl = params.get('f'); // per QRs vells redirectits
 
   if (payload) {
-    // QR nou — payload base64
-    try {
-      const data = JSON.parse(atob(payload));
-      balisaActual = BALISES.find(b => b.id === data.id && b.token === data.token);
-    } catch {}
+    // QR nou — payload base64. Format simplificat "ID:token" (Capons) o JSON (balises velles)
+    let id = null, token = null;
+    const text = atob(payload);
+    if (text.includes(':') && !text.trim().startsWith('{')) {
+      [id, token] = text.split(':');
+    } else {
+      try {
+        const data = JSON.parse(text);
+        id = data.id; token = data.token;
+      } catch {}
+    }
+    capoActual = CAPONS.find(c => c.id === id && c.token === token);
+    if (!capoActual) {
+      balisaActual = BALISES.find(b => b.id === id && b.token === token);
+    }
   } else if (formsUrl) {
     // QR vell — URL del forms codificada
     const url = atob(formsUrl);
@@ -413,23 +479,37 @@ window.addEventListener('DOMContentLoaded', () => {
 function mostrarEstat() {
   document.getElementById('estat-carregant').style.display = 'none';
 
-  if (!balisaActual) {
+  const item = capoActual || balisaActual;
+  if (!item) {
     document.getElementById('estat-error').style.display = 'block';
     return;
   }
 
   // Omple la tarjeta
-  document.getElementById('b-icon').textContent = balisaActual.icon;
-  document.getElementById('b-nom').textContent = balisaActual.nom;
-  document.getElementById('b-desc').textContent = balisaActual.descripcio;
-  document.getElementById('b-punts').textContent = balisaActual.punts;
+  document.getElementById('b-icon').textContent = item.icon;
+  document.getElementById('b-nom').textContent = item.nom;
+  document.getElementById('b-desc').textContent = item.descripcio;
+  document.getElementById('b-punts').textContent = item.punts;
   document.getElementById('estat-balisa').style.display = 'block';
 
-  // Guarda la balisa pendent a sessionStorage
-  sessionStorage.setItem('qr_pendent', balisaActual.token
-    ? btoa(JSON.stringify({ id: balisaActual.id, token: balisaActual.token }))
-    : btoa(JSON.stringify({ id: balisaActual.id, forms: true }))
-  );
+  if (capoActual) {
+    document.body.classList.add('fons-capona');
+    document.getElementById('titular-trobada').textContent = 'Has trobat un Capó!';
+    document.getElementById('explicacio-general').style.display = 'none';
+    document.getElementById('explicacio-capona').style.display = 'block';
+    document.getElementById('parking-maps').href =
+      `https://www.google.com/maps/dir/?api=1&destination=${GIMCANA_PARKING.lat},${GIMCANA_PARKING.lng}`;
+  }
+
+  // Guarda la balisa/capó pendent a sessionStorage
+  if (capoActual) {
+    sessionStorage.setItem('qr_pendent', btoa(`${capoActual.id}:${capoActual.token}`));
+  } else {
+    sessionStorage.setItem('qr_pendent', balisaActual.token
+      ? btoa(JSON.stringify({ id: balisaActual.id, token: balisaActual.token }))
+      : btoa(JSON.stringify({ id: balisaActual.id, forms: true }))
+    );
+  }
 }
 
 // ════════════════════════════════════════════════════════

@@ -61,11 +61,6 @@
     display: flex; align-items: center; gap: 0.6em; margin-bottom: 1.1em;
   }
   .eyebrow .dash { width: 28px; height: 1px; background: var(--gold); opacity: 0.6; }
-  .eyebrow.hero-kicker {
-    font-size: clamp(1.05rem, 2.6vw, 1.3rem); font-weight: 700; letter-spacing: 0.06em;
-    margin-bottom: 0.9em;
-  }
-  .eyebrow.hero-kicker .dash { width: 36px; }
 
   h1, h2, h3 { font-family: var(--f-display); font-weight: 700; text-wrap: balance; margin: 0; }
   h1 { font-size: clamp(2.1rem, 5.4vw, 3.4rem); line-height: 1.08; letter-spacing: -0.01em; }
@@ -102,13 +97,11 @@
   .video-card .mute-btn:active { transform: scale(0.94); }
 
   .hero-inner { padding-top: clamp(3.4rem, 9vw, 5.5rem); }
-  /* Nom de l'autor — clarament visible, sense tractament de marca */
-  .brand-row { display: flex; align-items: center; gap: clamp(0.5rem, 2vw, 0.8rem); margin-bottom: 1.6rem; }
-  .brand-row .mark { width: clamp(28px, 5.5vw, 36px); height: clamp(28px, 5.5vw, 36px); flex-shrink: 0; }
-  .brand-mark {
-    font-family: var(--f-display); font-weight: 700;
-    font-size: clamp(1.5rem, 4vw, 1.9rem); line-height: 1.1; color: var(--ink);
-  }
+  /* Lockup petit i discret — no competeix amb el titular */
+  .brand-row { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 2.4rem; }
+  .brand-row .mark { width: 30px; height: 30px; flex-shrink: 0; }
+  .brand-mark { font-family: var(--f-display); font-weight: 700; font-size: 1.05rem; line-height: 1.2; color: var(--ink); }
+  .brand-mark span { display: block; font-family: var(--f-body); font-weight: 500; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-dim); margin-top: 1px; }
   .hero h1 { margin-bottom: 0.7em; }
   .hero-cta { display: flex; gap: 0.9rem; flex-wrap: wrap; margin-top: 1.8rem; }
 
@@ -125,8 +118,8 @@
   /* Il·lustració de traç — de fons del hero, no una capsa a part */
   .hero-bg-illustration {
     position: absolute; top: 0; left: 50%; width: 100vw; margin-left: -50vw;
-    height: clamp(480px, 82vw, 760px);
-    overflow: hidden; pointer-events: none; z-index: 0; opacity: 0.4;
+    height: clamp(220px, 38vw, 320px);
+    overflow: hidden; pointer-events: none; z-index: 0; opacity: 0.35;
   }
   .hero-bg-illustration .topo-illustration { width: 100%; height: 100%; display: block; }
   .hero-inner { position: relative; z-index: 1; }
@@ -300,9 +293,9 @@
         <path d="M42 4.5c3.3 0 6 2.6 6 5.8 0 4.3-6 10.7-6 10.7S36 14.6 36 10.3c0-3.2 2.7-5.8 6-5.8z" fill="#D4A843"/>
         <circle cx="42" cy="10" r="2.1" fill="#15241A"/>
       </svg>
-      <div class="brand-mark">Francesc Ferré</div>
+      <div class="brand-mark">Francesc Ferré<span>Creador de Rutes Planenques</span></div>
     </div>
-    <div class="eyebrow hero-kicker"><span class="dash"></span>Projectes de rutes interactives</div>
+    <div class="eyebrow"><span class="dash"></span>Projectes de rutes interactives</div>
 
     <h1>Una insígnia per cada racó que val la pena descobrir</h1>
     <p class="lede">Rutes Planenques és la prova que funciona: cada ruta amaga una o dues insígnies pròpies, i aconseguir-les — amb els punts i la posició al rànquing que et donen — és el que fa que la gent surti a buscar la història real del territori.</p>

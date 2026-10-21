@@ -103,6 +103,10 @@
   .brand-mark { font-family: var(--f-display); font-weight: 700; font-size: 1.05rem; line-height: 1.2; color: var(--ink); }
   .brand-mark span { display: block; font-family: var(--f-body); font-weight: 500; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-dim); margin-top: 1px; }
   .hero h1 { margin-bottom: 0.7em; }
+  .intro-steps { display: flex; gap: 1.5rem 2rem; flex-wrap: wrap; margin: 0 0 1.6rem; }
+  .intro-steps .step { display: flex; flex-direction: column; gap: 0.2rem; max-width: 190px; }
+  .intro-steps .step b { font-family: var(--f-display); font-weight: 700; color: var(--gold); font-size: 1.05rem; }
+  .intro-steps .step span { font-size: 0.82rem; color: var(--ink-dim); line-height: 1.35; }
   .hero-cta { display: flex; gap: 0.9rem; flex-wrap: wrap; margin-top: 1.8rem; }
 
   .btn {
@@ -293,12 +297,18 @@
         <path d="M42 4.5c3.3 0 6 2.6 6 5.8 0 4.3-6 10.7-6 10.7S36 14.6 36 10.3c0-3.2 2.7-5.8 6-5.8z" fill="#D4A843"/>
         <circle cx="42" cy="10" r="2.1" fill="#15241A"/>
       </svg>
-      <div class="brand-mark">Francesc Ferré<span>Creador de Rutes Planenques</span></div>
+      <div class="brand-mark">Francesc Ferré<span>Projecte de rutes interactives</span></div>
     </div>
-    <div class="eyebrow"><span class="dash"></span>Projectes de rutes interactives</div>
 
     <h1>Una insígnia per cada racó que val la pena descobrir</h1>
-    <p class="lede">Rutes Planenques és la prova que funciona: cada ruta amaga una o dues insígnies pròpies, i aconseguir-les — amb els punts i la posició al rànquing que et donen — és el que fa que la gent surti a buscar la història real del territori.</p>
+
+    <div class="intro-steps">
+      <div class="step"><b>Juga</b><span>desbloqueja insígnies i puja al rànquing</span></div>
+      <div class="step"><b>Explora</b><span>surt a caminar pel territori real</span></div>
+      <div class="step"><b>Descobreix</b><span>coneix la història de cada racó</span></div>
+    </div>
+
+    <p class="lede">Rutes Planenques n'és la prova real que funciona: cada ruta amaga una o dues insígnies pròpies, i aconseguir-les — amb els punts i la posició al rànquing que et donen — és el que fa que la gent surti a buscar la història real del territori.</p>
 
     <div class="showcase" aria-hidden="true">
       <div class="showcase-row">

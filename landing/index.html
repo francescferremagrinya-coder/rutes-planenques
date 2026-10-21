@@ -219,6 +219,14 @@
   .list-check svg { flex-shrink: 0; margin-top: 0.3em; }
   .list-check b { font-weight: 600; }
 
+  /* Què oferim — targetes visuals */
+  .offer-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem 1.4rem; margin: 2rem 0; }
+  .offer-card { background: var(--bg-raised); border: 1px solid var(--line); border-radius: 14px; padding: 1.3rem; }
+  .offer-card .ic { width: 30px; height: 30px; margin-bottom: 0.7rem; }
+  .offer-card h3 { font-family: var(--f-display); font-weight: 700; font-size: 1rem; margin-bottom: 0.35rem; }
+  .offer-card p { font-size: 0.85rem; color: var(--ink-dim); margin: 0; }
+  @media (max-width: 620px) { .offer-grid { grid-template-columns: 1fr; } }
+
   /* Qui hi ha darrere */
   .about { display: flex; gap: 1.6rem; align-items: flex-start; flex-wrap: wrap; margin-top: 2rem; }
   .about img { width: 108px; height: 108px; border-radius: 50%; object-fit: cover; border: 2.5px solid var(--gold); flex-shrink: 0; }
@@ -243,6 +251,20 @@
 
   footer { padding-block: 2.4rem; }
   footer p { font-size: 0.78rem; color: var(--ink-dim); margin: 0; }
+  footer p.legal { font-size: 0.72rem; opacity: 0.75; margin-top: 0.5rem; }
+
+  /* Formulari de contacte */
+  .lead-form { display: grid; gap: 1rem; margin: 2rem 0 0.8rem; max-width: 440px; }
+  .lead-form .field { display: flex; flex-direction: column; gap: 0.35rem; }
+  .lead-form label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-dim); }
+  .lead-form input, .lead-form textarea {
+    font-family: var(--f-body); font-size: 0.95rem; color: var(--ink);
+    background: var(--bg-raised); border: 1px solid var(--line); border-radius: 10px;
+    padding: 0.7em 0.9em; resize: vertical;
+  }
+  .lead-form input:focus, .lead-form textarea:focus { outline: none; border-color: var(--gold); }
+  .lead-form button { justify-self: start; margin-top: 0.2rem; }
+  .form-note { font-size: 0.78rem; color: var(--ink-dim); margin: 0; max-width: 440px; }
 
   @media (max-width: 620px) {
     .mec-grid { grid-template-columns: 1fr; }
@@ -443,28 +465,32 @@
 <section id="adaptacio">
   <div class="eyebrow"><span class="dash"></span>Per al teu territori</div>
   <h2>Com seria la versió del teu poble</h2>
-  <p>No es ven una app solta: és un pack complet — el sistema, les insígnies pròpies i una part audiovisual pensada pel vostre territori. Cada territori tindria el seu propi projecte a part, amb la seva marca, les seves insígnies i el seu rànquing.</p>
+  <p>No es ven una app solta: és un pack complet pensat per al vostre territori. Cada territori tindria el seu propi projecte a part, amb la seva marca, les seves insígnies i el seu rànquing.</p>
 
-  <ul class="list-check">
-    <li>
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8.5" stroke="#D4A843"/><path d="M5.5 9.3l2.2 2.2 4.8-5" stroke="#D4A843" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <span><b>Insígnies i patrimoni propis.</b> Il·lustrades i escrites a partir del que és singular del vostre territori — igual que cada insígnia de Rutes Planenques té la seva pròpia il·lustració i història.</span>
-    </li>
-    <li>
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8.5" stroke="#D4A843"/><path d="M5.5 9.3l2.2 2.2 4.8-5" stroke="#D4A843" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <span><b>App i domini a part.</b> Base de dades, usuaris i rànquing independents — no es barreja amb cap altre poble.</span>
-    </li>
-    <li>
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8.5" stroke="#D4A843"/><path d="M5.5 9.3l2.2 2.2 4.8-5" stroke="#D4A843" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <span><b>Una part audiovisual pensada pel projecte.</b> Fotografia, vídeo o altres materials, segons el que encaixi millor amb el vostre cas.</span>
-    </li>
-    <li>
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="8.5" stroke="#D4A843"/><path d="M5.5 9.3l2.2 2.2 4.8-5" stroke="#D4A843" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <span><b>El mateix motor ja provat.</b> Escàner QR, insígnies, punts i panell d'administració ja construïts i funcionant sobre el terreny.</span>
-    </li>
-  </ul>
+  <div class="offer-grid">
+    <div class="offer-card">
+      <svg class="ic" viewBox="0 0 38 38" fill="none"><path d="M5 30 Q15 10 19 20 T33 8" stroke="#D4A843" stroke-width="2.2" stroke-linecap="round"/><circle cx="33" cy="8" r="2.6" fill="#D4A843"/><circle cx="5" cy="30" r="2.2" fill="none" stroke="#D4A843" stroke-width="2"/></svg>
+      <h3>Disseny de rutes</h3>
+      <p>Itineraris i punts d'interès pensats expressament per al vostre territori.</p>
+    </div>
+    <div class="offer-card">
+      <svg class="ic" viewBox="0 0 38 38" fill="none"><path d="M19 9v24M6 12c4-2 9-2 13 3 4-5 9-5 13-3v22c-4-2-9-2-13 3-4-5-9-5-13-3V12z" stroke="#D4A843" stroke-width="2" stroke-linejoin="round"/></svg>
+      <h3>Històries locals</h3>
+      <p>Patrimoni, llegendes i continguts escrits a mida de cada racó.</p>
+    </div>
+    <div class="offer-card">
+      <svg class="ic" viewBox="0 0 38 38" fill="none"><circle cx="19" cy="22" r="9" stroke="#D4A843" stroke-width="2"/><path d="M14 14L10 4M24 14l4-10" stroke="#D4A843" stroke-width="2" stroke-linecap="round"/><circle cx="19" cy="22" r="3.3" fill="#D4A843"/></svg>
+      <h3>Gamificació</h3>
+      <p>Insígnies, punts i rànquing — el mateix motor ja provat sobre el terreny.</p>
+    </div>
+    <div class="offer-card">
+      <svg class="ic" viewBox="0 0 38 38" fill="none"><rect x="5" y="12" width="28" height="18" rx="3" stroke="#D4A843" stroke-width="2"/><circle cx="19" cy="21" r="6" stroke="#D4A843" stroke-width="2"/><path d="M13 12l2-4h8l2 4" stroke="#D4A843" stroke-width="2" stroke-linejoin="round"/></svg>
+      <h3>Contingut audiovisual</h3>
+      <p>Fotografia, vídeo o altres recursos, segons el que encaixi amb el projecte.</p>
+    </div>
+  </div>
 
-  <p style="margin-top:1.6rem;font-size:0.92rem;color:var(--ink-dim)">Cada territori és diferent, així que l'abast concret —què inclou, terminis i pressupost— es defineix després d'una avaluació personalitzada del vostre cas.</p>
+  <p style="margin-top:1.6rem;font-size:0.92rem;color:var(--ink-dim)">Cada territori és diferent, així que l'abast concret —què inclou, terminis i pressupost— es defineix després d'una avaluació personalitzada del vostre cas. No tots els elements formen part de tots els pressupostos.</p>
 </section>
 
 <section id="qui-soc">
@@ -480,9 +506,31 @@
 
 <section id="contacte">
   <div class="eyebrow"><span class="dash"></span>Contacte</div>
-  <h2>Parlem del teu territori</h2>
-  <p>Escriu-me directament, sense intermediaris — responc jo mateix.</p>
+  <h2>Dissenyem una ruta interactiva per al teu municipi</h2>
+  <p>Explica'm breument la teva idea i et responc jo mateix, sense intermediaris.</p>
 
+  <form class="lead-form" id="leadForm">
+    <div class="field">
+      <label for="lfName">Nom</label>
+      <input type="text" id="lfName" name="name" required>
+    </div>
+    <div class="field">
+      <label for="lfOrg">Ajuntament o entitat</label>
+      <input type="text" id="lfOrg" name="org" required>
+    </div>
+    <div class="field">
+      <label for="lfEmail">Correu</label>
+      <input type="email" id="lfEmail" name="email" required>
+    </div>
+    <div class="field">
+      <label for="lfMsg">La teva idea (opcional)</label>
+      <textarea id="lfMsg" name="msg" rows="3"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Envia'm la idea</button>
+  </form>
+  <p class="form-note">S'obrirà el teu gestor de correu amb el missatge ja escrit, dirigit a laplanenca.rutes@gmail.com.</p>
+
+  <p style="margin-top:2.2rem;font-size:0.85rem;color:var(--ink-dim)">O escriu-me directament:</p>
   <div class="contact-grid">
     <div class="contact-row">
       <div><span class="lbl">Correu</span><span class="val">laplanenca.rutes@gmail.com</span></div>
@@ -497,11 +545,28 @@
 
 <footer>
   <p>Francesc Ferré · Projectes de rutes interactives · a partir de Rutes Planenques</p>
+  <p class="legal">Les dades que m'envies pel formulari només s'utilitzen per respondre't; no es comparteixen amb tercers.</p>
 </footer>
 
 </div>
 
 <script>
+  (function () {
+    var form = document.getElementById('leadForm');
+    if (!form) return;
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var name = document.getElementById('lfName').value.trim();
+      var org = document.getElementById('lfOrg').value.trim();
+      var email = document.getElementById('lfEmail').value.trim();
+      var msg = document.getElementById('lfMsg').value.trim();
+      var subject = 'Projecte interactiu per a ' + (org || 'un municipi');
+      var body = 'Nom: ' + name + '\nAjuntament/entitat: ' + org + '\nCorreu de contacte: ' + email + (msg ? ('\n\nIdea:\n' + msg) : '');
+      var mailto = 'mailto:laplanenca.rutes@gmail.com?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+      window.location.href = mailto;
+    });
+  })();
+
   (function () {
     var video = document.getElementById('heroVideo');
     var btn = document.getElementById('muteBtn');

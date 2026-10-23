@@ -193,7 +193,11 @@ const BALISES = [
     token: "sramon7pk", // token secret — no compartir
     imatge: "medalles/ermita-sant-ramon.png",
     lat: 41.377778, lng: 1.275944,
-    radi: 50
+    radi: 50,
+    // Endevinalla: substitueix l'escaneig de QR. Només es mostra i es pot
+    // resoldre quan el GPS confirma que ets dins el radi de la balisa.
+    pistaText: "No soc una porta ni tampoc un finestral,\nperò al fons de l'església tinc un lloc especial.\nDarrere de l'altar m'hauràs de buscar,\ni amb forma arrodonida em podràs trobar.\n\nQuè soc?",
+    respostaEndevinalla: "ABSIS"
   },
   {
     id: "CAP01",
@@ -641,6 +645,10 @@ function obrirRutaDetall(clau) {
       btnCta.textContent = '🎯 Comença la gimcana';
       btnCta.onclick = () => { tancarRutaDetall(); iniciarGimcana(); };
       notaQr.textContent = '🧭 Segueix el radar fins a cada Capó i escaneja el QR que trobaràs amagat per aconseguir-lo.';
+    } else if (clau === 'santramon') {
+      btnCta.textContent = '🧩 Resol l\'endevinalla';
+      btnCta.onclick = () => { tancarRutaDetall(); obrirEndevinalla('B07'); };
+      notaQr.textContent = "🧩 La pista només es desbloqueja quan ets físicament a l'ermita. Resol l'endevinalla per aconseguir la insígnia.";
     } else {
       btnCta.textContent = '📷 Escanejar QR';
       btnCta.onclick = () => { tancarRutaDetall(); iniciarEscaner(); };
@@ -1660,6 +1668,75 @@ async function validarIAtorgarMedalla(balisa, verificarGPS, coordsPrecaptades) {
 
   mostrarCelebracio(balisa);
   return true;
+}
+
+// ════════════════════════════════════════════════════════
+//  ENDEVINALLA (p. ex. El Peny i l'Ermita de Sant Ramon) — substitueix
+//  l'escaneig de QR per una pista + resposta escrita. La pista només es
+//  revela, i només es pot comprovar, quan el GPS confirma que ets dins
+//  el radi de la balisa.
+// ════════════════════════════════════════════════════════
+let endevinallaActiva = null;
+
+function obrirEndevinalla(balisaId) {
+  const balisa = BALISES.find(b => b.id === balisaId);
+  if (!balisa) return;
+  endevinallaActiva = balisa;
+  document.getElementById('endevinalla-estat-lluny').style.display = 'block';
+  document.getElementById('endevinalla-estat-prop').style.display = 'none';
+  document.getElementById('endevinalla-dist').textContent = '—';
+  document.getElementById('endevinalla-resposta').value = '';
+  document.getElementById('pantalla-endevinalla').style.display = 'block';
+  comprovaUbicacioEndevinalla();
+}
+
+function tancarEndevinalla() {
+  document.getElementById('pantalla-endevinalla').style.display = 'none';
+  endevinallaActiva = null;
+}
+
+async function comprovaUbicacioEndevinalla() {
+  const balisa = endevinallaActiva;
+  if (!balisa) return;
+  const btn = document.getElementById('endevinalla-comprova-ubicacio-btn');
+  if (btn) btn.disabled = true;
+  try {
+    let dist = 0;
+    if (!esAdmin) {
+      const pos = await obtenirGPS();
+      dist = calcularDistancia(pos.coords.latitude, pos.coords.longitude, balisa.lat, balisa.lng);
+    }
+    if (esAdmin || dist <= balisa.radi) {
+      document.getElementById('endevinalla-estat-lluny').style.display = 'none';
+      document.getElementById('endevinalla-estat-prop').style.display = 'block';
+      document.getElementById('endevinalla-pista-text').textContent = balisa.pistaText || '';
+    } else {
+      document.getElementById('endevinalla-dist').textContent = Math.round(dist);
+    }
+  } catch (e) {
+    mostrarToast('Cal permetre l\'accés al GPS per veure la pista.', true);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function normalitzaRespostaEndevinalla(s) {
+  return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toUpperCase();
+}
+
+async function enviaRespostaEndevinalla() {
+  const balisa = endevinallaActiva;
+  if (!balisa) return;
+  const input = document.getElementById('endevinalla-resposta');
+  if (normalitzaRespostaEndevinalla(input.value) !== normalitzaRespostaEndevinalla(balisa.respostaEndevinalla)) {
+    mostrarToast('❌ No és la resposta correcta. Torna-ho a provar!', true);
+    return;
+  }
+  const btn = document.getElementById('endevinalla-enviar-btn');
+  btn.disabled = true;
+  const ok = await validarIAtorgarMedalla(balisa, true);
+  btn.disabled = false;
+  if (ok) tancarEndevinalla();
 }
 
 // ════════════════════════════════════════════════════════
@@ -3884,6 +3961,18 @@ header {
 
 /* ── Gimcana dels Capons ── */
 #pantalla-gimcana { position: fixed; inset: 0; background: var(--fons); z-index: 100; overflow-y: auto; padding: 4.5rem 1.2rem 3rem; }
+#pantalla-endevinalla { display: none; position: fixed; inset: 0; background: var(--fons); z-index: 100; overflow-y: auto; padding: 4.5rem 1.2rem 3rem; }
+.endevinalla-pista-text {
+  white-space: pre-line; font-family: 'Fraunces', serif; font-style: italic;
+  color: var(--crema); font-size: 1.05rem; line-height: 1.5; margin-bottom: 1.4rem;
+}
+.endevinalla-input {
+  width: 100%; text-align: center; padding: 0.9rem; margin-bottom: 1rem;
+  background: rgba(0,0,0,0.25); border: 2px solid var(--or); border-radius: 10px;
+  font-family: 'Fraunces', serif; font-size: 1.3rem; font-weight: 700; color: var(--or);
+  text-transform: uppercase; caret-color: var(--or);
+}
+.endevinalla-input:focus { outline: none; border-color: var(--crema); background: rgba(212,168,67,0.12); }
 .gimcana-secc { text-align: center; }
 .gimcana-emoji { font-size: 3rem; margin-bottom: 0.5rem; }
 .gimcana-titol { font-size: 1rem; margin-bottom: 0.8rem; }
@@ -4314,6 +4403,27 @@ header {
   <button class="btn-scan" onclick="iniciarEscaner()">
     <span>📷</span> Escanejar QR
   </button>
+</div>
+
+<!-- ══ PANTALLA ENDEVINALLA (p. ex. El Peny i l'Ermita de Sant Ramon) ══ -->
+<div id="pantalla-endevinalla">
+  <button class="btn-tornar-ruta" onclick="tancarEndevinalla()">‹ Tornar</button>
+
+  <div id="endevinalla-estat-lluny" class="gimcana-secc">
+    <div class="gimcana-emoji">🧩</div>
+    <p class="gimcana-titol">La pista només es desbloqueja quan hi ets físicament</p>
+    <p class="gimcana-dist"><span id="endevinalla-dist">—</span> m</p>
+    <p class="gimcana-avis">Torna a comprovar-ho quan siguis al lloc.</p>
+    <button class="btn-principal" id="endevinalla-comprova-ubicacio-btn" onclick="comprovaUbicacioEndevinalla()">📍 Comprova la meva ubicació</button>
+  </div>
+
+  <div id="endevinalla-estat-prop" class="gimcana-secc" style="display:none">
+    <div class="gimcana-emoji">🧩</div>
+    <p class="gimcana-titol">Has arribat! Resol l'endevinalla</p>
+    <p class="endevinalla-pista-text" id="endevinalla-pista-text"></p>
+    <input type="text" id="endevinalla-resposta" class="endevinalla-input" placeholder="Escriu la resposta..." autocapitalize="characters" autocomplete="off">
+    <button class="btn-principal" id="endevinalla-enviar-btn" onclick="enviaRespostaEndevinalla()">🔓 Comprova la resposta</button>
+  </div>
 </div>
 
 <!-- ══ PANTALLA ESCÀNER ══ -->

@@ -197,7 +197,8 @@ const BALISES = [
     // Endevinalla: substitueix l'escaneig de QR. Només es mostra i es pot
     // resoldre quan el GPS confirma que ets dins el radi de la balisa.
     pistaText: "No soc una porta ni tampoc un finestral,\nperò al fons de l'església tinc un lloc especial.\nDarrere de l'altar m'hauràs de buscar,\ni amb forma arrodonida em podràs trobar.\n\nQuè soc?",
-    respostaEndevinalla: "ABSIS"
+    respostaEndevinalla: "ABSIS",
+    pistaLletres: "BSASI" // ordre desordenat en què es mostren les fitxes
   },
   {
     id: "CAP01",
@@ -1712,7 +1713,7 @@ async function comprovaUbicacioEndevinalla() {
       document.getElementById('endevinalla-estat-lluny').style.display = 'none';
       document.getElementById('endevinalla-estat-prop').style.display = 'block';
       document.getElementById('endevinalla-pista-text').textContent = balisa.pistaText || '';
-      generaLletresEndevinalla(balisa.respostaEndevinalla);
+      generaLletresEndevinalla(balisa);
     } else {
       document.getElementById('endevinalla-dist').textContent = Math.round(dist);
     }
@@ -1727,25 +1728,21 @@ function normalitzaRespostaEndevinalla(s) {
   return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toUpperCase();
 }
 
-function barrejaArray(arr) {
-  const a = arr.slice();
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
+// Munta les fitxes de lletres (estil Scrabble): la resposta es construeix
+// tocant-les en l'ordre correcte, enlloc d'escriure-les. L'ordre mostrat ve
+// de "pistaLletres" (desordenat a mà); si no n'hi ha, es barregen a l'atzar.
+function generaLletresEndevinalla(balisa) {
+  if (balisa.pistaLletres) {
+    endevinallaFitxes = normalitzaRespostaEndevinalla(balisa.pistaLletres).split('').map(l => ({ lletra: l }));
+  } else {
+    const lletres = normalitzaRespostaEndevinalla(balisa.respostaEndevinalla).split('');
+    const a = lletres.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    endevinallaFitxes = a.map(l => ({ lletra: l }));
   }
-  return a;
-}
-
-// Munta les fitxes de lletres barrejades (estil Scrabble): la resposta es
-// construeix tocant-les en l'ordre correcte, enlloc d'escriure-les.
-function generaLletresEndevinalla(paraula) {
-  const lletres = normalitzaRespostaEndevinalla(paraula).split('');
-  let ordre = barrejaArray(lletres.map((_, i) => i));
-  // Si l'atzar les deixa en l'ordre correcte, les tornem a barrejar
-  if (ordre.join(',') === lletres.map((_, i) => i).join(',')) {
-    ordre = barrejaArray(ordre);
-  }
-  endevinallaFitxes = ordre.map(i => ({ lletra: lletres[i] }));
   endevinallaSeleccio = [];
   renderitzaLletresEndevinalla();
 }
@@ -3179,6 +3176,11 @@ window.forcarPistaGimcana = forcarPistaGimcana;
 window.debugForcaPistaActual = debugForcaPistaActual;
 window.debugCapoSeguent = debugCapoSeguent;
 window.debugCapoAnterior = debugCapoAnterior;
+window.obrirEndevinalla = obrirEndevinalla;
+window.tancarEndevinalla = tancarEndevinalla;
+window.comprovaUbicacioEndevinalla = comprovaUbicacioEndevinalla;
+window.seleccionaLletraEndevinalla = seleccionaLletraEndevinalla;
+window.reiniciaLletresEndevinalla = reiniciaLletresEndevinalla;
 
 // Registre Service Worker (PWA)
 if ('serviceWorker' in navigator) {

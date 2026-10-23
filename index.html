@@ -1678,6 +1678,9 @@ async function validarIAtorgarMedalla(balisa, verificarGPS, coordsPrecaptades) {
 // ════════════════════════════════════════════════════════
 let endevinallaActiva = null;
 
+let endevinallaFitxes = [];    // [{lletra, usada}], ordre barrejat
+let endevinallaSeleccio = [];  // índexs de endevinallaFitxes triats, en l'ordre tocat
+
 function obrirEndevinalla(balisaId) {
   const balisa = BALISES.find(b => b.id === balisaId);
   if (!balisa) return;
@@ -1685,7 +1688,6 @@ function obrirEndevinalla(balisaId) {
   document.getElementById('endevinalla-estat-lluny').style.display = 'block';
   document.getElementById('endevinalla-estat-prop').style.display = 'none';
   document.getElementById('endevinalla-dist').textContent = '—';
-  document.getElementById('endevinalla-resposta').value = '';
   document.getElementById('pantalla-endevinalla').style.display = 'block';
   comprovaUbicacioEndevinalla();
 }
@@ -1710,6 +1712,7 @@ async function comprovaUbicacioEndevinalla() {
       document.getElementById('endevinalla-estat-lluny').style.display = 'none';
       document.getElementById('endevinalla-estat-prop').style.display = 'block';
       document.getElementById('endevinalla-pista-text').textContent = balisa.pistaText || '';
+      generaLletresEndevinalla(balisa.respostaEndevinalla);
     } else {
       document.getElementById('endevinalla-dist').textContent = Math.round(dist);
     }
@@ -1724,19 +1727,71 @@ function normalitzaRespostaEndevinalla(s) {
   return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').trim().toUpperCase();
 }
 
-async function enviaRespostaEndevinalla() {
+function barrejaArray(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Munta les fitxes de lletres barrejades (estil Scrabble): la resposta es
+// construeix tocant-les en l'ordre correcte, enlloc d'escriure-les.
+function generaLletresEndevinalla(paraula) {
+  const lletres = normalitzaRespostaEndevinalla(paraula).split('');
+  let ordre = barrejaArray(lletres.map((_, i) => i));
+  // Si l'atzar les deixa en l'ordre correcte, les tornem a barrejar
+  if (ordre.join(',') === lletres.map((_, i) => i).join(',')) {
+    ordre = barrejaArray(ordre);
+  }
+  endevinallaFitxes = ordre.map(i => ({ lletra: lletres[i] }));
+  endevinallaSeleccio = [];
+  renderitzaLletresEndevinalla();
+}
+
+function renderitzaLletresEndevinalla() {
+  const contLletres = document.getElementById('endevinalla-lletres');
+  contLletres.innerHTML = endevinallaFitxes.map((f, i) => {
+    const usada = endevinallaSeleccio.includes(i);
+    return `<button class="endevinalla-fitxa" ${usada ? 'disabled' : ''} onclick="seleccionaLletraEndevinalla(${i})">${f.lletra}</button>`;
+  }).join('');
+
+  const lletresConstruides = endevinallaSeleccio.map(i => endevinallaFitxes[i].lletra);
+  document.getElementById('endevinalla-construit').innerHTML = endevinallaFitxes
+    .map((_, i) => `<span class="endevinalla-casella-construida">${lletresConstruides[i] || ''}</span>`)
+    .join('');
+}
+
+async function seleccionaLletraEndevinalla(i) {
+  if (endevinallaSeleccio.includes(i)) return;
+  endevinallaSeleccio.push(i);
+  renderitzaLletresEndevinalla();
+  if (endevinallaSeleccio.length === endevinallaFitxes.length) {
+    await comprovaLletresEndevinalla();
+  }
+}
+
+function reiniciaLletresEndevinalla() {
+  endevinallaSeleccio = [];
+  renderitzaLletresEndevinalla();
+}
+
+async function comprovaLletresEndevinalla() {
   const balisa = endevinallaActiva;
   if (!balisa) return;
-  const input = document.getElementById('endevinalla-resposta');
-  if (normalitzaRespostaEndevinalla(input.value) !== normalitzaRespostaEndevinalla(balisa.respostaEndevinalla)) {
-    mostrarToast('❌ No és la resposta correcta. Torna-ho a provar!', true);
+  const paraula = endevinallaSeleccio.map(i => endevinallaFitxes[i].lletra).join('');
+  if (normalitzaRespostaEndevinalla(paraula) !== normalitzaRespostaEndevinalla(balisa.respostaEndevinalla)) {
+    mostrarToast('❌ Ordre incorrecte. Torna-ho a provar!', true);
+    setTimeout(reiniciaLletresEndevinalla, 900);
     return;
   }
-  const btn = document.getElementById('endevinalla-enviar-btn');
-  btn.disabled = true;
   const ok = await validarIAtorgarMedalla(balisa, true);
-  btn.disabled = false;
-  if (ok) tancarEndevinalla();
+  if (ok) {
+    tancarEndevinalla();
+  } else {
+    reiniciaLletresEndevinalla();
+  }
 }
 
 // ════════════════════════════════════════════════════════
@@ -3966,13 +4021,24 @@ header {
   white-space: pre-line; font-family: 'Fraunces', serif; font-style: italic;
   color: var(--crema); font-size: 1.05rem; line-height: 1.5; margin-bottom: 1.4rem;
 }
-.endevinalla-input {
-  width: 100%; text-align: center; padding: 0.9rem; margin-bottom: 1rem;
-  background: rgba(0,0,0,0.25); border: 2px solid var(--or); border-radius: 10px;
-  font-family: 'Fraunces', serif; font-size: 1.3rem; font-weight: 700; color: var(--or);
-  text-transform: uppercase; caret-color: var(--or);
+.endevinalla-construit {
+  display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.4rem;
 }
-.endevinalla-input:focus { outline: none; border-color: var(--crema); background: rgba(212,168,67,0.12); }
+.endevinalla-casella-construida {
+  width: 2.6rem; height: 2.6rem; display: flex; align-items: center; justify-content: center;
+  border-bottom: 3px solid var(--or); font-family: 'Fraunces', serif; font-size: 1.5rem;
+  font-weight: 700; color: var(--crema);
+}
+.endevinalla-lletres {
+  display: flex; justify-content: center; gap: 0.6rem; flex-wrap: wrap; margin-bottom: 1.4rem;
+}
+.endevinalla-fitxa {
+  width: 2.8rem; height: 2.8rem; border-radius: 8px;
+  background: var(--or); color: #16240F; border: none;
+  font-family: 'Fraunces', serif; font-size: 1.3rem; font-weight: 700;
+  cursor: pointer; box-shadow: 0 2px 0 rgba(0,0,0,0.25);
+}
+.endevinalla-fitxa:disabled { opacity: 0; pointer-events: none; }
 .gimcana-secc { text-align: center; }
 .gimcana-emoji { font-size: 3rem; margin-bottom: 0.5rem; }
 .gimcana-titol { font-size: 1rem; margin-bottom: 0.8rem; }
@@ -4421,8 +4487,9 @@ header {
     <div class="gimcana-emoji">🧩</div>
     <p class="gimcana-titol">Has arribat! Resol l'endevinalla</p>
     <p class="endevinalla-pista-text" id="endevinalla-pista-text"></p>
-    <input type="text" id="endevinalla-resposta" class="endevinalla-input" placeholder="Escriu la resposta..." autocapitalize="characters" autocomplete="off">
-    <button class="btn-principal" id="endevinalla-enviar-btn" onclick="enviaRespostaEndevinalla()">🔓 Comprova la resposta</button>
+    <div class="endevinalla-construit" id="endevinalla-construit"></div>
+    <div class="endevinalla-lletres" id="endevinalla-lletres"></div>
+    <button class="btn-secundari-gimcana" onclick="reiniciaLletresEndevinalla()">↺ Torna a començar</button>
   </div>
 </div>
 

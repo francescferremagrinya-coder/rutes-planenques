@@ -184,7 +184,7 @@ const BALISES = [
   },
   {
     id: "B07",
-    nom: "Ermita i Peny de Sant Ramon",
+    nom: "El Peny i l'Ermita de Sant Ramon",
     icon: "⛪",
     color: "#7A6A54",
     punts: 100,
@@ -545,20 +545,30 @@ const RUTES_INFO = {
     ]
   },
   santramon: {
-    titol: "Ermita i Peny de Sant Ramon",
-    subtitol: "Un balcó natural sobre el Pla",
-    intro: "Una pujada curta i senzilla fins a l'ermita i el mirador que domina tot el territori.",
+    titol: "El Peny i l'Ermita de Sant Ramon",
+    subtitol: "Un balcó natural i una ermita plens d'història, al cor del Pla",
+    intro: "Un recorregut circular i planer fins al balcó natural del Peny i les restes de l'ermita de Sant Ramon, ple de vistes i petites llegendes.",
     dificultat: 'facil',
     stats: [
-      { valor: 'Curta i fàcil', etiqueta: 'RECORREGUT' },
-      { valor: 'Totes les edats', etiqueta: 'PER A QUI' }
+      { valor: '~5 km', etiqueta: 'RECORREGUT' },
+      { valor: 'Fàcil, circular', etiqueta: 'DIFICULTAT' }
     ],
     imatge: "medalles/ermita-sant-ramon.png",
-    // TODO: substituir pel text definitiu que em passarà en Francesc
     paragrafs: [
-      `Pendent d'afegir la descripció de la ruta.`
+      `Una ruta circular d'uns 5 km per descobrir alguns dels racons més estimats del nostre entorn, entre boscos, formacions rocoses, antics camins i patrimoni local.`,
+      `## Cap al Peny`,
+      `Sortim de l'església de Sant Ramon i pugem pels Carpis fins a travessar el Camí Travesser, en direcció al Peny, tot passant pel bosc de Torrossolla.`,
+      `Fem una parada al Peny, un balcó natural de roca des d'on podem contemplar unes meravelloses vistes del nostre territori. Un indret molt especial, que molts planencs portem al cor i que forma part d'aquells llocs que sempre ve de gust tornar a visitar.`,
+      `## Cap a l'ermita`,
+      `Des d'aquí, seguim el sender cap a les restes de l'ermita de Sant Ramon. El tram més tècnic compta amb baranes de fusta que ens ajuden a avançar amb més seguretat. Passem pel costat de la font de Sant Ramon i, al cap de pocs metres, arribem davant de l'ermita.`,
+      `És el moment de descansar una estona als bancs i gaudir de les vistes que s'obren davant nostre: el Camp de Tarragona, el mar, Figuerola del Camp i el Pla de Santa Maria. I no ens oblidem del repte! Obrim l'app i la ruta per seguir les indicacions que ens portaran fins al QR. L'escaneig ens permetrà aconseguir una nova medalla digital.`,
+      `## La tornada i la llegenda del camí`,
+      `Per tornar, baixem pel camí habitual fins al Camí Travesser i enllacem amb l'antic camí de Sant Ramon, passant per la rasa del Tudores. Aquest tram ens acosta a la història dels antics camins de carro que connectaven el poble amb la zona dels Carpis.`,
+      `Precisament, la tradició popular recull una curiosa llegenda vinculada a aquest indret: en un tram de roca viva hi ha unes marques que s'han identificat popularment com la petjada i el cor de Nostre Senyor. Una història que forma part del patrimoni llegendari del nostre entorn i que ens recorda que els camins també amaguen històries que han passat de generació en generació.`,
+      `Finalment, arribem a la carretera de Figuerola, molt a prop del punt d'inici.`
     ],
     paragrafsFinal: [
+      `Una ruta per caminar sense presses, gaudir del paisatge i retrobar-nos amb alguns dels indrets més estimats del Pla.`,
       `Aquesta proposta forma part de Rutes del Pla i voltants, on cada recorregut té la seva pròpia insígnia digital col·leccionable. Per aconseguir-la cal arribar fins al punt indicat i escanejar el QR que hi trobaràs. Una manera de fer que cada ruta no sigui només un recorregut, sinó també una nova descoberta per afegir a la col·lecció.`
     ]
   }
@@ -4265,13 +4275,13 @@ header {
         </div>
       </div>
 
-      <!-- Nivell 5: Ermita i Peny de Sant Ramon — amagada fins que MOSTRAR_RUTA_SANTRAMON sigui true -->
+      <!-- Nivell 5: El Peny i l'Ermita de Sant Ramon — amagada fins que MOSTRAR_RUTA_SANTRAMON sigui true -->
       <div class="nivell-card" id="nivell-card-santramon" onclick="obrirRutaDetall('santramon')"
            style="display:none;background-image: url('medalles/ermita-sant-ramon.png')">
         <span class="nivell-etiqueta">Ruta fàcil</span>
         <span class="nivell-dificultat facil">🙂 Fàcil</span>
         <div class="nivell-info">
-          <h2 class="nivell-nom">Ermita i Peny de Sant Ramon</h2>
+          <h2 class="nivell-nom">El Peny i l'Ermita de Sant Ramon</h2>
           <div class="nivell-stats">📏 Curta i senzilla · 👨‍👩‍👧‍👦 Per a totes les edats</div>
           <div class="nivell-cta">📖 Descobreix la història ›</div>
         </div>

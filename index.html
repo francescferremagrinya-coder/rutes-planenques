@@ -55,6 +55,12 @@ import { getAnalytics, logEvent, isSupported as analyticsSuportada }
 // ════════════════════════════════════════════════════════
 const MOSTRAR_RUTA_CAPONA = false;
 
+// ════════════════════════════════════════════════════════
+//  ⛪ ERMITA I PENY DE SANT RAMON — canvia a "true" quan
+//  estigui llesta per publicar-se (QR enganxat al lloc)
+// ════════════════════════════════════════════════════════
+const MOSTRAR_RUTA_SANTRAMON = false;
+
 // Mentre MOSTRAR_RUTA_CAPONA sigui false, aquests correus (el de Google amb
 // què entren a l'app) també podran veure i jugar la Ruta dels Capons, sense
 // necessitat de ser admins. Afegeix-hi els correus dels testers que vulguis.
@@ -537,6 +543,24 @@ const RUTES_INFO = {
     paragrafsFinal: [
       "Cada Capó que trobis desbloqueja un tros de la seva història. Quan els hagis trobat tots, la família Capona tornarà a estar completa."
     ]
+  },
+  santramon: {
+    titol: "Ermita i Peny de Sant Ramon",
+    subtitol: "Un balcó natural sobre el Pla",
+    intro: "Una pujada curta i senzilla fins a l'ermita i el mirador que domina tot el territori.",
+    dificultat: 'facil',
+    stats: [
+      { valor: 'Curta i fàcil', etiqueta: 'RECORREGUT' },
+      { valor: 'Totes les edats', etiqueta: 'PER A QUI' }
+    ],
+    imatge: "medalles/ermita-sant-ramon.png",
+    // TODO: substituir pel text definitiu que em passarà en Francesc
+    paragrafs: [
+      `Pendent d'afegir la descripció de la ruta.`
+    ],
+    paragrafsFinal: [
+      `Aquesta proposta forma part de Rutes del Pla i voltants, on cada recorregut té la seva pròpia insígnia digital col·leccionable. Per aconseguir-la cal arribar fins al punt indicat i escanejar el QR que hi trobaràs. Una manera de fer que cada ruta no sigui només un recorregut, sinó també una nova descoberta per afegir a la col·lecció.`
+    ]
   }
 
 };
@@ -853,6 +877,8 @@ onAuthStateChanged(auth, async (user) => {
     esAdmin = ADMINS.includes(user.uid);
     const potVeureCapona = MOSTRAR_RUTA_CAPONA || esAdmin || TESTERS_CAPONA.includes(user.email);
     document.getElementById('nivell-card-capona').style.display = potVeureCapona ? 'flex' : 'none';
+    const potVeureSantRamon = MOSTRAR_RUTA_SANTRAMON || esAdmin;
+    document.getElementById('nivell-card-santramon').style.display = potVeureSantRamon ? 'flex' : 'none';
     const { introVista, avisVist } = await assegurarPerfil(user);
     aplicaMedallesPendents(user.uid, user.email).catch(() => {});
     introPendent = !introVista;
@@ -3415,6 +3441,7 @@ header {
   padding: 0.3rem 0.8rem; border-radius: 20px;
   font-size: 0.7rem; font-weight: 700; letter-spacing: 0.02em;
 }
+.nivell-dificultat.facil { background: rgba(92,122,62,0.85); color: #F5F0E8; }
 .nivell-dificultat.moderada { background: rgba(212,168,67,0.85); color: #16240F; }
 .nivell-dificultat.exigent { background: rgba(192,82,74,0.9); color: #F5F0E8; }
 .nivell-banner-properament {
@@ -4238,7 +4265,19 @@ header {
         </div>
       </div>
 
-      <!-- Nivell 5: La Ruta dels Capons (gimcana) — amagada fins que MOSTRAR_RUTA_CAPONA sigui true -->
+      <!-- Nivell 5: Ermita i Peny de Sant Ramon — amagada fins que MOSTRAR_RUTA_SANTRAMON sigui true -->
+      <div class="nivell-card" id="nivell-card-santramon" onclick="obrirRutaDetall('santramon')"
+           style="display:none;background-image: url('medalles/ermita-sant-ramon.png')">
+        <span class="nivell-etiqueta">Ruta fàcil</span>
+        <span class="nivell-dificultat facil">🙂 Fàcil</span>
+        <div class="nivell-info">
+          <h2 class="nivell-nom">Ermita i Peny de Sant Ramon</h2>
+          <div class="nivell-stats">📏 Curta i senzilla · 👨‍👩‍👧‍👦 Per a totes les edats</div>
+          <div class="nivell-cta">📖 Descobreix la història ›</div>
+        </div>
+      </div>
+
+      <!-- Nivell 6: La Ruta dels Capons (gimcana) — amagada fins que MOSTRAR_RUTA_CAPONA sigui true -->
       <div class="nivell-card" id="nivell-card-capona" onclick="obrirRutaDetall('capona')"
            style="display:none">
         <span class="nivell-etiqueta">🎯 Gimcana familiar</span>

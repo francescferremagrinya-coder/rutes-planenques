@@ -192,6 +192,10 @@ const BALISES = [
     descripcio: "Al Peny de Sant Ramon, el balcó natural amb vistes sobre tot el Pla",
     token: "sramon7pk", // token secret — no compartir
     imatge: "medalles/ermita-sant-ramon.png",
+    // Caixa de nom ajustada a la banda grisa buida sota "EXPLORADOR":
+    // medalla estreta (format vertical), calen una mida menor i un límit
+    // d'amplada perquè el nom no sobresurti del camp
+    nomCaixa: { xPct: 0.5, yPct: 0.72, mida: 0.032, amplePct: 0.37, color: '#1A0D06' },
     lat: 41.377778, lng: 1.275944,
     radi: 50,
     // Endevinalla: substitueix l'escaneig de QR. Només es mostra i es pot
@@ -1340,11 +1344,20 @@ async function crearImatgePersonalitzada(balisa, nom) {
   ctx.drawImage(img, 0, 0);
 
   const caixa = balisa.nomCaixa || NOM_CAIXA_DEFECTE;
-  const midaFont = Math.round(canvas.height * caixa.mida);
-  ctx.font = `700 ${midaFont}px 'Fraunces', serif`;
+  let midaFont = Math.round(canvas.height * caixa.mida);
   ctx.fillStyle = caixa.color;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
+  // Si la caixa defineix una amplada màxima (medalles més estretes, com la
+  // de Sant Ramon), reduïm la mida de la lletra fins que el nom hi càpiga
+  ctx.font = `700 ${midaFont}px 'Fraunces', serif`;
+  if (caixa.amplePct) {
+    const ampleMax = canvas.width * caixa.amplePct;
+    while (midaFont > 10 && ctx.measureText(nom).width > ampleMax) {
+      midaFont -= 1;
+      ctx.font = `700 ${midaFont}px 'Fraunces', serif`;
+    }
+  }
   ctx.fillText(nom, canvas.width * caixa.xPct, canvas.height * caixa.yPct);
 
   return canvas;

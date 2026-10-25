@@ -1412,33 +1412,40 @@ async function personalitzarMedalles(nom, medallesObtingudes) {
 // Correus exclosos del rànquing públic (organitzadors, no participants)
 const RANKING_EXCLOSOS_EMAIL = ["jessica.martinez.gabarro@gmail.com"];
 
+// Data de la medalla més recent d'un usuari — fa de criteri de desempat
+// (qui ha arribat abans als mateixos punts queda per davant)
+function ultimaMedallaData(u) {
+  const dates = (u.medalles || []).map(m => (m.data?.toDate?.() || new Date(m.data)).getTime());
+  return dates.length ? Math.max(...dates) : Infinity;
+}
+
 function escoltarRanking() {
   const q = query(collection(db, 'usuaris'), orderBy('punts', 'desc'));
   onSnapshot(q, (snap) => {
     const llista = document.getElementById('ranking-llista');
     llista.innerHTML = '';
-    let comptats = 0;       // nombre d'usuaris mostrats fins ara
-    let puntsAnterior = null;
-    let posMostrada = 0;    // posició real, compartida en cas d'empat (1,1,3...)
-    snap.forEach(d => {
-      const u = d.data();
-      const idsNoComptables = BALISES.filter(b => b.gimcana || b.oculta).map(b => b.id);
+
+    const idsNoComptables = BALISES.filter(b => b.gimcana || b.oculta).map(b => b.id);
+    const usuaris = snap.docs
+      .map(d => ({ id: d.id, dades: d.data() }))
+      .filter(({ id, dades }) => {
+        const medalles = (dades.medalles || []).filter(m => !idsNoComptables.includes(m.id)).length;
+        if (medalles === 0) return false; // no mostris usuaris sense cap medalla
+        if (ADMINS.includes(id) || RANKING_EXCLOSOS_EMAIL.includes(dades.email)) return false;
+        return true;
+      })
+      // Desempat: amb els mateixos punts, qui va arribar-hi abans (medalla més
+      // recent amb data més antiga) queda per davant — cada persona té la seva
+      // pròpia posició, sense posicions compartides
+      .sort((a, b) => (b.dades.punts || 0) - (a.dades.punts || 0) || ultimaMedallaData(a.dades) - ultimaMedallaData(b.dades));
+
+    let pos = 0;
+    usuaris.forEach(({ id, dades: u }) => {
+      pos++;
       const medalles = (u.medalles || []).filter(m => !idsNoComptables.includes(m.id)).length;
-      if (medalles === 0) return; // no mostris usuaris sense cap medalla
-      if (ADMINS.includes(d.id) || RANKING_EXCLOSOS_EMAIL.includes(u.email)) return;
-
-      comptats++;
-      if (u.punts !== puntsAnterior) {
-        posMostrada = comptats;
-        puntsAnterior = u.punts;
-      }
-
       const div = document.createElement('div');
-      div.className = 'ranking-item' + (d.id === usuariActual?.uid ? ' jo' : '');
-      // L'empat només es comparteix dins del podi (top 3); a partir d'aquí,
-      // numeració normal una posició per persona, encara que hi hagi empat de punts
-      const posFinal = posMostrada <= 3 ? posMostrada : comptats;
-      const emoji = posFinal === 1 ? '🥇' : posFinal === 2 ? '🥈' : posFinal === 3 ? '🥉' : `${posFinal}.`;
+      div.className = 'ranking-item' + (id === usuariActual?.uid ? ' jo' : '');
+      const emoji = pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : `${pos}.`;
       const nivell = nivellJugador(medalles);
       div.innerHTML = `
         <span class="ranking-pos">${emoji}</span>
@@ -1453,7 +1460,7 @@ function escoltarRanking() {
       llista.appendChild(div);
     });
 
-    if (comptats === 0) {
+    if (pos === 0) {
       llista.innerHTML = `<p class="ranking-buit">Encara ningú ha aconseguit cap medalla.<br>Sigues el primer a escanejar un QR! 🏅</p>`;
     }
   });

@@ -1428,10 +1428,14 @@ function escoltarRanking() {
       const div = document.createElement('div');
       div.className = 'ranking-item' + (d.id === usuariActual?.uid ? ' jo' : '');
       const emoji = posMostrada === 1 ? '🥇' : posMostrada === 2 ? '🥈' : posMostrada === 3 ? '🥉' : `${posMostrada}.`;
+      const nivell = nivellJugador(medalles);
       div.innerHTML = `
         <span class="ranking-pos">${emoji}</span>
         <img class="ranking-foto" src="${u.foto || ''}" alt="" onerror="this.style.display='none'">
-        <span class="ranking-nom">${u.nom}</span>
+        <span class="ranking-nom-wrap">
+          <span class="ranking-nom">${u.nom}</span>
+          ${nivell ? `<span class="ranking-nivell">${nivell.emoji} ${nivell.nom}</span>` : ''}
+        </span>
         <span class="ranking-medalles">${medalles} 🏅</span>
         <span class="ranking-punts">${u.punts} pts</span>
       `;
@@ -3919,7 +3923,9 @@ header {
 .ranking-item.jo { background: rgba(61,107,69,0.2); border-color: rgba(61,107,69,0.4); }
 .ranking-pos { font-size: 1.1rem; width: 28px; text-align: center; flex-shrink: 0; }
 .ranking-foto { width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0; }
-.ranking-nom { flex: 1; font-size: 0.88rem; font-weight: 500; }
+.ranking-nom-wrap { flex: 1; display: flex; flex-direction: column; gap: 0.1rem; min-width: 0; }
+.ranking-nom { font-size: 0.88rem; font-weight: 500; }
+.ranking-nivell { font-size: 0.68rem; font-weight: 700; color: var(--or); opacity: 0.85; }
 .ranking-medalles { font-size: 0.78rem; color: var(--pedra); }
 .ranking-punts { font-size: 0.8rem; color: var(--or); font-weight: 700; }
 

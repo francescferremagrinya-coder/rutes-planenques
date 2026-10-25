@@ -1435,7 +1435,10 @@ function escoltarRanking() {
 
       const div = document.createElement('div');
       div.className = 'ranking-item' + (d.id === usuariActual?.uid ? ' jo' : '');
-      const emoji = posMostrada === 1 ? '🥇' : posMostrada === 2 ? '🥈' : posMostrada === 3 ? '🥉' : `${posMostrada}.`;
+      // L'empat només es comparteix dins del podi (top 3); a partir d'aquí,
+      // numeració normal una posició per persona, encara que hi hagi empat de punts
+      const posFinal = posMostrada <= 3 ? posMostrada : comptats;
+      const emoji = posFinal === 1 ? '🥇' : posFinal === 2 ? '🥈' : posFinal === 3 ? '🥉' : `${posFinal}.`;
       const nivell = nivellJugador(medalles);
       div.innerHTML = `
         <span class="ranking-pos">${emoji}</span>

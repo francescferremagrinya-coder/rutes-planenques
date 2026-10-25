@@ -2715,6 +2715,29 @@ async function resetCaponsPropis() {
 }
 window.resetCaponsPropis = resetCaponsPropis;
 
+async function resetMedallaPropia(balisaId) {
+  if (!esAdmin || !usuariActual) return;
+  const balisa = BALISES.find(b => b.id === balisaId);
+  if (!balisa) return;
+  if (!confirm(`Segur que vols esborrar la TEVA medalla de "${balisa.nom}"? Això no afecta altres usuaris.`)) return;
+
+  const ref = doc(db, 'usuaris', usuariActual.uid);
+  const snap = await getDoc(ref);
+  const dades = snap.data();
+  const medalles = dades.medalles || [];
+  const puntsPerduts = medalles.filter(m => m.id === balisaId).reduce((s, m) => s + (m.punts || 0), 0);
+  const medallesRestants = medalles.filter(m => m.id !== balisaId);
+
+  await updateDoc(ref, {
+    medalles: medallesRestants,
+    punts: Math.max(0, (dades.punts || 0) - puntsPerduts)
+  });
+
+  mostrarToast(`Medalla de "${balisa.nom}" esborrada. Ja la pots tornar a aconseguir! 🔄`);
+  carregarPerfil();
+}
+window.resetMedallaPropia = resetMedallaPropia;
+
 // Actualitza els punts de les medalles JA guanyades per TOTS els usuaris perquè coincideixin
 // amb els valors actuals de BALISES (per defecte, canviar punts a BALISES només afecta
 // medalles noves — això posa també les antigues al dia).
@@ -4442,6 +4465,7 @@ header {
       <div id="admin-gimcana-force" class="admin-gimcana-force"></div>
       <h3>🔄 Reiniciar proves</h3>
       <button class="admin-force-btn" onclick="resetCaponsPropis()">Esborra les MEVES cartes dels Capons</button>
+      <button class="admin-force-btn" onclick="resetMedallaPropia('B07')">Esborra la MEVA medalla de Sant Ramon</button>
       <h3>🔢 Puntuacions</h3>
       <button class="admin-force-btn" onclick="recalcularPuntuacionsGlobals()">Actualitza els punts de TOTHOM als valors actuals</button>
       <button class="admin-force-btn" onclick="netejaMedallesDuplicades()">Neteja medalles i Capons duplicats</button>

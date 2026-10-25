@@ -1217,6 +1217,14 @@ async function carregarPerfil() {
   });
 }
 
+// Nivells de progressió segons el nombre de medalles (no cartes de capons) aconseguides
+function nivellJugador(n) {
+  if (n >= 8) return { nom: 'Llegenda Planenca', emoji: '🏆' };
+  if (n >= 6) return { nom: 'Aventurer', emoji: '🔥' };
+  if (n >= 3) return { nom: 'Explorador', emoji: '🧭' };
+  return null;
+}
+
 function renderPerfil(dades) {
   const medalles = dades.medalles || [];
   const punts = dades.punts || 0;
@@ -1228,6 +1236,14 @@ function renderPerfil(dades) {
   document.getElementById('usuari-nom').textContent = dades.nom;
   document.getElementById('usuari-foto').src = dades.foto || '';
   document.getElementById('usuari-punts').textContent = punts + ' pts';
+  const nivellEl = document.getElementById('usuari-nivell');
+  const nivell = nivellJugador(obtingudes);
+  if (nivell) {
+    nivellEl.textContent = `${nivell.emoji} ${nivell.nom}`;
+    nivellEl.style.display = 'inline-block';
+  } else {
+    nivellEl.style.display = 'none';
+  }
 
   // Progress
   document.getElementById('prog-text').textContent = `${obtingudes}/${total} balises`;
@@ -1684,7 +1700,18 @@ async function validarIAtorgarMedalla(balisa, verificarGPS, coordsPrecaptades) {
     aturaSeguimentGimcanaGPS();
   }
 
-  mostrarCelebracio(balisa);
+  // Si aquesta medalla fa pujar de nivell (Explorador/Aventurer/Llegenda Planenca),
+  // ho mostrem a la pantalla de celebració per anar motivant el jugador
+  let nouNivell = null;
+  if (!balisa.gimcana) {
+    const balisesVisibles = BALISES.filter(b => !b.gimcana && (!b.oculta || esAdmin));
+    const abans = (dades.medalles || []).filter(m => balisesVisibles.some(b => b.id === m.id)).length;
+    const nivellAbans = nivellJugador(abans);
+    const nivellDespres = nivellJugador(abans + 1);
+    if (nivellDespres && nivellDespres.nom !== nivellAbans?.nom) nouNivell = nivellDespres;
+  }
+
+  mostrarCelebracio(balisa, nouNivell);
   return true;
 }
 
@@ -1922,7 +1949,7 @@ window.tancarCartesCapons = tancarCartesCapons;
 // ════════════════════════════════════════════════════════
 //  CELEBRACIÓ — pantalla d'enhorabona en obtenir una medalla
 // ════════════════════════════════════════════════════════
-async function mostrarCelebracio(balisa) {
+async function mostrarCelebracio(balisa, nouNivell) {
   tocarSoCelebracio();
   document.getElementById('celebracio-sub').textContent = balisa.gimcana ? 'Has trobat una carta nova' : 'Has aconseguit una medalla';
   document.getElementById('celebracio-nom').textContent = balisa.nom;
@@ -1930,6 +1957,14 @@ async function mostrarCelebracio(balisa) {
   // Els Capons de la gimcana no donen punts individualment — només la medalla final Capó Explorador
   puntsEl.style.display = balisa.gimcana ? 'none' : 'block';
   puntsEl.textContent = `+${balisa.punts} pts`;
+
+  const nivellEl = document.getElementById('celebracio-nivell');
+  if (nouNivell) {
+    nivellEl.textContent = `${nouNivell.emoji} Nou nivell: ${nouNivell.nom}!`;
+    nivellEl.style.display = 'block';
+  } else {
+    nivellEl.style.display = 'none';
+  }
 
   const imgEl = document.getElementById('celebracio-img');
   const iconFbEl = document.getElementById('celebracio-icon-fb');
@@ -3430,6 +3465,11 @@ header {
 .perfil-info { flex: 1; }
 #usuari-nom { font-weight: 700; font-size: 1rem; }
 #usuari-punts { font-size: 0.8rem; color: var(--or); font-weight: 700; }
+#usuari-nivell {
+  margin-top: 0.35rem; font-size: 0.72rem; font-weight: 700;
+  color: var(--fons); background: var(--or);
+  padding: 0.2rem 0.6rem; border-radius: 999px;
+}
 
 /* Progress */
 .prog-wrap { padding: 0 1.2rem 1rem; }
@@ -4012,6 +4052,11 @@ header {
 }
 .celebracio-nom { font-family: 'Fraunces', serif; font-size: 1.2rem; font-weight: 700; margin-bottom: 0.3rem; }
 .celebracio-punts { color: var(--or); font-weight: 700; font-size: 0.95rem; margin-bottom: 1.6rem; }
+.celebracio-nivell {
+  color: var(--fons); background: var(--or); display: inline-block;
+  font-weight: 700; font-size: 0.85rem; padding: 0.4rem 0.9rem;
+  border-radius: 999px; margin: -0.8rem auto 1.4rem;
+}
 .celebracio-conte { color: var(--crema); font-size: 0.85rem; line-height: 1.5; text-align: left; background: rgba(255,255,255,0.05); border-radius: 10px; padding: 0.8rem; margin-bottom: 1.2rem; }
 
 /* Les meves cartes dels Capons */
@@ -4346,6 +4391,7 @@ header {
       <div class="perfil-info">
         <div id="usuari-nom">—</div>
         <div id="usuari-punts">0 pts</div>
+        <span id="usuari-nivell" style="display:none"></span>
       </div>
     </div>
 
@@ -4686,6 +4732,7 @@ header {
     <span id="celebracio-icon-fb" class="celebracio-icon-fb" style="display:none"></span>
     <p class="celebracio-nom" id="celebracio-nom">—</p>
     <p class="celebracio-punts" id="celebracio-punts">+0 pts</p>
+    <p class="celebracio-nivell" id="celebracio-nivell" style="display:none"></p>
     <p class="celebracio-conte" id="celebracio-conte" style="display:none"></p>
     <button class="btn-principal" id="celebracio-btn" onclick="tancarCelebracio()">Genial!</button>
   </div>

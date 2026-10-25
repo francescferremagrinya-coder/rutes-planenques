@@ -1419,6 +1419,11 @@ function ultimaMedallaData(u) {
   return dates.length ? Math.max(...dates) : Infinity;
 }
 
+// Guarda les dades de cada usuari mostrat al ranking perquè es puguin
+// consultar en clicar-hi (veure quines medalles té), sense haver-les de
+// tornar a demanar a Firestore
+let rankingCache = {};
+
 function escoltarRanking() {
   const q = query(collection(db, 'usuaris'), orderBy('punts', 'desc'));
   onSnapshot(q, (snap) => {
@@ -1442,9 +1447,11 @@ function escoltarRanking() {
     let pos = 0;
     usuaris.forEach(({ id, dades: u }) => {
       pos++;
+      rankingCache[id] = u;
       const medalles = (u.medalles || []).filter(m => !idsNoComptables.includes(m.id)).length;
       const div = document.createElement('div');
       div.className = 'ranking-item' + (id === usuariActual?.uid ? ' jo' : '');
+      div.onclick = () => obrirMedallesRanking(id);
       const emoji = pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : `${pos}.`;
       const nivell = nivellJugador(medalles);
       div.innerHTML = `
@@ -1465,6 +1472,71 @@ function escoltarRanking() {
     }
   });
 }
+
+// Mostra quines medalles té un jugador del ranking (clicant la seva fila)
+function obrirMedallesRanking(uid) {
+  const u = rankingCache[uid];
+  if (!u) return;
+  const idsNoComptables = BALISES.filter(b => b.gimcana || b.oculta).map(b => b.id);
+  const balisesVisibles = BALISES.filter(b => !idsNoComptables.includes(b.id));
+  const medalles = u.medalles || [];
+  const obtingudes = medalles.filter(m => balisesVisibles.some(b => b.id === m.id)).length;
+  const nivell = nivellJugador(obtingudes);
+
+  document.getElementById('ranking-medalles-foto').src = u.foto || '';
+  document.getElementById('ranking-medalles-nom').textContent = u.nom;
+  const nivellEl = document.getElementById('ranking-medalles-nivell');
+  if (nivell) {
+    nivellEl.textContent = `${nivell.emoji} ${nivell.nom}`;
+    nivellEl.style.display = 'inline-block';
+  } else {
+    nivellEl.style.display = 'none';
+  }
+
+  const grid = document.getElementById('ranking-medalles-grid');
+  grid.innerHTML = '';
+  balisesVisibles.forEach(b => {
+    const ob = medalles.find(m => m.id === b.id);
+    const div = document.createElement('div');
+    div.className = 'medalla' + (ob ? ' obtinguda' : ' bloquejada');
+    div.style.setProperty('--color', b.color);
+    if (ob) {
+      div.innerHTML = `
+        <div class="medalla-img-wrap">
+          ${b.imatge
+            ? `<img class="medalla-img" src="${b.imatge}" alt="${b.nom}"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+               <span class="medalla-icon-fb" style="display:none">${b.icon}</span>`
+            : `<span class="medalla-icon">${b.icon}</span>`
+          }
+        </div>
+        <span class="medalla-nom">${b.nom}</span>
+      `;
+    } else {
+      div.innerHTML = `
+        <div class="medalla-img-wrap bloq">
+          ${b.imatge
+            ? `<img class="medalla-img medalla-silueta" src="${b.imatge}" alt=""
+               onerror="this.style.display='none';this.nextElementSibling.style.display='block'">
+               <span class="medalla-icon-fb medalla-silueta" style="display:none">${b.icon}</span>`
+            : `<span class="medalla-icon medalla-silueta">${b.icon}</span>`
+          }
+          <span class="medalla-bloq-overlay">?</span>
+        </div>
+        <span class="medalla-nom" style="color:var(--pedra)">Per descobrir</span>
+      `;
+    }
+    grid.appendChild(div);
+  });
+
+  document.getElementById('modal-ranking-medalles').classList.add('visible');
+}
+window.obrirMedallesRanking = obrirMedallesRanking;
+
+function tancarMedallesRanking() {
+  document.getElementById('modal-ranking-medalles').classList.remove('visible');
+}
+window.tancarMedallesRanking = tancarMedallesRanking;
 
 // ════════════════════════════════════════════════════════
 //  ESCÀNER QR
@@ -3960,6 +4032,7 @@ header {
   padding: 0.7rem 0.8rem; border-radius: 10px;
   margin-bottom: 0.4rem; background: rgba(255,255,255,0.03);
   border: 1px solid rgba(255,255,255,0.06);
+  cursor: pointer;
 }
 .ranking-item.jo { background: rgba(61,107,69,0.2); border-color: rgba(61,107,69,0.4); }
 .ranking-pos { font-size: 1.1rem; width: 28px; text-align: center; flex-shrink: 0; }
@@ -4061,6 +4134,31 @@ header {
   gap: 1rem; padding: 2rem;
 }
 #modal-medalla-gran.visible { display: flex; }
+
+/* Medalles d'un jugador del ranking */
+#modal-ranking-medalles {
+  display: none;
+  position: fixed; inset: 0; z-index: 205;
+  background: rgba(10,16,10,0.88);
+  align-items: center; justify-content: center;
+  padding: 1.5rem;
+}
+#modal-ranking-medalles.visible { display: flex; }
+.ranking-medalles-card {
+  max-width: 420px; width: 100%; max-height: 85vh; overflow-y: auto;
+  background: linear-gradient(180deg, #24391f 0%, #16240f 100%);
+  border: 1px solid rgba(212,168,67,0.35);
+  border-radius: 24px;
+  padding: 1.6rem 1.2rem 1.3rem;
+  text-align: center;
+}
+.ranking-medalles-header { display: flex; flex-direction: column; align-items: center; gap: 0.4rem; margin-bottom: 1rem; }
+.ranking-medalles-foto { width: 56px; height: 56px; border-radius: 50%; object-fit: cover; }
+#ranking-medalles-nom { font-size: 1rem; color: var(--crema); }
+#ranking-medalles-nivell {
+  font-size: 0.72rem; font-weight: 700; color: var(--fons); background: var(--or);
+  padding: 0.2rem 0.6rem; border-radius: 999px;
+}
 #modal-medalla-gran img {
   max-width: min(90vw, 420px); max-height: 70vh;
   object-fit: contain;
@@ -4798,6 +4896,19 @@ header {
 <div id="modal-medalla-gran" onclick="tancarMedallaGran()">
   <img id="medalla-gran-img" src="" alt="">
   <p id="medalla-gran-nom"></p>
+</div>
+
+<!-- ══ MEDALLES D'UN JUGADOR DEL RANKING (en clicar la seva fila) ══ -->
+<div id="modal-ranking-medalles" onclick="tancarMedallesRanking()">
+  <div class="ranking-medalles-card" onclick="event.stopPropagation()">
+    <div class="ranking-medalles-header">
+      <img id="ranking-medalles-foto" class="ranking-medalles-foto" src="" alt="" onerror="this.style.display='none'">
+      <strong id="ranking-medalles-nom">—</strong>
+      <span id="ranking-medalles-nivell" style="display:none"></span>
+    </div>
+    <div class="medalles-grid" id="ranking-medalles-grid"></div>
+    <button class="btn-tancar-scan" onclick="tancarMedallesRanking()">✕ Tancar</button>
+  </div>
 </div>
 
 </body>

@@ -665,7 +665,7 @@ function obrirRutaDetall(clau) {
     } else if (clau === 'santramon') {
       btnCta.textContent = '🧩 Resol l\'endevinalla';
       btnCta.onclick = () => { tancarRutaDetall(); obrirEndevinalla('B07'); };
-      notaQr.textContent = "🧩 La pista només es desbloqueja quan ets físicament a l'ermita. Resol l'endevinalla per aconseguir la insígnia.";
+      notaQr.textContent = "🧩 Aquesta ruta no té cap QR físic. Quan ets davant l'ermita, obre l'app i resol l'endevinalla que se't desbloqueja per aconseguir la insígnia.";
     } else {
       btnCta.textContent = '📷 Escanejar QR';
       btnCta.onclick = () => { tancarRutaDetall(); iniciarEscaner(); };

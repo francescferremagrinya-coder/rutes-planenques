@@ -61,6 +61,14 @@ const MOSTRAR_RUTA_CAPONA = false;
 // ════════════════════════════════════════════════════════
 const MOSTRAR_RUTA_SANTRAMON = true;
 
+// TEMPORAL: per provar l'endevinalla de Sant Ramon com si NO fossis admin
+// (comprovació GPS real, sense saltar-la). Treu "B07" d'aquesta llista
+// quan ja no calgui fer proves reals al lloc.
+const FORCA_GPS_REAL = ['B07'];
+function potSaltarGPS(balisaId) {
+  return esAdmin && !FORCA_GPS_REAL.includes(balisaId);
+}
+
 // Mentre MOSTRAR_RUTA_CAPONA sigui false, aquests correus (el de Google amb
 // què entren a l'app) també podran veure i jugar la Ruta dels Capons, sense
 // necessitat de ser admins. Afegeix-hi els correus dels testers que vulguis.
@@ -1658,7 +1666,7 @@ async function validarIAtorgarMedalla(balisa, verificarGPS, coordsPrecaptades) {
   // Verificació GPS (per QRs nous) — els admins es poden saltar la comprovació per fer proves.
   // Si ja teníem coordenades capturades (reintent des de la cua), les reutilitzem
   // enlloc de tornar a demanar GPS, que podria donar la ubicació actual (p. ex. a casa).
-  if (verificarGPS && !esAdmin) {
+  if (verificarGPS && !potSaltarGPS(balisa.id)) {
     mostrarToast('📡 Verificant ubicació GPS...');
     try {
       const coords = coordsPrecaptades || (await obtenirGPS()).coords;
@@ -1674,7 +1682,7 @@ async function validarIAtorgarMedalla(balisa, verificarGPS, coordsPrecaptades) {
       mostrarToast('Cal permetre l\'accés al GPS per validar.', true);
       return false;
     }
-  } else if (verificarGPS && esAdmin) {
+  } else if (verificarGPS && potSaltarGPS(balisa.id)) {
     mostrarToast('📡 Admin: comprovació GPS saltada.');
   }
 
@@ -1761,11 +1769,11 @@ async function comprovaUbicacioEndevinalla() {
   if (btn) btn.disabled = true;
   try {
     let dist = 0;
-    if (!esAdmin) {
+    if (!potSaltarGPS(balisa.id)) {
       const pos = await obtenirGPS();
       dist = calcularDistancia(pos.coords.latitude, pos.coords.longitude, balisa.lat, balisa.lng);
     }
-    if (esAdmin || dist <= balisa.radi) {
+    if (potSaltarGPS(balisa.id) || dist <= balisa.radi) {
       document.getElementById('endevinalla-estat-lluny').style.display = 'none';
       document.getElementById('endevinalla-estat-prop').style.display = 'block';
       document.getElementById('endevinalla-pista-text').textContent = balisa.pistaText || '';

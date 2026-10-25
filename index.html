@@ -1409,16 +1409,25 @@ function escoltarRanking() {
   onSnapshot(q, (snap) => {
     const llista = document.getElementById('ranking-llista');
     llista.innerHTML = '';
-    let pos = 1;
+    let comptats = 0;       // nombre d'usuaris mostrats fins ara
+    let puntsAnterior = null;
+    let posMostrada = 0;    // posició real, compartida en cas d'empat (1,1,3...)
     snap.forEach(d => {
       const u = d.data();
       const idsNoComptables = BALISES.filter(b => b.gimcana || b.oculta).map(b => b.id);
       const medalles = (u.medalles || []).filter(m => !idsNoComptables.includes(m.id)).length;
       if (medalles === 0) return; // no mostris usuaris sense cap medalla
       if (ADMINS.includes(d.id) || RANKING_EXCLOSOS_EMAIL.includes(u.email)) return;
+
+      comptats++;
+      if (u.punts !== puntsAnterior) {
+        posMostrada = comptats;
+        puntsAnterior = u.punts;
+      }
+
       const div = document.createElement('div');
       div.className = 'ranking-item' + (d.id === usuariActual?.uid ? ' jo' : '');
-      const emoji = pos === 1 ? '🥇' : pos === 2 ? '🥈' : pos === 3 ? '🥉' : `${pos}.`;
+      const emoji = posMostrada === 1 ? '🥇' : posMostrada === 2 ? '🥈' : posMostrada === 3 ? '🥉' : `${posMostrada}.`;
       div.innerHTML = `
         <span class="ranking-pos">${emoji}</span>
         <img class="ranking-foto" src="${u.foto || ''}" alt="" onerror="this.style.display='none'">
@@ -1427,10 +1436,9 @@ function escoltarRanking() {
         <span class="ranking-punts">${u.punts} pts</span>
       `;
       llista.appendChild(div);
-      pos++;
     });
 
-    if (pos === 1) {
+    if (comptats === 0) {
       llista.innerHTML = `<p class="ranking-buit">Encara ningú ha aconseguit cap medalla.<br>Sigues el primer a escanejar un QR! 🏅</p>`;
     }
   });

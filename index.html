@@ -645,6 +645,8 @@ function obrirRutaDetall(clau) {
   const btnCta = document.getElementById('ruta-detall-cta');
   const notaQr = document.getElementById('ruta-detall-nota-qr');
   const properamentEl = document.getElementById('ruta-detall-properament');
+  const avisEspecialEl = document.getElementById('ruta-detall-avis-especial');
+  avisEspecialEl.style.display = 'none';
   document.getElementById('ruta-detall-cartes-btn').style.display = clau === 'capona' ? 'block' : 'none';
   btnCta.disabled = false;
   // Els admins es poden saltar el bloqueig "properament" per provar la ruta abans que estigui activa per a tothom
@@ -665,7 +667,9 @@ function obrirRutaDetall(clau) {
     } else if (clau === 'santramon') {
       btnCta.textContent = '🧩 Resol l\'endevinalla';
       btnCta.onclick = () => { tancarRutaDetall(); obrirEndevinalla('B07'); };
-      notaQr.textContent = "🧩 Aquesta ruta no té cap QR físic. Quan ets davant l'ermita, obre l'app i resol l'endevinalla que se't desbloqueja per aconseguir la insígnia.";
+      avisEspecialEl.textContent = '🚫📷 Aquesta ruta NO té cap QR físic';
+      avisEspecialEl.style.display = 'block';
+      notaQr.textContent = "🧩 Quan ets davant l'ermita, obre l'app i resol l'endevinalla que se't desbloqueja per aconseguir la insígnia.";
     } else {
       btnCta.textContent = '📷 Escanejar QR';
       btnCta.onclick = () => { tancarRutaDetall(); iniciarEscaner(); };
@@ -3942,6 +3946,16 @@ header {
   font-size: 0.75rem; color: var(--pedra); line-height: 1.5;
   text-align: center; padding: 0 0.5rem;
 }
+.ruta-detall-avis-especial {
+  background: rgba(212,168,67,0.14);
+  border: 1.5px solid rgba(212,168,67,0.55);
+  border-radius: 12px;
+  padding: 0.9rem 1rem;
+  font-size: 0.9rem; font-weight: 700;
+  line-height: 1.5; text-align: center;
+  color: var(--crema);
+  margin-bottom: 1rem;
+}
 .btn-foto360 {
   width: 100%; background: rgba(123,181,200,0.12);
   border: 1px solid rgba(123,181,200,0.35);
@@ -4834,6 +4848,7 @@ header {
     <p class="ruta-detall-avis" id="ruta-detall-avis" style="display:none"></p>
     <p class="ruta-detall-track-avis" id="ruta-detall-track-avis" style="display:none">🧭 Recomanem seguir el track de Wikiloc (obre'l o descarrega'l al teu dispositiu de seguiment) durant tot el recorregut: en alguns trams és fàcil perdre's si no el segueixes.</p>
 
+    <p class="ruta-detall-avis-especial" id="ruta-detall-avis-especial" style="display:none"></p>
     <div class="ruta-detall-botons">
       <button class="btn-principal" id="ruta-detall-cta" onclick="tancarRutaDetall(); iniciarEscaner()">📷 Escanejar QR</button>
       <p class="ruta-detall-nota-qr" id="ruta-detall-nota-qr">🏅 Quan arribis físicament al lloc, escaneja el QR que hi trobaràs per aconseguir la insígnia d'aquesta ruta.</p>

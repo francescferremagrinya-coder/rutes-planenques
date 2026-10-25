@@ -1499,9 +1499,11 @@ function obrirMedallesRanking(uid) {
     const ob = medalles.find(m => m.id === b.id);
     const fila = document.createElement('div');
     fila.className = 'ranking-medalla-fila' + (ob ? ' obtinguda' : '');
+    const data = ob ? formatData(ob.data?.toDate?.() || new Date(ob.data)) : '';
     fila.innerHTML = `
       <span class="ranking-medalla-icona">${ob ? '✅' : '⬜️'}</span>
       <span class="ranking-medalla-nom">${b.nom}</span>
+      ${ob ? `<span class="ranking-medalla-data">${data}</span>` : ''}
     `;
     llista.appendChild(fila);
   });
@@ -4144,6 +4146,8 @@ header {
 }
 .ranking-medalla-fila.obtinguda { color: var(--crema); background: rgba(61,107,69,0.18); }
 .ranking-medalla-icona { flex-shrink: 0; font-size: 0.9rem; }
+.ranking-medalla-nom { flex: 1; }
+.ranking-medalla-data { flex-shrink: 0; font-size: 0.74rem; color: var(--or); }
 #modal-medalla-gran img {
   max-width: min(90vw, 420px); max-height: 70vh;
   object-fit: contain;

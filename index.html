@@ -2954,6 +2954,43 @@ async function atorgaMedallaManual() {
 }
 window.atorgaMedallaManual = atorgaMedallaManual;
 
+// Dona els 8 Capons (i la medalla final "Capó Explorador") a un correu de
+// cop — per ensenyar la gimcana sencera abans que els QRs físics estiguin
+// desplegats. Fa servir el mateix camp de correu que atorgaMedallaManual().
+async function atorgaTotsElsCaponsManual() {
+  if (!esAdmin) return;
+  const email = document.getElementById('admin-medalla-email').value.trim();
+  if (!email) { mostrarToast('Posa un correu vàlid.', true); return; }
+
+  const q = query(collection(db, 'usuaris'), where('email', '==', email));
+  const resultat = await getDocs(q);
+  if (resultat.empty) { mostrarToast(`No trobo cap usuari amb el correu ${email}.`, true); return; }
+
+  const docUsuari = resultat.docs[0];
+  const dades = docUsuari.data();
+  const ref = doc(db, 'usuaris', docUsuari.id);
+
+  const capons = gimcanaCapons();
+  const caponsTrobats = dades.caponsTrobats || [];
+  const idsJaTrobats = new Set(caponsTrobats.map(c => c.id));
+  const nousCapons = capons
+    .filter(c => !idsJaTrobats.has(c.id))
+    .map(c => ({ id: c.id, nom: c.nom, data: new Date() }));
+  const caponsFinals = [...caponsTrobats, ...nousCapons];
+
+  const capoFinal = BALISES.find(b => b.id === 'CAPO_EXPLORADOR');
+  const medalles = dades.medalles || [];
+  const jaTeMedallaFinal = capoFinal && medalles.some(m => m.id === capoFinal.id);
+  const update = { caponsTrobats: caponsFinals };
+  if (capoFinal && !jaTeMedallaFinal) {
+    update.medalles = [...medalles, { id: capoFinal.id, nom: capoFinal.nom, data: new Date(), punts: capoFinal.punts }];
+    update.punts = (dades.punts || 0) + capoFinal.punts;
+  }
+  await updateDoc(ref, update);
+  mostrarToast(`✅ 8 Capons${!jaTeMedallaFinal ? ' + medalla final' : ''} donats a ${dades.nom || email}.`);
+}
+window.atorgaTotsElsCaponsManual = atorgaTotsElsCaponsManual;
+
 // Com atorgaMedallaManual(), però per a una llista de correus de cop (un per
 // línia o separats per comes) — pensat per a migracions, com la gent que ja
 // havia completat una ruta pel Google Forms antic abans que existís l'app.
@@ -4591,6 +4628,9 @@ header {
       <p class="admin-usuari-medalles">O a diversos correus de cop (un per línia, o separats per comes) — per exemple per migrar qui ja havia fet una ruta pel Google Forms antic. Fa servir la balisa triada a dalt.</p>
       <textarea id="admin-medalla-email-massiu" class="suggeriment-textarea" rows="4" placeholder="correu1@exemple.com&#10;correu2@exemple.com" style="margin-bottom:0.6rem"></textarea>
       <button class="admin-force-btn" onclick="atorgaMedallaManualMassiva()">Atorga-la a tots aquests correus</button>
+      <h3>🐔 Donar tots els Capons d'un cop</h3>
+      <p class="admin-usuari-medalles">Per ensenyar la gimcana sencera a algú abans que els QRs estiguin desplegats físicament. Dona els 8 Capons i la medalla final "Capó Explorador" al correu de dalt.</p>
+      <button class="admin-force-btn" onclick="atorgaTotsElsCaponsManual()">Dona tots els Capons a aquest correu</button>
       <h3>📧 Correus</h3>
       <button class="admin-force-btn" onclick="copiaCorreusAmbMedalla()">Copia els correus de qui té alguna medalla</button>
       <h3>✉️ Suggeriments</h3>

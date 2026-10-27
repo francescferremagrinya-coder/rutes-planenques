@@ -1683,7 +1683,7 @@ async function processarQR(text) {
 async function validarIAtorgarMedalla(balisa, verificarGPS, coordsPrecaptades) {
   if (!navigator.onLine) {
     let coords = coordsPrecaptades;
-    if (verificarGPS && !coords && !esAdmin) {
+    if (verificarGPS && !coords && !potSaltarGPS(balisa.id)) {
       try {
         const pos = await obtenirGPS();
         coords = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
@@ -1811,6 +1811,7 @@ let endevinallaActiva = null;
 
 let endevinallaFitxes = [];    // [{lletra, usada}], ordre barrejat
 let endevinallaSeleccio = [];  // índexs de endevinallaFitxes triats, en l'ordre tocat
+let endevinallaCoordsPrecaptades = null; // GPS ja confirmat en comprovaUbicacioEndevinalla(), reutilitzat en validar
 
 function obrirEndevinalla(balisaId) {
   const balisa = BALISES.find(b => b.id === balisaId);
@@ -1820,6 +1821,7 @@ function obrirEndevinalla(balisaId) {
   document.getElementById('endevinalla-estat-prop').style.display = 'none';
   document.getElementById('endevinalla-dist').textContent = '—';
   document.getElementById('pantalla-endevinalla').style.display = 'block';
+  endevinallaCoordsPrecaptades = null;
   comprovaUbicacioEndevinalla();
 }
 
@@ -1838,6 +1840,7 @@ async function comprovaUbicacioEndevinalla() {
     if (!potSaltarGPS(balisa.id)) {
       const pos = await obtenirGPS();
       dist = calcularDistancia(pos.coords.latitude, pos.coords.longitude, balisa.lat, balisa.lng);
+      endevinallaCoordsPrecaptades = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
     }
     if (potSaltarGPS(balisa.id) || dist <= balisa.radi) {
       document.getElementById('endevinalla-estat-lluny').style.display = 'none';
@@ -1913,7 +1916,7 @@ async function comprovaLletresEndevinalla() {
     setTimeout(reiniciaLletresEndevinalla, 900);
     return;
   }
-  const ok = await validarIAtorgarMedalla(balisa, true);
+  const ok = await validarIAtorgarMedalla(balisa, true, endevinallaCoordsPrecaptades);
   if (ok) {
     tancarEndevinalla();
   } else {

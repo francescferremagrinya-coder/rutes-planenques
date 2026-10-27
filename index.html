@@ -1238,6 +1238,17 @@ function nivellJugador(n) {
   return null;
 }
 
+// Compta les medalles REALS d'algú (rutes + "Capó Explorador" si l'ha
+// aconseguit) per calcular-ne el nivell. A diferència de la graella de
+// medalles, aquí SÍ que compta encara que la balisa sigui "oculta" (com
+// Capó Explorador): oculta només vol dir "no la mostris com a targeta
+// bloquejada a la graella", no "no compta pel nivell". Els Capons
+// individuals de la gimcana mai arriben a "medalles" (van a
+// "caponsTrobats"), així que ja queden exclosos sense fer res més.
+function comptaMedallesReals(dades) {
+  return (dades.medalles || []).filter(m => BALISES.some(b => b.id === m.id && !b.gimcana)).length;
+}
+
 function renderPerfil(dades) {
   const medalles = dades.medalles || [];
   const punts = dades.punts || 0;
@@ -1250,7 +1261,7 @@ function renderPerfil(dades) {
   document.getElementById('usuari-foto').src = dades.foto || '';
   document.getElementById('usuari-punts').textContent = punts + ' pts';
   const nivellEl = document.getElementById('usuari-nivell');
-  const nivell = nivellJugador(obtingudes);
+  const nivell = nivellJugador(comptaMedallesReals(dades));
   if (nivell) {
     nivellEl.textContent = `${nivell.emoji} ${nivell.nom}`;
     nivellEl.style.display = 'inline-block';
@@ -1435,11 +1446,10 @@ function escoltarRanking() {
     const llista = document.getElementById('ranking-llista');
     llista.innerHTML = '';
 
-    const idsNoComptables = BALISES.filter(b => b.gimcana || b.oculta).map(b => b.id);
     const usuaris = snap.docs
       .map(d => ({ id: d.id, dades: d.data() }))
       .filter(({ id, dades }) => {
-        const medalles = (dades.medalles || []).filter(m => !idsNoComptables.includes(m.id)).length;
+        const medalles = comptaMedallesReals(dades);
         if (medalles === 0) return false; // no mostris usuaris sense cap medalla
         if (ADMINS.includes(id) || RANKING_EXCLOSOS_EMAIL.includes(dades.email)) return false;
         return true;
@@ -1453,7 +1463,7 @@ function escoltarRanking() {
     usuaris.forEach(({ id, dades: u }) => {
       pos++;
       rankingCache[id] = u;
-      const medalles = (u.medalles || []).filter(m => !idsNoComptables.includes(m.id)).length;
+      const medalles = comptaMedallesReals(u);
       const div = document.createElement('div');
       div.className = 'ranking-item' + (id === usuariActual?.uid ? ' jo' : '');
       div.onclick = () => obrirMedallesRanking(id);
@@ -1482,11 +1492,9 @@ function escoltarRanking() {
 function obrirMedallesRanking(uid) {
   const u = rankingCache[uid];
   if (!u) return;
-  const idsNoComptables = BALISES.filter(b => b.gimcana || b.oculta).map(b => b.id);
-  const balisesVisibles = BALISES.filter(b => !idsNoComptables.includes(b.id));
+  const balisesVisibles = BALISES.filter(b => !b.gimcana && (!b.oculta || esAdmin));
   const medalles = u.medalles || [];
-  const obtingudes = medalles.filter(m => balisesVisibles.some(b => b.id === m.id)).length;
-  const nivell = nivellJugador(obtingudes);
+  const nivell = nivellJugador(comptaMedallesReals(u));
 
   document.getElementById('ranking-medalles-foto').src = u.foto || '';
   document.getElementById('ranking-medalles-nom').textContent = u.nom;
@@ -1777,21 +1785,25 @@ async function validarIAtorgarMedalla(balisa, verificarGPS, coordsPrecaptades) {
   }
 
   trackEvent('medalla_aconseguida', { balisa_id: balisa.id, balisa_nom: balisa.nom, punts: balisa.punts });
+  let gimcanaCompletadaAra = false;
   if (balisa.gimcana && !(await properCapoGimcana())) {
     trackEvent('gimcana_completada');
     await atorgarMedallaFinalGimcana();
+    gimcanaCompletadaAra = true;
     // Ja no hi ha cap Capó més a buscar: aturem el GPS de fons que havíem
     // deixat actiu en escanejar (si no, seguiria avisant de sortir del
     // track encara que la gimcana ja estigui acabada).
     aturaSeguimentGimcanaGPS();
   }
 
-  // Si aquesta medalla fa pujar de nivell (Explorador/Aventurer/Llegenda Planenca),
-  // ho mostrem a la pantalla de celebració per anar motivant el jugador
+  // Si aquesta medalla (o, en completar la gimcana, la medalla final "Capó
+  // Explorador" que s'acaba d'atorgar) fa pujar de nivell, ho mostrem a la
+  // pantalla de celebració per anar motivant el jugador. "dades" és
+  // l'estat d'abans d'aquesta medalla, així que sempre representa el
+  // recompte previ correcte en tots dos casos.
   let nouNivell = null;
-  if (!balisa.gimcana) {
-    const balisesVisibles = BALISES.filter(b => !b.gimcana && (!b.oculta || esAdmin));
-    const abans = (dades.medalles || []).filter(m => balisesVisibles.some(b => b.id === m.id)).length;
+  if (!balisa.gimcana || gimcanaCompletadaAra) {
+    const abans = comptaMedallesReals(dades);
     const nivellAbans = nivellJugador(abans);
     const nivellDespres = nivellJugador(abans + 1);
     if (nivellDespres && nivellDespres.nom !== nivellAbans?.nom) nouNivell = nivellDespres;

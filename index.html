@@ -64,7 +64,7 @@ const MOSTRAR_RUTA_SANTRAMON = true;
 // TEMPORAL: per provar l'endevinalla de Sant Ramon com si NO fossis admin
 // (comprovació GPS real, sense saltar-la). Treu "B07" d'aquesta llista
 // quan ja no calgui fer proves reals al lloc.
-const FORCA_GPS_REAL = ['B07'];
+const FORCA_GPS_REAL = [];
 function potSaltarGPS(balisaId) {
   return esAdmin && !FORCA_GPS_REAL.includes(balisaId);
 }

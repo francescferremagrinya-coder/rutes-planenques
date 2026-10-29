@@ -3201,7 +3201,13 @@ async function mostrarAdmin() {
     const llistaUsuaris = document.getElementById('admin-usuaris-llista');
     const files = [];
     totsUsuaris.forEach(d => files.push(d.data()));
-    files.sort((a, b) => (b.medalles?.length || 0) - (a.medalles?.length || 0));
+    // Ordre d'afegit (primer qui va entrar primer amb Google); si algú no té
+    // "creat" (usuaris molt antics d'abans d'aquest camp), es tracta com el més antic
+    files.sort((a, b) => {
+      const da = a.creat?.toDate ? a.creat.toDate() : new Date(0);
+      const db_ = b.creat?.toDate ? b.creat.toDate() : new Date(0);
+      return da - db_;
+    });
 
     llistaUsuaris.innerHTML = files.map(u => {
       const medalles = u.medalles || [];

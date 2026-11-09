@@ -1462,7 +1462,10 @@ function escoltarRanking() {
     let pos = 0;
     usuaris.forEach(({ id, dades: u }) => {
       pos++;
-      rankingCache[id] = u;
+      // Només es guarda el que fa servir obrirMedallesRanking() (nom, foto,
+      // medalles) — mai el document sencer, per no deixar el correu de
+      // tothom accessible des de la consola del navegador
+      rankingCache[id] = { nom: u.nom, foto: u.foto, medalles: u.medalles };
       const medalles = comptaMedallesReals(u);
       const div = document.createElement('div');
       div.className = 'ranking-item' + (id === usuariActual?.uid ? ' jo' : '');
@@ -1878,6 +1881,14 @@ function normalitzaRespostaEndevinalla(s) {
 // de "pistaLletres" (desordenat a mà); si no n'hi ha, es barregen a l'atzar.
 function generaLletresEndevinalla(balisa) {
   if (balisa.pistaLletres) {
+    // Avís de desenvolupament: si mai algú escriu malament "pistaLletres" en
+    // afegir una ruta nova (lletra de més, de menys o diferent), l'endevinalla
+    // quedaria impossible de resoldre sense que ningú se n'adonés — ho avisem
+    // aquí perquè surti de seguida en provar-ho, no quan ja ho trobi algú
+    const ordenades = s => normalitzaRespostaEndevinalla(s).split('').sort().join('');
+    if (ordenades(balisa.pistaLletres) !== ordenades(balisa.respostaEndevinalla)) {
+      console.warn(`⚠️ pistaLletres de "${balisa.id}" no és un anagrama exacte de respostaEndevinalla — l'endevinalla no es podrà resoldre mai.`);
+    }
     endevinallaFitxes = normalitzaRespostaEndevinalla(balisa.pistaLletres).split('').map(l => ({ lletra: l }));
   } else {
     const lletres = normalitzaRespostaEndevinalla(balisa.respostaEndevinalla).split('');

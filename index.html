@@ -2148,6 +2148,12 @@ let gimcanaFletxaRotacio = 0;
 let gimcanaPistaMostrada = false;
 let gimcanaBruixolaAbsolutaActiva = false;
 let gimcanaDarrerAvisFora = 0;
+let gimcanaAvisPrecisioMostrat = false;
+// Per sobre d'aquesta precisió (en metres, el mateix valor que ja dona el
+// navegador amb cada lectura de GPS) considerem que la lectura és dolenta
+// — prou per avisar l'usuari proactivament, perquè sense aquest avís no té
+// cap manera de saber que el seu GPS va malament.
+const GIMCANA_PRECISIO_DOLENTA_M = 100;
 const GIMCANA_AVIS_FORA_INTERVAL_M = 10;
 // Llindar per revelar la pista — independent del "radi" de cada Capó (300m,
 // pensat per tolerar la imprecisió del GPS en validar l'escaneig). Si féssim
@@ -2488,6 +2494,7 @@ async function iniciarGimcana() {
   mostrarPantalla('gimcana');
   trackEvent('gimcana_iniciada');
   gimcanaUltimIdxTrajecte = null;
+  gimcanaAvisPrecisioMostrat = false;
   mostrarToast('🔊 Activa el volum del mòbil per sentir els avisos del joc!');
   document.getElementById('gimcana-debug').style.display = esAdmin ? 'block' : 'none';
   document.getElementById('gimcana-parking').style.display = 'block';
@@ -2666,6 +2673,16 @@ function gimcanaOrientacio(e, esAbsolut) {
 
 function actualitzaRadarGimcana(coords) {
   actualitzaPuntMapa(coords);
+
+  // El mòbil ja sap si la seva pròpia lectura de GPS és imprecisa (coords.accuracy,
+  // en metres). Sense aquest avís, l'usuari no té cap manera de saber que el GPS
+  // va malament i que val la pena provar de posar el mòbil en mode avió i treure'l
+  // (sovint força'l a tornar a buscar satèl·lits de zero).
+  if (!gimcanaAvisPrecisioMostrat && coords.accuracy > GIMCANA_PRECISIO_DOLENTA_M) {
+    gimcanaAvisPrecisioMostrat = true;
+    mostrarToast(`📡 El GPS no és prou precís ara mateix (marge d'error de ${Math.round(coords.accuracy)}m). Si la fletxa o la distància no quadren, prova de posar el mòbil en mode avió uns segons i treure'l.`, true);
+  }
+
   const c = gimcanaObjectiuActual;
   if (!c) return;
 

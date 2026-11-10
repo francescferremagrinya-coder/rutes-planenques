@@ -2149,6 +2149,14 @@ let gimcanaPistaMostrada = false;
 let gimcanaBruixolaAbsolutaActiva = false;
 let gimcanaDarrerAvisFora = 0;
 const GIMCANA_AVIS_FORA_INTERVAL_M = 10;
+// Llindar per revelar la pista — independent del "radi" de cada Capó (300m,
+// pensat per tolerar la imprecisió del GPS en validar l'escaneig). Si féssim
+// servir el mateix 300m per revelar la pista, sortiria massa d'hora, abans
+// d'arribar de debò al Capó.
+const GIMCANA_RADI_REVELAR_PISTA_M = 20;
+// Índex del tram del trajecte on es va trobar l'usuari l'última vegada —
+// es reinicia a null en començar la gimcana de nou (iniciarGimcana()).
+let gimcanaUltimIdxTrajecte = null;
 // Per sota d'aquesta distància el marge d'error del GPS pot despistar més que
 // ajudar: s'amaga la brúixola i preval la pista de text.
 const GIMCANA_AMAGA_FLETXA_M = 10;
@@ -2354,13 +2362,31 @@ function projeccioASegment(lat, lng, lat1, lng1, lat2, lng2) {
 
 // Troba a quin segment del trajecte (índex + fracció t) queda més a prop la
 // posició de l'usuari.
+//
+// En alguns trams (p. ex. just abans del Capó Dormilega, un carreró sense
+// sortida) el camí de tornada passa a només uns 20m del camí d'anada: buscar
+// el punt més proper de TOT el recorregut, sense tenir en compte l'ordre, pot
+// confondre's i agafar el tram de tornada en comptes del d'anada (o
+// al revés), fent que la fletxa assenyali cap a un tram ja superat.
+//
+// Per evitar-ho: un cop ja sabem per on anàvem (gimcanaUltimIdxTrajecte), només
+// es consideren els trams propers cap endavant (amb un petit marge enrere per
+// soroll del GPS); i quan dos trams queden a una distància molt semblant
+// (dins 15m), es prefereix sempre el de índex més petit — és a dir, el tram
+// encara no superat — en comptes del que resulti unes poques passes més a prop.
 function projeccioATrajecte(lat, lng, trajecte) {
-  let millor = { idx: 0, t: 0, dist: Infinity };
-  for (let i = 0; i < trajecte.length - 1; i++) {
+  let desDe = 0, fins = trajecte.length - 1;
+  if (gimcanaUltimIdxTrajecte !== null) {
+    desDe = Math.max(0, gimcanaUltimIdxTrajecte - 3);
+    fins = Math.min(trajecte.length - 1, gimcanaUltimIdxTrajecte + 15);
+  }
+  let millor = { idx: desDe, t: 0, dist: Infinity };
+  for (let i = desDe; i < fins; i++) {
     const a = trajecte[i], b = trajecte[i + 1];
     const { dist, t } = projeccioASegment(lat, lng, a.lat, a.lng, b.lat, b.lng);
-    if (dist < millor.dist) millor = { idx: i, t, dist };
+    if (dist < millor.dist - 15) millor = { idx: i, t, dist };
   }
+  gimcanaUltimIdxTrajecte = millor.idx;
   return millor;
 }
 
@@ -2461,6 +2487,7 @@ function gimcanaMissatgeTornada(d) {
 async function iniciarGimcana() {
   mostrarPantalla('gimcana');
   trackEvent('gimcana_iniciada');
+  gimcanaUltimIdxTrajecte = null;
   mostrarToast('🔊 Activa el volum del mòbil per sentir els avisos del joc!');
   document.getElementById('gimcana-debug').style.display = esAdmin ? 'block' : 'none';
   document.getElementById('gimcana-parking').style.display = 'block';
@@ -2680,7 +2707,7 @@ function actualitzaRadarGimcana(coords) {
       tancarGimcana(true);
       return;
     }
-  } else if (dFinal <= (c.radi || 25)) {
+  } else if (dFinal <= GIMCANA_RADI_REVELAR_PISTA_M) {
     if (!gimcanaPistaMostrada) {
       gimcanaPistaMostrada = true;
       tocarSoPista();

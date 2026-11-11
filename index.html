@@ -2030,27 +2030,43 @@ async function mostrarCartesCapons() {
 function renderCartesCapons(trobats) {
   const capons = gimcanaCapons();
   document.getElementById('cartes-capons-resum').textContent = `${trobats.length}/${capons.length} Capons trobats`;
-  document.getElementById('cartes-capons-llista').innerHTML = capons.map(c => {
+  document.getElementById('cartes-capons-llista').innerHTML = capons.map((c, i) => {
     const ob = trobats.find(t => t.id === c.id);
+    const num = `<span class="carta-capo-num">${i + 1}</span>`;
     if (ob) {
       return `
-        <div class="carta-capo obtinguda">
+        <div class="carta-capo obtinguda" onclick="obrirCartaCapoGran('${c.id}')">
+          ${num}
           <img class="carta-capo-img" src="${c.imatge}" alt="${c.nom}" onerror="this.style.display='none'">
-          <div class="carta-capo-cos">
-            <p class="carta-capo-nom">${c.nom}</p>
-            <p class="carta-capo-text">${c.conte || ''}</p>
-          </div>
+          <div class="carta-capo-placa"><p class="carta-capo-nom">${c.nom}</p></div>
         </div>`;
     }
     return `
         <div class="carta-capo bloquejada">
-          <div class="carta-capo-img carta-capo-silueta">?</div>
-          <div class="carta-capo-cos">
-            <p class="carta-capo-nom">Per descobrir</p>
-          </div>
+          ${num}
+          <img class="carta-capo-img" src="${c.imatge}" alt="" onerror="this.style.display='none'">
+          <div class="carta-capo-silueta">?</div>
+          <div class="carta-capo-placa"><p class="carta-capo-nom">Per descobrir</p></div>
         </div>`;
   }).join('');
 }
+
+// Vista gran d'una carta ja obtinguda, amb la seva historieta — mateix
+// esperit que obrirMedallaGran() per a les medalles de rutes normals.
+function obrirCartaCapoGran(id) {
+  const balisa = BALISES.find(b => b.id === id);
+  if (!balisa) return;
+  document.getElementById('carta-capo-gran-img').src = balisa.imatge || '';
+  document.getElementById('carta-capo-gran-nom').textContent = balisa.nom;
+  document.getElementById('carta-capo-gran-text').textContent = balisa.conte || '';
+  document.getElementById('modal-carta-capo-gran').classList.add('visible');
+}
+window.obrirCartaCapoGran = obrirCartaCapoGran;
+
+function tancarCartaCapoGran() {
+  document.getElementById('modal-carta-capo-gran').classList.remove('visible');
+}
+window.tancarCartaCapoGran = tancarCartaCapoGran;
 
 function tancarCartesCapons() {
   document.getElementById('modal-cartes-capons').style.display = 'none';
@@ -4330,23 +4346,83 @@ header {
 .celebracio-conte { color: var(--crema); font-size: 0.85rem; line-height: 1.5; text-align: left; background: rgba(255,255,255,0.05); border-radius: 10px; padding: 0.8rem; margin-bottom: 1.2rem; }
 
 /* Les meves cartes dels Capons */
+/* ── Cartes dels Capons: estètica de carta de joc/consola ── */
+#cartes-capons-llista {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.9rem;
+  margin-bottom: 1rem;
+}
 .carta-capo {
-  display: flex; gap: 0.9rem; align-items: flex-start; text-align: left;
-  background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
-  border-radius: 14px; padding: 0.8rem; margin-bottom: 0.8rem;
+  position: relative; aspect-ratio: 3 / 4; border-radius: 16px; overflow: hidden;
+  background: #10190f; cursor: default;
+}
+.carta-capo.obtinguda {
+  cursor: pointer;
+  box-shadow: 0 0 0 2px var(--or), 0 0 22px rgba(212,168,67,0.5), 0 10px 22px rgba(0,0,0,0.5);
+}
+.carta-capo.bloquejada {
+  box-shadow: 0 0 0 1px rgba(255,255,255,0.14);
 }
 .carta-capo-img {
-  width: 64px; height: 64px; object-fit: cover; border-radius: 10px;
-  flex-shrink: 0; background: rgba(0,0,0,0.2);
+  position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
 }
+.carta-capo.bloquejada .carta-capo-img { filter: brightness(0); opacity: 0.8; }
 .carta-capo-silueta {
-  display: flex; align-items: center; justify-content: center;
-  color: var(--pedra); font-size: 1.4rem; font-weight: 700;
-  background: rgba(255,255,255,0.06);
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  color: var(--pedra); font-family: 'Fraunces', serif; font-size: 2.2rem; font-weight: 700;
+  background: radial-gradient(circle at 50% 40%, rgba(255,255,255,0.08), transparent 70%);
 }
-.carta-capo-nom { font-family: 'Fraunces', serif; font-size: 1rem; font-weight: 700; margin: 0 0 0.3rem; }
+.carta-capo-num {
+  position: absolute; top: 8px; left: 8px; z-index: 2;
+  width: 24px; height: 24px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.72rem; font-weight: 800; font-family: 'Space Grotesk', sans-serif;
+  background: var(--or); color: var(--fons);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+}
+.carta-capo.bloquejada .carta-capo-num { background: rgba(255,255,255,0.2); color: var(--crema); }
+.carta-capo-placa {
+  position: absolute; left: 0; right: 0; bottom: 0; z-index: 2;
+  padding: 1.4rem 0.6rem 0.5rem;
+  background: linear-gradient(180deg, transparent, rgba(5,8,5,0.92) 65%);
+}
+.carta-capo-nom {
+  margin: 0; text-align: center; font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.74rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--crema);
+}
 .carta-capo.bloquejada .carta-capo-nom { color: var(--pedra); }
-.carta-capo-text { font-size: 0.82rem; line-height: 1.5; color: var(--crema); margin: 0; opacity: 0.9; }
+/* Dreçera lluent que travessa la carta en diagonal, només quan ja l'has trobada */
+.carta-capo.obtinguda::after {
+  content: ''; position: absolute; inset: 0; z-index: 1; pointer-events: none;
+  background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,0.22) 48%, transparent 66%);
+  background-size: 250% 250%; animation: brillantorCarta 3.2s ease-in-out infinite;
+}
+@keyframes brillantorCarta {
+  0% { background-position: 120% 120%; }
+  50% { background-position: 0% 0%; }
+  100% { background-position: 120% 120%; }
+}
+
+#modal-carta-capo-gran {
+  display: none; position: fixed; inset: 0; z-index: 206;
+  background: rgba(10,16,10,0.94);
+  flex-direction: column; align-items: center; justify-content: center;
+  gap: 1rem; padding: 2rem;
+}
+#modal-carta-capo-gran.visible { display: flex; }
+#modal-carta-capo-gran img {
+  max-width: min(78vw, 340px); max-height: 48vh; object-fit: contain;
+  border-radius: 18px;
+  box-shadow: 0 0 0 2px var(--or), 0 0 30px rgba(212,168,67,0.5), 0 14px 32px rgba(0,0,0,0.55);
+}
+#carta-capo-gran-nom {
+  font-family: 'Fraunces', serif; font-weight: 700; font-size: 1.25rem;
+  color: var(--or); text-align: center; margin: 0;
+}
+#carta-capo-gran-text {
+  font-size: 0.92rem; line-height: 1.6; color: var(--crema); text-align: center;
+  max-width: 420px; opacity: 0.92; margin: 0;
+}
 
 /* ── Gimcana dels Capons ── */
 #pantalla-gimcana { position: fixed; inset: 0; background: var(--fons); z-index: 100; overflow-y: auto; padding: 4.5rem 1.2rem 3rem; }
@@ -5018,6 +5094,13 @@ header {
 <div id="modal-medalla-gran" onclick="tancarMedallaGran()">
   <img id="medalla-gran-img" src="" alt="">
   <p id="medalla-gran-nom"></p>
+</div>
+
+<!-- ══ CARTA GRAN D'UN CAPÓ (en clicar una carta ja obtinguda) ══ -->
+<div id="modal-carta-capo-gran" onclick="tancarCartaCapoGran()">
+  <img id="carta-capo-gran-img" src="" alt="">
+  <p id="carta-capo-gran-nom"></p>
+  <p id="carta-capo-gran-text"></p>
 </div>
 
 <!-- ══ MEDALLES D'UN JUGADOR DEL RANKING (en clicar la seva fila) ══ -->

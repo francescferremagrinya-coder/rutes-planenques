@@ -692,9 +692,16 @@ function obrirRutaDetall(clau) {
   // Es mostra sempre el primer paràgraf com a tast; la resta queda plegat
   // darrere el botó "Llegeix la història completa"
   const paragrafsRestants = r.paragrafs.slice();
+  // Si el primer paràgraf és un titular (p.ex. "## La història dels Capons"),
+  // el traiem i el posem sempre al davant del tast — si no, quedava "enterrat"
+  // just darrere del paràgraf de tast quan s'expandia la resta de l'article.
+  let titularPreview = '';
+  if (paragrafsRestants[0]?.startsWith('## ')) {
+    titularPreview = `<h3 class="ruta-detall-seccio">${paragrafsRestants.shift().slice(3)}</h3>`;
+  }
   const previewIdx = paragrafsRestants.findIndex(p => !p.startsWith('## '));
   const textPreview = previewIdx >= 0 ? paragrafsRestants.splice(previewIdx, 1)[0] : '';
-  document.getElementById('ruta-detall-article-preview').innerHTML = textPreview ? `<p>${textPreview}</p>` : '';
+  document.getElementById('ruta-detall-article-preview').innerHTML = titularPreview + (textPreview ? `<p>${textPreview}</p>` : '');
 
   let html = paragrafsRestants.map(paraOSeccio).join('');
   if (r.llegenda?.length) {

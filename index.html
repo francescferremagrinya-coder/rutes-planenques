@@ -554,7 +554,11 @@ const RUTES_INFO = {
     ],
     imatge: "medalles/portada-capona.jpg",
     paragrafs: [
-      "Fa molts anys, a la masia de la Capona, una de les més importants del Pla, hi vivien uns petits éssers de pedra que ajudaven en tot el que calia. Amb el temps, la masia es va anar abandonant... i els seus habitants, els Capons, es van escampar per totes les barraques de pedra seca que hi ha pels volts, amagant-se dins de les pedres que tant bé coneixien.",
+      "## La història dels Capons",
+      "Fa molts anys, quan la masia de la Capona encara era plena de vida, hi havia uns petits éssers de pedra que s'encarregaven d'ajudar en les feines del dia a dia. Eren els Capons, uns personatges menuts i una mica entremaliats que coneixien cada racó de la masia i dels seus voltants.",
+      "Però, amb el pas del temps, la masia va quedar enrere i els Capons van haver de buscar un nou refugi. Coneixedors com ningú de les pedres i dels marges, van trobar el lloc perfecte per amagar-se: les barraques de pedra seca escampades pels camps del Pla.",
+      "Des d'aleshores, diuen que hi continuen amagats, esperant que algú prou curiós sigui capaç de trobar-los.",
+      "T'atreveixes a descobrir on s'amaga cadascun dels vuit Capons?",
       "Aquesta proposta és diferent de les altres rutes: no cal fer quilòmetres ni desnivell, sinó seguir un radar que et guiarà, pas a pas, cap a cada Capó amagat. Quan hi arribis, una pista t'ajudarà a trobar-lo exactament.",
       "És una gimcana pensada per a famílies: curta, plana i d'accés fàcil, ideal per anar-hi amb infants i descobrir junts les barraques de pedra seca del terme mentre es completa una petita història."
     ],
@@ -664,7 +668,7 @@ function obrirRutaDetall(clau) {
     if (clau === 'capona') {
       btnCta.textContent = '🎯 Comença la gimcana';
       btnCta.onclick = () => { tancarRutaDetall(); iniciarGimcana(); };
-      notaQr.textContent = '🧭 Segueix el radar fins a cada Capó i escaneja el QR que trobaràs amagat per aconseguir-lo.';
+      notaQr.textContent = '🧭 Segueix el radar, troba els Capons amagats entre les barraques i escaneja el seu QR per aconseguir-ne la carta!';
     } else if (clau === 'santramon') {
       btnCta.textContent = '🧩 Resol l\'endevinalla';
       btnCta.onclick = () => { tancarRutaDetall(); obrirEndevinalla('B07'); };

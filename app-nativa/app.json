@@ -12,6 +12,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "cat.rutesplanenques.app",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",

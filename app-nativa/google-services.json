@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "843557916096",
+    "project_id": "rutes-planenques",
+    "storage_bucket": "rutes-planenques.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:843557916096:android:9c36f5b27dd41be40bcc25",
+        "android_client_info": {
+          "package_name": "cat.rutesplanenques.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "843557916096-3su6ao1r1vgtq1kh7tupk8lue8iu8ngg.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "cat.rutesplanenques.app",
+            "certificate_hash": "1985fa254f3275ac5b25da587413483b914a4697"
+          }
+        },
+        {
+          "client_id": "843557916096-33qn203jq715p5nv13p6hibstglea340.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA9Y4DDY0QqSdGD9EZzpxRgYEtOpbWGF98"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "843557916096-33qn203jq715p5nv13p6hibstglea340.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

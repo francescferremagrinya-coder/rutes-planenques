@@ -24,7 +24,8 @@ WebBrowser.maybeCompleteAuthSession();
 // ════════════════════════════════════════════════════════
 const WEB_CLIENT_ID =
   "843557916096-33qn2o3jq715p5nv13p6hibstglea340.apps.googleusercontent.com";
-const ANDROID_CLIENT_ID = ""; // TODO: enganxar l'ID de client OAuth Android
+const ANDROID_CLIENT_ID =
+  "843557916096-3su6ao1r1vgtq1kh7tupk8lue8iu8ngg.apps.googleusercontent.com";
 
 export default function Login() {
   const { user, carregant } = useAuth();

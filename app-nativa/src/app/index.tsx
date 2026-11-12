@@ -22,7 +22,8 @@ WebBrowser.maybeCompleteAuthSession();
 //     signatura (Expo la dona amb `eas credentials`). Enganxa'l a
 //     ANDROID_CLIENT_ID.
 // ════════════════════════════════════════════════════════
-const WEB_CLIENT_ID = ""; // TODO: enganxar el Client ID web de Firebase
+const WEB_CLIENT_ID =
+  "843557916096-33qn2o3jq715p5nv13p6hibstglea340.apps.googleusercontent.com";
 const ANDROID_CLIENT_ID = ""; // TODO: enganxar l'ID de client OAuth Android
 
 export default function Login() {

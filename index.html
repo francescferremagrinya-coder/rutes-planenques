@@ -983,23 +983,41 @@ function mostrarLoginSenseSessio() {
   const balisa = pendent ? decodificaBalisaDeQR(pendent) : null;
   const rutaInici = !balisa ? RUTES_INFO[sessionStorage.getItem('ruta_pendent')] : null;
   if (balisa || rutaInici) {
-    document.getElementById('loginqr-icona').textContent = balisa ? (balisa.icon || '🏅') : '🧭';
-    document.getElementById('loginqr-nom').textContent = balisa ? balisa.nom : rutaInici.titol;
+    document.getElementById('loginqr-icona').innerHTML = balisa
+      ? (balisa.icon || '🏅')
+      : '<img src="icons/icon-512.png" alt="Rutes Planenques" style="width:100%;height:100%;border-radius:50%">';
+    document.getElementById('loginqr-titol').innerHTML = balisa
+      ? `Has trobat <span id="loginqr-nom">${balisa.nom}</span>!`
+      : `Benvingut a<br><span id="loginqr-nom">${rutaInici.titol}</span>!`;
 
     const esCapo = balisa ? !!balisa.gimcana : sessionStorage.getItem('ruta_pendent') === 'capona';
     document.getElementById('pantalla-login-qr').classList.toggle('fons-capona', esCapo);
+    document.getElementById('loginqr-hero').style.display = esCapo ? 'block' : 'none';
     document.getElementById('loginqr-explicacio-general').style.display = esCapo ? 'none' : 'block';
     document.getElementById('loginqr-explicacio-capona').style.display = esCapo ? 'block' : 'none';
-    if (esCapo) {
-      document.getElementById('loginqr-parking-maps').href =
-        `https://www.google.com/maps/dir/?api=1&destination=${GIMCANA_PARKING.lat},${GIMCANA_PARKING.lng}`;
-    }
+    // El pas "ves al pàrquing" només té sentit si s'ha arribat escanejant un
+    // Capó concret pel camí (potser sense haver passat pel cartell d'inici);
+    // si s'ha arribat pel QR d'inici de ruta, ja s'és físicament al pàrquing.
+    document.getElementById('loginqr-capona-parking').style.display = balisa ? 'flex' : 'none';
+    if (esCapo) loginqrMostraPagina(1);
+    else document.getElementById('loginqr-btn-google').style.display = 'flex';
 
     mostrarPantalla('login-qr');
   } else {
     mostrarPantalla('login');
   }
 }
+
+// Mini-paginació de la pantalla de benvinguda de la Ruta dels Capons:
+// pàgina 1 (història) i pàgina 2 (mecànica del joc + botó de login).
+function loginqrMostraPagina(n) {
+  document.getElementById('loginqr-pagina-1').style.display = n === 1 ? 'block' : 'none';
+  document.getElementById('loginqr-pagina-2').style.display = n === 2 ? 'block' : 'none';
+  document.getElementById('loginqr-punt-1').classList.toggle('actiu', n === 1);
+  document.getElementById('loginqr-punt-2').classList.toggle('actiu', n === 2);
+  document.getElementById('loginqr-btn-google').style.display = n === 2 ? 'flex' : 'none';
+}
+window.loginqrMostraPagina = loginqrMostraPagina;
 
 async function loginGoogle() {
   try {
@@ -3625,12 +3643,100 @@ header {
   text-align: center;
 }
 #pantalla-login-qr.fons-capona {
+  padding: 0 1.5rem 2rem;
+}
+.loginqr-hero {
+  width: calc(100% + 3rem);
+  margin: 0 -1.5rem 0;
+  height: 36vh;
+  min-height: 230px;
+  max-height: 320px;
   background-image:
-    linear-gradient(180deg, rgba(26,46,29,0.80) 0%, rgba(26,46,29,0.95) 55%, var(--fons) 100%),
+    linear-gradient(180deg, rgba(26,46,29,0) 45%, var(--fons) 96%),
     url('medalles/portada-capona.jpg');
   background-size: cover;
-  background-position: center;
+  background-position: center 28%;
+  animation: apareixCapona 0.6s ease-out;
 }
+@keyframes apareixCapona {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+#pantalla-login-qr.fons-capona .intro-card { margin-top: -2.6rem; position: relative; }
+#pantalla-login-qr.fons-capona .intro-logo {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 4.6rem; height: 4.6rem;
+  font-size: 2.3rem;
+  background: var(--fons);
+  border: 2px solid rgba(212,168,67,0.5);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  border-radius: 50%;
+  margin-bottom: 1rem;
+}
+#pantalla-login-qr.fons-capona .intro-titol {
+  font-size: 1.85rem;
+  line-height: 1.25;
+}
+#pantalla-login-qr.fons-capona .joc-explicacio-capona {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(212,168,67,0.3);
+  border-radius: 20px;
+  padding: 1.3rem 1.2rem 1rem;
+}
+.loginqr-capona-intro {
+  font-size: 1rem;
+  color: var(--crema);
+  opacity: 0.92;
+  line-height: 1.6;
+  margin-bottom: 1.1rem;
+  text-align: left;
+}
+#pantalla-login-qr.fons-capona .pas {
+  font-size: 1.02rem;
+  line-height: 1.5;
+  align-items: flex-start;
+  gap: 0.9rem;
+}
+#pantalla-login-qr.fons-capona .pas-icon {
+  width: 2.3rem; height: 2.3rem;
+  font-size: 1.2rem;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(212,168,67,0.16);
+  border: 1px solid rgba(212,168,67,0.4);
+  border-radius: 50%;
+  margin-top: -0.1rem;
+}
+.loginqr-avis-mobil {
+  font-size: 0.85rem;
+  color: var(--or);
+  background: rgba(212,168,67,0.1);
+  border: 1px solid rgba(212,168,67,0.3);
+  border-radius: 12px;
+  padding: 0.7rem 0.9rem;
+  line-height: 1.45;
+  margin-top: 1rem;
+  text-align: left;
+}
+.loginqr-enrere {
+  display: block;
+  margin: 0.8rem auto 0;
+  background: none;
+  border: none;
+  color: var(--pedra);
+  font-size: 0.85rem;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.loginqr-punts {
+  display: flex; justify-content: center; gap: 0.4rem;
+  margin-top: 1.2rem;
+}
+.loginqr-punt {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: rgba(255,255,255,0.2);
+  transition: background 0.2s, transform 0.2s;
+}
+.loginqr-punt.actiu { background: var(--or); transform: scale(1.3); }
 /* ── PANTALLA AVÍS LEGAL ── */
 #pantalla-avis-legal {
   min-height: 100vh;
@@ -4562,9 +4668,10 @@ header {
 
 <!-- ══ PANTALLA BENVINGUDA (QR escanejat sense sessió iniciada) ══ -->
 <div id="pantalla-login-qr" style="display:none">
+  <div class="loginqr-hero" id="loginqr-hero" style="display:none"></div>
   <div class="intro-card">
     <span class="intro-logo" id="loginqr-icona">🏅</span>
-    <h1 class="intro-titol">Has trobat <span id="loginqr-nom">una balisa</span>!</h1>
+    <h1 class="intro-titol" id="loginqr-titol">Has trobat <span id="loginqr-nom">una balisa</span>!</h1>
 
     <div class="joc-explicacio" id="loginqr-explicacio-general">
       <div class="pas">
@@ -4577,29 +4684,43 @@ header {
       </div>
     </div>
 
-    <div class="joc-explicacio" id="loginqr-explicacio-capona" style="display:none">
-      <p style="font-size:0.9rem;color:var(--pedra);line-height:1.5;margin-bottom:0.9rem">
-        <strong>La Ruta dels Capons</strong> és una gimcana familiar: fa anys, a la masia de la Capona, hi vivien uns petits éssers de pedra que, amb el temps, es van escampar per les barraques de pedra seca del terme. Una família espera que la retrobis, Capó a Capó — curta, plana i a l'abast de totes les edats.
-      </p>
-      <div class="pas">
-        <span class="pas-icon">🅿️</span>
-        <span>La ruta comença al <strong>pàrquing de la Ruta de la Capona</strong>. Si encara no hi ets, dirigeix-t'hi primer per començar a buscar els Capons.</span>
+    <div class="joc-explicacio joc-explicacio-capona" id="loginqr-explicacio-capona" style="display:none">
+      <div class="loginqr-pagina" id="loginqr-pagina-1">
+        <p class="loginqr-capona-intro">
+          Fa anys, a la masia de la Capona, hi vivien uns petits éssers de pedra que es van escampar per les barraques de pedra seca del terme. Una família espera que la retrobis, Capó a Capó.
+        </p>
+        <button class="btn-principal" onclick="loginqrMostraPagina(2)">Següent ›</button>
       </div>
-      <div class="pas">
-        <span class="pas-icon">📲</span>
-        <span>Un cop allà, <strong>inicia sessió amb Google</strong> i un radar et guiarà pas a pas fins a cada Capó.</span>
+      <div class="loginqr-pagina" id="loginqr-pagina-2" style="display:none">
+        <div class="pas" id="loginqr-capona-parking">
+          <span class="pas-icon">🅿️</span>
+          <span>La ruta comença al <strong>pàrquing de la Ruta de la Capona</strong>. Si encara no hi ets, dirigeix-t'hi primer per començar a buscar els Capons.</span>
+        </div>
+        <div class="pas">
+          <span class="pas-icon">🧭</span>
+          <span>Una <strong>fletxa i la distància en metres</strong> et guiaran, pas a pas, fins al Capó més proper.</span>
+        </div>
+        <div class="pas">
+          <span class="pas-icon">🗺️</span>
+          <span>Si et despistes, pots consultar el <strong>mapa del recorregut</strong> en qualsevol moment.</span>
+        </div>
+        <div class="pas">
+          <span class="pas-icon">🔍</span>
+          <span>Quan siguis a prop, apareixerà una <strong>pista</strong> que t'ajudarà a trobar-lo i podràs <strong>escanejar el seu QR</strong>.</span>
+        </div>
+        <div class="pas">
+          <span class="pas-icon">🎖️</span>
+          <span>Hi ha <strong>8 Capons</strong> amagats pel terme — troba'ls tots per completar la família!</span>
+        </div>
+        <p class="loginqr-avis-mobil">⚠️ Mantén la pantalla activa i no surtis de l'app mentre juguis, o la brúixola i el GPS es poden despenjar.</p>
+        <button class="loginqr-enrere" onclick="loginqrMostraPagina(1)">‹ Enrere</button>
       </div>
-      <div class="pas">
-        <span class="pas-icon">🥾</span>
-        <span>Aquesta és una de les rutes incloses al projecte <strong>Rutes Planenques</strong>, amb més itineraris pel territori.</span>
+      <div class="loginqr-punts">
+        <span class="loginqr-punt actiu" id="loginqr-punt-1"></span><span class="loginqr-punt" id="loginqr-punt-2"></span>
       </div>
-      <a id="loginqr-parking-maps" href="#" target="_blank" rel="noopener"
-         style="display:flex;align-items:center;justify-content:center;gap:0.5rem;text-decoration:none;color:var(--crema);border:1px solid rgba(255,255,255,0.15);border-radius:14px;padding:0.8rem 1.5rem;margin-top:0.4rem;font-size:0.9rem">
-        🗺️ Com arribar-hi al pàrquing
-      </a>
     </div>
 
-    <button class="btn-google" onclick="loginGoogle()" style="margin: 0 auto;">
+    <button class="btn-google" id="loginqr-btn-google" onclick="loginGoogle()" style="margin: 0 auto;">
       <svg viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
       Continua amb Google
     </button>

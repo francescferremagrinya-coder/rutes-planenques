@@ -942,6 +942,17 @@ onAuthStateChanged(auth, async (user) => {
     carregarPerfil();
     escoltarRanking();
     processarCoaQRPendent();
+    // Si s'ha arribat amb el QR d'inici de ruta (p.ex. el cartell del
+    // pàrquing de la Capona) i la pantalla principal ja és visible,
+    // obrim directament la fitxa amb les instruccions.
+    const rutaPendent = sessionStorage.getItem('ruta_pendent');
+    if (rutaPendent) {
+      sessionStorage.removeItem('ruta_pendent');
+      const potVeureRuta = rutaPendent !== 'capona' || potVeureCapona;
+      if (avisVist && !introPendent && potVeureRuta) {
+        obrirRutaDetall(rutaPendent);
+      }
+    }
   } else {
     mostrarLoginSenseSessio();
   }
@@ -970,11 +981,12 @@ function decodificaBalisaDeQR(payload) {
 function mostrarLoginSenseSessio() {
   const pendent = sessionStorage.getItem('qr_pendent');
   const balisa = pendent ? decodificaBalisaDeQR(pendent) : null;
-  if (balisa) {
-    document.getElementById('loginqr-icona').textContent = balisa.icon || '🏅';
-    document.getElementById('loginqr-nom').textContent = balisa.nom;
+  const rutaInici = !balisa ? RUTES_INFO[sessionStorage.getItem('ruta_pendent')] : null;
+  if (balisa || rutaInici) {
+    document.getElementById('loginqr-icona').textContent = balisa ? (balisa.icon || '🏅') : '🧭';
+    document.getElementById('loginqr-nom').textContent = balisa ? balisa.nom : rutaInici.titol;
 
-    const esCapo = !!balisa.gimcana;
+    const esCapo = balisa ? !!balisa.gimcana : sessionStorage.getItem('ruta_pendent') === 'capona';
     document.getElementById('pantalla-login-qr').classList.toggle('fons-capona', esCapo);
     document.getElementById('loginqr-explicacio-general').style.display = esCapo ? 'none' : 'block';
     document.getElementById('loginqr-explicacio-capona').style.display = esCapo ? 'block' : 'none';
@@ -3492,9 +3504,15 @@ if ('serviceWorker' in navigator) {
 window.addEventListener('DOMContentLoaded', () => {
   const params = new URLSearchParams(location.search);
   const payload = params.get('b');
+  const rutaInici = params.get('ruta');
   if (payload) {
     history.replaceState({}, '', location.pathname);
     sessionStorage.setItem('qr_pendent', payload);
+  } else if (rutaInici) {
+    // QR d'inici de ruta (p.ex. el cartell al pàrquing de la Capona):
+    // no registra cap escaneig, només obre la fitxa amb les instruccions.
+    history.replaceState({}, '', location.pathname);
+    sessionStorage.setItem('ruta_pendent', rutaInici);
   }
 });
 

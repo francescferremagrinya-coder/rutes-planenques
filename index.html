@@ -2075,11 +2075,12 @@ function renderCartesCapons(trobats) {
     const ob = trobats.find(t => t.id === c.id);
     const num = `<span class="carta-capo-num">${i + 1}</span>`;
     if (ob) {
+      // Les il·lustracions ja porten el nom i el número dibuixats a dins,
+      // així que aquí no es repeteix el xip de número ni la placa del nom
+      // (a diferència de la carta bloquejada, on la imatge queda en silueta).
       return `
         <div class="carta-capo obtinguda" onclick="obrirCartaCapoGran('${c.id}')">
-          ${num}
           <img class="carta-capo-img" src="${c.imatge}" alt="${c.nom}" onerror="this.style.display='none'">
-          <div class="carta-capo-placa"><p class="carta-capo-nom">${c.nom}</p></div>
         </div>`;
     }
     return `

@@ -2483,15 +2483,83 @@ function projeccioATrajecte(lat, lng, trajecte) {
 // el camí exacte fins allà: el mapa és una il·lustració artística, no un
 // plànol geogràfic, així que una línia "de veritat" calculada amb GPS mai
 // encaixa bé amb el traçat dibuixat a mà.
-function marcaObjectiuMapa(lat, lng) {
+function marcaObjectiuMapa(lat, lng, foto360) {
   const senyal = document.getElementById('gimcana-mapa-objectiu');
   if (!senyal) return;
   gimcanaObjectiuPct = llatlngAPercentMapa(lat, lng);
   senyal.style.left = gimcanaObjectiuPct.x + '%';
   senyal.style.top = gimcanaObjectiuPct.y + '%';
   senyal.style.display = 'block';
+  gimcanaObjectiuFoto360 = foto360 || null;
+  senyal.classList.toggle('gimcana-mapa-objectiu-clicable', !!gimcanaObjectiuFoto360);
   actualitzaZoomMapa();
 }
+
+// ════════════════════════════════════════════════════════
+//  BINOCLES — foto 360 orientativa de l'objectiu actual, clicant el senyal
+//  daurat del mapa. Només disponible quan aquell Capó té foto360 configurada
+//  (es van afegint a mesura que es van fent les fotos amb dron).
+// ════════════════════════════════════════════════════════
+let gimcanaObjectiuFoto360 = null;
+let binoclesViewer = null;
+
+function carregarPannellum() {
+  return new Promise((resolve, reject) => {
+    if (window.pannellum) { resolve(window.pannellum); return; }
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'vendor/pannellum.css';
+    document.head.appendChild(link);
+    const script = document.createElement('script');
+    script.src = 'vendor/pannellum.js';
+    script.onload = () => resolve(window.pannellum);
+    script.onerror = () => reject(new Error('No s\'ha pogut carregar el visor 360.'));
+    document.head.appendChild(script);
+  });
+}
+
+function obreBinoclesObjectiu() {
+  if (!gimcanaObjectiuFoto360) return;
+  obreBinocles(gimcanaObjectiuFoto360);
+}
+window.obreBinoclesObjectiu = obreBinoclesObjectiu;
+
+async function obreBinocles(foto360) {
+  trackEvent('gimcana_binocles_obert');
+  document.getElementById('binocles-modal').style.display = 'flex';
+  try {
+    const pannellum = await carregarPannellum();
+    if (binoclesViewer) { binoclesViewer.destroy(); binoclesViewer = null; }
+    binoclesViewer = pannellum.viewer('binocles-pano', {
+      type: 'equirectangular',
+      panorama: foto360.img,
+      autoLoad: true,
+      showControls: false,
+      showZoomCtrl: false,
+      showFullscreenCtrl: false,
+      compass: false,
+      mouseZoom: false,
+      hfov: 110,
+      minHfov: 70, maxHfov: 120,
+      pitch: foto360.pitch || 0,
+      yaw: foto360.yaw || 0,
+      hotSpots: [
+        { pitch: foto360.pitch || 0, yaw: foto360.yaw || 0, type: 'info', cssClass: 'binocles-hotspot', createTooltipFunc: (div) => { div.innerHTML = '👉'; }, createTooltipArgs: null }
+      ]
+    });
+  } catch (e) {
+    console.error(e);
+    tancarBinocles();
+    mostrarToast('No s\'ha pogut carregar la foto 360.');
+  }
+}
+window.obreBinocles = obreBinocles;
+
+function tancarBinocles() {
+  document.getElementById('binocles-modal').style.display = 'none';
+  if (binoclesViewer) { binoclesViewer.destroy(); binoclesViewer = null; }
+}
+window.tancarBinocles = tancarBinocles;
 
 // So d'avís (dues notes descendents, interval de tritó) quan et vas allunyant
 // del recorregut, amb ona triangular perquè es distingeixi clarament dels
@@ -2602,7 +2670,7 @@ async function comencaRadarGimcana() {
 
   const idx = gimcanaCapons().findIndex(c => c.id === proper.id);
   document.getElementById('gimcana-progres').textContent = `Estàs buscant el ${GIMCANA_ORDINALS[idx]} Capó`;
-  marcaObjectiuMapa(proper.lat, proper.lng);
+  marcaObjectiuMapa(proper.lat, proper.lng, proper.foto360);
   if (gimcanaUltimesCoords) actualitzaPuntMapa(gimcanaUltimesCoords);
 }
 
@@ -4571,6 +4639,13 @@ header {
   70% { box-shadow: 0 0 0 20px rgba(212,168,67,0); }
   100% { box-shadow: 0 0 0 0 rgba(212,168,67,0); }
 }
+/* Quan l'objectiu actual té foto 360, el senyal es pot clicar per obrir els
+   binocles — una petita insígnia ho indica perquè es noti que és interactiu. */
+.gimcana-mapa-objectiu-clicable { cursor: pointer; }
+.gimcana-mapa-objectiu-clicable::after {
+  content: '👀'; position: absolute; left: 50%; top: -26px;
+  transform: translateX(-50%); font-size: 15px; line-height: 1;
+}
 #gimcana-pista-card {
   margin-top: 1.5rem;
   background: linear-gradient(180deg, rgba(212,168,67,0.2), rgba(212,168,67,0.07));
@@ -4589,6 +4664,34 @@ header {
 }
 .gimcana-pista-titol { color: var(--or); font-weight: 700; font-size: 1.1rem; margin-bottom: 0.6rem; }
 .gimcana-pista-text { font-style: italic; font-size: 1.1rem; line-height: 1.6; margin-bottom: 1rem; white-space: pre-line; }
+
+/* ── Binocles: foto 360 orientativa, emmarcada com si es mirés per uns
+   binocles — només l'ull esquerre mostra la panoràmica real (el dret és
+   decoratiu), però la silueta de les dues lents ja dona la sensació. ── */
+#binocles-modal {
+  display: none; position: fixed; inset: 0; z-index: 500;
+  background: #0b0d08; flex-direction: column; align-items: center; justify-content: center;
+}
+#binocles-cos { display: flex; align-items: center; justify-content: center; width: 100%; }
+.binocles-ull {
+  width: 42vw; height: 42vw; max-width: 230px; max-height: 230px;
+  border-radius: 50%; overflow: hidden; position: relative;
+  background: #1a1410; border: 4px solid #2b2319; box-shadow: 0 0 0 2px #000 inset, 0 6px 18px rgba(0,0,0,0.5);
+}
+#binocles-ull-dta { background: radial-gradient(circle at 40% 35%, #2b2319, #0b0d08 75%); }
+#binocles-pont { width: 7vw; max-width: 36px; height: 20vw; max-height: 100px; background: #2b2319; margin: 0 -6px; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
+#binocles-pano { position: absolute; inset: 0; }
+#binocles-etiqueta { color: var(--crema); font-weight: 700; margin-top: 1.6rem; text-align: center; padding: 0 1.5rem; }
+#binocles-tancar {
+  margin-top: 1.4rem; background: rgba(212,168,67,0.12); color: var(--crema);
+  border: 2px solid var(--or); border-radius: 14px; font-family: 'Space Grotesk', sans-serif;
+  font-size: 1rem; font-weight: 700; padding: 0.7rem 1.4rem; cursor: pointer;
+}
+.binocles-hotspot {
+  background: none !important; width: auto !important; height: auto !important;
+  font-size: 1.8rem; filter: drop-shadow(0 0 6px rgba(212,168,67,0.9));
+  animation: gimcana-objectiu-pols 1.6s ease-out infinite;
+}
 
 /* Panell de proves (només admin), fix a baix de la pantalla de gimcana */
 #gimcana-debug {
@@ -5055,7 +5158,7 @@ header {
     <div class="gimcana-mapa-zona">
       <div id="gimcana-mapa-contingut">
         <img src="rutes/mapa-capons.jpg" alt="Mapa del recorregut">
-        <div id="gimcana-mapa-objectiu" style="display:none"></div>
+        <div id="gimcana-mapa-objectiu" style="display:none" onclick="obreBinoclesObjectiu()"></div>
         <div id="gimcana-mapa-punt"></div>
       </div>
     </div>
@@ -5069,6 +5172,19 @@ header {
       <p class="gimcana-pista-text" id="gimcana-pista-text"></p>
       <button class="btn-principal" onclick="tancarGimcana(false); iniciarEscaner(true)">📷 Escanejar el Capó</button>
     </div>
+  </div>
+
+  <!-- Binocles: foto 360 orientativa de l'objectiu actual -->
+  <div id="binocles-modal" style="display:none">
+    <div id="binocles-cos">
+      <div id="binocles-ull-esq" class="binocles-ull">
+        <div id="binocles-pano"></div>
+      </div>
+      <div id="binocles-pont"></div>
+      <div id="binocles-ull-dta" class="binocles-ull"></div>
+    </div>
+    <p id="binocles-etiqueta">👀 Mira cap on és el proper Capó</p>
+    <button id="binocles-tancar" onclick="tancarBinocles()">‹ Tornar al mapa</button>
   </div>
 
   <!-- Panell de proves — només visible per a admin -->

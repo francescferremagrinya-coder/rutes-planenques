@@ -2932,6 +2932,34 @@ async function resetMedallaPropia(balisaId) {
 }
 window.resetMedallaPropia = resetMedallaPropia;
 
+// Esborra els Capons (i la medalla final, si la té) d'un ALTRE usuari, per
+// UID — pensat per a testers de camp que necessiten repetir la gimcana.
+// Mateixa lògica que resetCaponsPropis(), però amb l'UID com a paràmetre
+// en comptes de fer servir sempre usuariActual.
+async function resetCaponsUsuari(uid, etiqueta) {
+  if (!esAdmin) return;
+  if (!confirm(`Segur que vols esborrar els Capons de ${etiqueta || uid}? Això no afecta altres usuaris.`)) return;
+
+  const ref = doc(db, 'usuaris', uid);
+  const snap = await getDoc(ref);
+  if (!snap.exists()) { mostrarToast('No s\'ha trobat aquest usuari.', true); return; }
+  const dades = snap.data();
+  const medalles = dades.medalles || [];
+
+  const puntsPerduts = medalles.filter(m => m.id === 'CAPO_EXPLORADOR').reduce((s, m) => s + (m.punts || 0), 0);
+  const medallesRestants = medalles.filter(m => m.id !== 'CAPO_EXPLORADOR');
+
+  await updateDoc(ref, {
+    medalles: medallesRestants,
+    caponsTrobats: [],
+    punts: Math.max(0, (dades.punts || 0) - puntsPerduts)
+  });
+
+  mostrarToast(`Capons de ${etiqueta || uid} esborrats. 🔄`);
+  mostrarAdmin();
+}
+window.resetCaponsUsuari = resetCaponsUsuari;
+
 // Actualitza els punts de les medalles JA guanyades per TOTS els usuaris perquè coincideixin
 // amb els valors actuals de BALISES (per defecte, canviar punts a BALISES només afecta
 // medalles noves — això posa també les antigues al dia).
@@ -3313,7 +3341,7 @@ async function mostrarAdmin() {
 
     const llistaUsuaris = document.getElementById('admin-usuaris-llista');
     const files = [];
-    totsUsuaris.forEach(d => files.push(d.data()));
+    totsUsuaris.forEach(d => files.push({ ...d.data(), _uid: d.id }));
     // Ordre d'afegit (primer qui va entrar primer amb Google); si algú no té
     // "creat" (usuaris molt antics d'abans d'aquest camp), es tracta com el més antic
     files.sort((a, b) => {
@@ -3325,10 +3353,16 @@ async function mostrarAdmin() {
     llistaUsuaris.innerHTML = files.map(u => {
       const medalles = u.medalles || [];
       const noms = medalles.map(m => escapeHtml(m.nom)).join(', ') || '<em>cap encara</em>';
+      const teCapons = medalles.some(m => m.id === 'CAPO_EXPLORADOR') || (u.caponsTrobats || []).length > 0;
+      const etiqueta = escapeHtml(u.nom || u.email || 'Sense nom');
+      const botoCapons = teCapons
+        ? `<button class="admin-force-btn" onclick="resetCaponsUsuari('${u._uid}', '${etiqueta.replace(/'/g, "\\'")}')">🔄 Esborra els seus Capons</button>`
+        : '';
       return `
         <div class="admin-usuari-item">
-          <p class="admin-usuari-nom">${escapeHtml(u.nom || u.email || 'Sense nom')} — ${medalles.length} 🏅</p>
+          <p class="admin-usuari-nom">${etiqueta} — ${medalles.length} 🏅</p>
           <p class="admin-usuari-medalles">${noms}</p>
+          ${botoCapons}
         </div>
       `;
     }).join('');

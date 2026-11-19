@@ -2197,15 +2197,16 @@ function tancarCelebracio() {
 // ════════════════════════════════════════════════════════
 const GIMCANA_PARKING = { lat: 41.3613185, lng: 1.3458540, radi: 20 };
 let gimcanaWatchId = null;
-let gimcanaHeading = null;
 let gimcanaUltimesCoords = null;
 let gimcanaObjectiuActual = null;
 let gimcanaTornant = false; // true quan ja s'han trobat tots els Capons i s'està tornant cap al pàrquing
-let gimcanaBrujolaOk = false;
-let gimcanaFletxaRotacio = 0;
 let gimcanaPistaMostrada = false;
-let gimcanaBruixolaAbsolutaActiva = false;
 let gimcanaDarrerAvisFora = 0;
+// Índex al trajecte (GIMCANA_TRAJECTE_GPX) de cada fita, en ordre: [pàrquing,
+// Capó 1, Capó 2, ... Capó 8] — calculat un sol cop a iniciarGimcana(), es fa
+// servir per dibuixar al mapa només el tram entre la fita anterior i la
+// següent (en comptes del recorregut sencer sense cap pista de direcció).
+let gimcanaFitesIdx = [];
 let gimcanaAvisPrecisioMostrat = false;
 // Per sobre d'aquesta precisió (en metres, el mateix valor que ja dona el
 // navegador amb cada lectura de GPS) considerem que la lectura és dolenta
@@ -2221,9 +2222,6 @@ const GIMCANA_RADI_REVELAR_PISTA_M = 20;
 // Índex del tram del trajecte on es va trobar l'usuari l'última vegada —
 // es reinicia a null en començar la gimcana de nou (iniciarGimcana()).
 let gimcanaUltimIdxTrajecte = null;
-// Per sota d'aquesta distància el marge d'error del GPS pot despistar més que
-// ajudar: s'amaga la brúixola i preval la pista de text.
-const GIMCANA_AMAGA_FLETXA_M = 10;
 let gimcanaWakeLock = null;
 
 // Evita que la pantalla s'apagui sola mentre es fa la gimcana, perquè els
@@ -2373,17 +2371,6 @@ function actualitzaPuntMapa(coords) {
   punt.style.top = (py / m.imgH * 100) + '%';
 }
 
-function mostrarMapaGimcana() {
-  document.getElementById('gimcana-radar').style.display = 'none';
-  document.getElementById('gimcana-mapa').style.display = 'block';
-  if (gimcanaUltimesCoords) actualitzaPuntMapa(gimcanaUltimesCoords);
-  trackEvent('gimcana_mapa_obert');
-}
-
-function tancarMapaGimcana() {
-  document.getElementById('gimcana-mapa').style.display = 'none';
-  document.getElementById('gimcana-radar').style.display = 'block';
-}
 
 // Distància (en metres) d'un punt al segment A-B més proper, amb una projecció
 // plana senzilla (prou precisa a la distància curta d'aquesta gimcana).
@@ -2454,43 +2441,37 @@ function projeccioATrajecte(lat, lng, trajecte) {
   return millor;
 }
 
-// Avança 'metres' trajecte amunt (cap a índexs creixents, l'ordre en què es
-// va enregistrar: pàrquing → Capó 1 → Capó 2 → ... → Capó 8) a partir del
-// punt (idx, t), sense sobrepassar el final de l'array.
-function avancaPelTrajecte(trajecte, idx, t, metres) {
-  const a = trajecte[idx], b = trajecte[idx + 1];
-  let punt = { lat: a.lat + (b.lat - a.lat) * t, lng: a.lng + (b.lng - a.lng) * t };
-  let i = idx;
-  while (metres > 0 && i < trajecte.length - 1) {
-    const seg = trajecte[i + 1];
-    const distSeg = calcularDistancia(punt.lat, punt.lng, seg.lat, seg.lng);
-    if (distSeg <= metres) {
-      metres -= distSeg;
-      punt = seg;
-      i++;
-    } else {
-      const frac = distSeg === 0 ? 0 : metres / distSeg;
-      punt = { lat: punt.lat + (seg.lat - punt.lat) * frac, lng: punt.lng + (seg.lng - punt.lng) * frac };
-      metres = 0;
-    }
-  }
-  return punt;
+// Calcula, un sol cop per partida, a quin índex del trajecte queda cada fita
+// (pàrquing + cada Capó en ordre). Reutilitza projeccioATrajecte (biaix cap
+// endavant) perquè cada fita es busqui després de l'anterior, evitant
+// confondre trams d'anada i de tornada que passen a prop.
+function calculaFitesTrajecte() {
+  const idxPrevi = gimcanaUltimIdxTrajecte;
+  gimcanaUltimIdxTrajecte = null;
+  const fites = [0];
+  gimcanaCapons().forEach(c => {
+    fites.push(projeccioATrajecte(c.lat, c.lng, gimcanaTrajecte()).idx);
+  });
+  gimcanaUltimIdxTrajecte = idxPrevi;
+  return fites;
 }
 
-// Distància (en metres) on la fletxa deixa d'apuntar "seguint el camí" i
-// torna a apuntar directe a l'objectiu — a prop de l'arribada és millor un
-// senyal precís que no pas un punt del trajecte que es pot quedar curt.
-const GIMCANA_LLINDAR_APUNTAR_DIRECTE_M = 25;
-const GIMCANA_AVANÇ_FLETXA_M = 15;
-
-// Punt cap on ha d'apuntar la fletxa: si encara queda lluny, segueix el
-// trajecte real (evita que apunti en línia recta travessant marges, barrancs
-// o altres obstacles que hi pugui haver pel mig); a prop del final, apunta
-// directe a l'objectiu per acabar de precisar.
-function puntGuiaFletxa(lat, lng, objectiu, distObjectiu) {
-  if (distObjectiu <= GIMCANA_LLINDAR_APUNTAR_DIRECTE_M) return objectiu;
-  const proj = projeccioATrajecte(lat, lng, gimcanaTrajecte());
-  return avancaPelTrajecte(gimcanaTrajecte(), proj.idx, proj.t, GIMCANA_AVANÇ_FLETXA_M);
+// Pinta sobre el mapa, en un color diferent del fons, només el tram del
+// trajecte entre dos índexs (la fita anterior i la següent) — en comptes
+// d'ensenyar sempre el recorregut sencer sense cap pista de cap a on anar.
+function dibuixaTramMapa(desDeIdx, finsIdx) {
+  const polilinia = document.getElementById('gimcana-mapa-tram');
+  if (!polilinia) return;
+  const trajecte = gimcanaTrajecte();
+  const m = GIMCANA_MAPA;
+  const punts = trajecte.slice(desDeIdx, finsIdx + 1).map(p => {
+    const xFrac = (p.lng - m.lngMin) / (m.lngMax - m.lngMin);
+    const yFrac = (p.lat - m.latMax) / (m.latMin - m.latMax);
+    const px = (m.drawLeft + xFrac * (m.drawRight - m.drawLeft)) / m.imgW * 100;
+    const py = (m.drawTop + yFrac * (m.drawBottom - m.drawTop)) / m.imgH * 100;
+    return `${px.toFixed(2)},${py.toFixed(2)}`;
+  }).join(' ');
+  polilinia.setAttribute('points', punts);
 }
 
 // So d'avís (dues notes descendents, interval de tritó) quan et vas allunyant
@@ -2521,29 +2502,14 @@ async function properCapoGimcana() {
   return gimcanaCapons().find(c => !trobats.some(m => m.id === c.id)) || null;
 }
 
-// Mitjana entre dos angles seguint sempre el camí més curt (evita el salt
-// a la volta 359°→0°), amb 'factor' entre 0 (no es mou) i 1 (salta directe).
-function suavitzarAngle(actual, nou, factor) {
-  const diff = ((nou - actual + 540) % 360) - 180;
-  return (actual + diff * factor + 360) % 360;
-}
-
-function gimcanaBearing(lat1, lng1, lat2, lng2) {
-  const toRad = g => g * Math.PI / 180, toDeg = r => r * 180 / Math.PI;
-  const dLon = toRad(lng2 - lng1);
-  const y = Math.sin(dLon) * Math.cos(toRad(lat2));
-  const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) - Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLon);
-  return (toDeg(Math.atan2(y, x)) + 360) % 360;
-}
-
 function gimcanaMissatgeHost(d) {
-  if (d > 100) return "Encara queda una mica, segueix la fletxa!";
+  if (d > 100) return "Encara queda una mica, segueix el camí marcat al mapa!";
   if (d > 30) return "Ja t'hi acostes... vinga!";
   return "Molt a prop! Mira bé al teu voltant.";
 }
 
 function gimcanaMissatgeTornada(d) {
-  if (d > 100) return "Camí de tornada cap al cotxe, segueix la fletxa!";
+  if (d > 100) return "Camí de tornada cap al cotxe, segueix el mapa!";
   if (d > 30) return "Ja hi ets a prop...";
   return "Quasi al pàrquing!";
 }
@@ -2553,6 +2519,7 @@ async function iniciarGimcana() {
   trackEvent('gimcana_iniciada');
   gimcanaUltimIdxTrajecte = null;
   gimcanaAvisPrecisioMostrat = false;
+  gimcanaFitesIdx = calculaFitesTrajecte();
   mostrarToast('🔊 Activa el volum del mòbil per sentir els avisos del joc!');
   document.getElementById('gimcana-debug').style.display = esAdmin ? 'block' : 'none';
   document.getElementById('gimcana-parking').style.display = 'block';
@@ -2575,43 +2542,14 @@ async function iniciarGimcana() {
   }
 }
 
-// Activa GPS + brúixola — compartit entre la cerca de Capons i la tornada
-// al pàrquing un cop trobats tots.
-// El permís de brúixola d'iOS només es concedeix si es demana de manera
-// immediata dins el mateix clic de l'usuari; si fem algun 'await' abans
-// (Firestore, GPS...) Safari el denega en silenci i la brúixola mai s'activa.
-function activarSeguimentIBrujolaGimcana() {
-  const statusEl = document.getElementById('gimcana-brujola-status');
-  gimcanaBrujolaOk = false;
-  if (statusEl) statusEl.textContent = '🧭 Activant brúixola…';
+// Activa GPS — compartit entre la cerca de Capons i la tornada al pàrquing
+// un cop trobats tots. (Abans també activava la brúixola del mòbil per
+// moure una fletxa, però es va treure: depèn massa del sensor de cada
+// mòbil i es despenja en bloquejar la pantalla o canviar d'app. Ara la
+// guia és només el mapa amb el tram pintat i la distància en metres,
+// totes dues coses basades només en GPS.)
+function activarSeguimentGimcana() {
   activarWakeLock();
-
-  if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') {
-    DeviceOrientationEvent.requestPermission()
-      .then(r => {
-        if (r === 'granted') {
-          window.addEventListener('deviceorientation', gimcanaOrientacio);
-        } else if (statusEl) {
-          statusEl.textContent = '⚠️ Permís de brúixola denegat. Configuració del mòbil › Safari › Ubicació, o esborra les dades del lloc i torna-ho a provar.';
-        }
-      })
-      .catch(() => { if (statusEl) statusEl.textContent = '⚠️ Aquest navegador no ha pogut activar la brúixola.'; });
-  } else {
-    // A Android sovint es disparen alhora 'deviceorientation' (pot ser relatiu
-    // a la posició inicial del mòbil, no al nord real) i 'deviceorientationabsolute'
-    // (referenciat al nord). Barrejar-los feia que la brúixola saltés i indiqués
-    // malament. Un cop rebem el primer esdeveniment absolut, ignorem els relatius.
-    gimcanaBruixolaAbsolutaActiva = false;
-    window.addEventListener('deviceorientationabsolute', gimcanaOrientacioAbsoluta, true);
-    window.addEventListener('deviceorientation', gimcanaOrientacioRelativa, true);
-  }
-
-  setTimeout(() => {
-    if (!gimcanaBrujolaOk && statusEl && statusEl.textContent.includes('Activant')) {
-      statusEl.textContent = '⚠️ El mòbil no envia dades de brúixola. Gira una mica el telèfon o camina uns passos.';
-    }
-  }, 4000);
-
   if (gimcanaWatchId === null) {
     gimcanaWatchId = navigator.geolocation.watchPosition(
       pos => { gimcanaUltimesCoords = pos.coords; actualitzaRadarGimcana(pos.coords); },
@@ -2621,8 +2559,10 @@ function activarSeguimentIBrujolaGimcana() {
   }
 }
 
+const GIMCANA_ORDINALS = ['primer', 'segon', 'tercer', 'quart', 'cinquè', 'sisè', 'setè', 'vuitè'];
+
 async function comencaRadarGimcana() {
-  activarSeguimentIBrujolaGimcana();
+  activarSeguimentGimcana();
 
   const proper = await properCapoGimcana();
   if (!proper) {
@@ -2635,17 +2575,15 @@ async function comencaRadarGimcana() {
 
   document.getElementById('gimcana-parking').style.display = 'none';
   document.getElementById('gimcana-radar').style.display = 'block';
-  document.getElementById('gimcana-mapa').style.display = 'none';
   document.getElementById('gimcana-pista-card').style.display = 'none';
-  document.getElementById('gimcana-fletxa-zona').style.display = 'flex';
   document.getElementById('btn-tornada-seguretat').style.display = 'block';
   gimcanaPistaMostrada = false;
   gimcanaDarrerAvisFora = 0;
-  gimcanaFletxaRotacio = 0;
 
-  const total = gimcanaCapons().length;
   const idx = gimcanaCapons().findIndex(c => c.id === proper.id);
-  document.getElementById('gimcana-progres').textContent = `Capó ${idx + 1} de ${total}`;
+  document.getElementById('gimcana-progres').textContent = `Estàs buscant el ${GIMCANA_ORDINALS[idx]} Capó`;
+  dibuixaTramMapa(gimcanaFitesIdx[idx], gimcanaFitesIdx[idx + 1]);
+  if (gimcanaUltimesCoords) actualitzaPuntMapa(gimcanaUltimesCoords);
 }
 
 // Botó de seguretat: permet tornar al pàrquing en qualsevol moment de la
@@ -2665,69 +2603,22 @@ function iniciaTornadaParking() {
   trackEvent('gimcana_tornada_iniciada');
   gimcanaTornant = true;
   gimcanaObjectiuActual = GIMCANA_PARKING;
-  gimcanaFletxaRotacio = 0;
   gimcanaDarrerAvisFora = 0;
   gimcanaPistaMostrada = false;
 
   document.getElementById('gimcana-parking').style.display = 'none';
   document.getElementById('gimcana-radar').style.display = 'block';
-  document.getElementById('gimcana-mapa').style.display = 'none';
   document.getElementById('gimcana-pista-card').style.display = 'none';
-  document.getElementById('gimcana-fletxa-zona').style.display = 'flex';
   document.getElementById('btn-tornada-seguretat').style.display = 'none';
   document.getElementById('gimcana-progres').textContent = '🚗 Tornada cap al cotxe';
   document.getElementById('gimcana-radar-dist').textContent = '—';
-  document.getElementById('gimcana-bafarada').textContent = 'Segueix la fletxa cap al pàrquing!';
+  document.getElementById('gimcana-bafarada').textContent = 'Segueix el mapa cap al pàrquing!';
+  dibuixaTramMapa(gimcanaFitesIdx[gimcanaFitesIdx.length - 1], gimcanaTrajecte().length - 1);
+  if (gimcanaUltimesCoords) actualitzaPuntMapa(gimcanaUltimesCoords);
 
-  activarSeguimentIBrujolaGimcana();
+  activarSeguimentGimcana();
 }
 window.iniciaTornadaParking = iniciaTornadaParking;
-
-// A Android es dispara sovint 'deviceorientation' A MÉS de 'deviceorientationabsolute'
-// per al mateix gir físic, amb valors lleugerament diferents. Un cop confirmem que
-// tenim esdeveniments absoluts (referenciats al nord real), ignorem els relatius.
-function gimcanaOrientacioAbsoluta(e) {
-  gimcanaBruixolaAbsolutaActiva = true;
-  gimcanaOrientacio(e, true);
-}
-function gimcanaOrientacioRelativa(e) {
-  if (gimcanaBruixolaAbsolutaActiva && !e.absolute) return;
-  if (e.absolute) gimcanaBruixolaAbsolutaActiva = true;
-  gimcanaOrientacio(e, !!e.absolute);
-}
-
-function gimcanaOrientacio(e, esAbsolut) {
-  let nouHeading;
-  if (typeof e.webkitCompassHeading === 'number') {
-    // iOS Safari: ja ve directament com a rumb de brúixola (0° = nord, creixent
-    // en sentit horari).
-    nouHeading = e.webkitCompassHeading;
-  } else if (esAbsolut && e.alpha !== null) {
-    // Android ('deviceorientationabsolute'): l'alfa ja és directament el rumb
-    // de la brúixola, igual que a iOS. Abans li fèiem "360 - alfa", que en
-    // realitat el reflectia (no simplement l'invertia), i per això la fletxa
-    // apuntava en direcció contrària a la de l'iPhone.
-    nouHeading = e.alpha;
-  } else if (e.alpha !== null) {
-    // Últim recurs: esdeveniment no absolut, l'alfa és relatiu a la posició
-    // inicial del mòbil, no al nord real. Aproximació poc fiable.
-    nouHeading = (360 - e.alpha) % 360;
-  } else return;
-
-  // Suavitzem la lectura (barrejant-la amb l'anterior pel camí més curt) perquè
-  // el soroll propi del sensor no faci tremolar ni saltar la fletxa.
-  gimcanaHeading = gimcanaHeading === null ? nouHeading : suavitzarAngle(gimcanaHeading, nouHeading, 0.4);
-
-  gimcanaBrujolaOk = true;
-  const statusEl = document.getElementById('gimcana-brujola-status');
-  if (statusEl) statusEl.textContent = `🧭 Brúixola activa (${Math.round(gimcanaHeading)}°)`;
-
-  // Redibuixa la fletxa a cada lectura de la brúixola, no només quan arriba
-  // una nova posició GPS (que pot trigar uns segons entre actualitzacions i
-  // fa que la fletxa vagi endarrerida respecte a on apuntes el mòbil).
-  if (gimcanaUltimesCoords) actualitzaRadarGimcana(gimcanaUltimesCoords);
-}
-
 
 function actualitzaRadarGimcana(coords) {
   actualitzaPuntMapa(coords);
@@ -2747,31 +2638,6 @@ function actualitzaRadarGimcana(coords) {
   const dFinal = calcularDistancia(coords.latitude, coords.longitude, c.lat, c.lng);
   document.getElementById('gimcana-radar-dist').textContent = Math.round(dFinal);
   document.getElementById('gimcana-bafarada').textContent = gimcanaTornant ? gimcanaMissatgeTornada(dFinal) : gimcanaMissatgeHost(dFinal);
-
-  const zonaFletxa = document.getElementById('gimcana-fletxa-zona');
-  if (dFinal < GIMCANA_AMAGA_FLETXA_M) {
-    // Massa a prop: el marge d'error del GPS fa que la fletxa pugui assenyalar
-    // qualsevol direcció sense sentit. Val més amagar-la i confiar en la pista.
-    zonaFletxa.style.display = 'none';
-  } else {
-    zonaFletxa.style.display = 'flex';
-    const fletxa = document.getElementById('gimcana-fletxa');
-    if (gimcanaHeading !== null) {
-      // La fletxa no apunta en línia recta a l'objectiu, sinó seguint el
-      // trajecte real enregistrat (GIMCANA_TRAJECTE_GPX): si no, entre Capons
-      // pot assenyalar a través de marges, barrancs o altres obstacles que de
-      // debò calen voltar.
-      const puntGuia = puntGuiaFletxa(coords.latitude, coords.longitude, c, dFinal);
-      const rumb = gimcanaBearing(coords.latitude, coords.longitude, puntGuia.lat, puntGuia.lng);
-      const objectiuDeg = (rumb - gimcanaHeading + 360) % 360;
-      // Gira sempre pel camí més curt: si no ho féssim, en creuar el llindar
-      // 359°→0° la fletxa faria una volta sencera en comptes d'un petit gir,
-      // cosa que es percep com si anés lenta o es quedés endarrerida.
-      let diff = ((objectiuDeg - gimcanaFletxaRotacio) % 360 + 540) % 360 - 180;
-      gimcanaFletxaRotacio += diff;
-      fletxa.style.transform = `rotate(${gimcanaFletxaRotacio}deg)`;
-    }
-  }
 
   if (gimcanaTornant) {
     if (dFinal <= (c.radi || 20)) {
@@ -3512,8 +3378,6 @@ window.tancarAvisLegal = tancarAvisLegal;
 window.obrirIntro = obrirIntro;
 window.obrirSuggeriments = obrirSuggeriments;
 window.tancarSuggeriments = tancarSuggeriments;
-window.mostrarMapaGimcana = mostrarMapaGimcana;
-window.tancarMapaGimcana = tancarMapaGimcana;
 window.enviarSuggeriment = enviarSuggeriment;
 window.obrirCodiManual = obrirCodiManual;
 window.avancaCasella = avancaCasella;
@@ -4629,12 +4493,8 @@ header {
   background: transparent; border: 1px solid rgba(255,255,255,0.2); border-radius: 10px;
   color: var(--crema); text-decoration: none; margin-bottom: 0.8rem; font-family: 'Space Grotesk', sans-serif;
 }
-.gimcana-progres { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--pedra); margin-bottom: 0.8rem; }
-.gimcana-host-fila { display: flex; align-items: center; gap: 0.7rem; margin-bottom: 1rem; text-align: left; }
-.gimcana-host-avatar { font-size: 2.4rem; flex-shrink: 0; }
-.gimcana-bafarada { background: var(--crema); color: var(--fons); border-radius: 14px; border-bottom-left-radius: 2px; padding: 0.55rem 0.8rem; font-size: 0.8rem; font-weight: 600; flex: 1; }
-.gimcana-fletxa-zona { width: 160px; height: 160px; margin: 0.5rem auto; border-radius: 50%; border: 3px solid rgba(212,168,67,0.3); display: flex; align-items: center; justify-content: center; }
-.gimcana-brujola-status { font-size: 0.75rem; color: var(--pedra); text-align: center; margin-top: 0.3rem; min-height: 1.2em; opacity: 0.85; }
+.gimcana-progres { font-size: 1rem; font-weight: 700; color: var(--crema); margin-bottom: 0.8rem; }
+.gimcana-bafarada { background: var(--crema); color: var(--fons); border-radius: 14px; padding: 0.6rem 1rem; font-size: 0.85rem; font-weight: 600; display: block; max-width: 100%; margin: 0 auto 1rem; }
 .gimcana-calibra-btn {
   width: 100%;
   background: rgba(212,168,67,0.12);
@@ -4656,17 +4516,17 @@ header {
 .gimcana-btn-seguretat:hover { background: rgba(192,82,74,0.22); }
 .gimcana-mapa-zona {
   position: relative; width: 100%; border-radius: 14px; overflow: hidden;
-  margin-bottom: 1.5rem; border: 1px solid rgba(212,168,67,0.3);
+  margin-bottom: 1rem; border: 1px solid rgba(212,168,67,0.3);
 }
 .gimcana-mapa-zona img { width: 100%; display: block; }
+.gimcana-mapa-tram-svg { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
 #gimcana-mapa-punt {
   position: absolute; width: 18px; height: 18px; border-radius: 50%;
-  background: var(--or); border: 3px solid var(--crema);
+  background: var(--cel); border: 3px solid var(--crema);
   transform: translate(-50%, -50%);
-  box-shadow: 0 0 0 7px rgba(212,168,67,0.35);
+  box-shadow: 0 0 0 7px rgba(123,181,200,0.4);
   transition: left 0.4s linear, top 0.4s linear;
 }
-.gimcana-fletxa { width: 118px; height: 118px; display: inline-block; transition: transform 0.15s linear; transform-box: fill-box; transform-origin: center; }
 #gimcana-pista-card { margin-top: 1.5rem; background: rgba(255,255,255,0.05); border-radius: 14px; padding: 1.2rem; }
 .gimcana-pista-titol { color: var(--or); font-weight: 700; margin-bottom: 0.6rem; }
 .gimcana-pista-text { font-style: italic; font-size: 1.1rem; line-height: 1.6; margin-bottom: 1rem; white-space: pre-line; }
@@ -5133,21 +4993,15 @@ header {
 
   <div id="gimcana-radar" class="gimcana-secc" style="display:none">
     <p class="gimcana-progres" id="gimcana-progres">Buscant un Capó…</p>
-    <div class="gimcana-host-fila">
-      <span class="gimcana-host-avatar">🧭</span>
-      <div class="gimcana-bafarada" id="gimcana-bafarada">Segueix la fletxa!</div>
-    </div>
-    <div class="gimcana-fletxa-zona" id="gimcana-fletxa-zona">
-      <svg class="gimcana-fletxa" id="gimcana-fletxa" viewBox="0 0 100 100">
-        <circle cx="50" cy="50" r="47" fill="none" stroke="#D4A843" stroke-width="1.6"/>
-        <circle cx="50" cy="50" r="42" fill="none" stroke="#D4A843" stroke-width="0.6" opacity="0.7"/>
-        <polygon points="50,6 68,42 55,42 55,88 45,88 45,42 32,42" fill="#C0524A" stroke="#16240F" stroke-width="1.4" stroke-linejoin="round"/>
-        <circle cx="50" cy="50" r="6" fill="#1A2E1D" stroke="#D4A843" stroke-width="1"/>
+    <div class="gimcana-mapa-zona">
+      <img src="rutes/mapa-capons.jpg" alt="Mapa del recorregut">
+      <svg class="gimcana-mapa-tram-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+        <polyline id="gimcana-mapa-tram" fill="none" stroke="#7BB5C8" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round" opacity="0.9"/>
       </svg>
+      <div id="gimcana-mapa-punt"></div>
     </div>
     <p class="gimcana-dist"><span id="gimcana-radar-dist">—</span> m</p>
-    <p class="gimcana-brujola-status" id="gimcana-brujola-status"></p>
-    <button class="gimcana-calibra-btn" onclick="mostrarMapaGimcana()">🗺️ Veure el mapa</button>
+    <p class="gimcana-bafarada" id="gimcana-bafarada">Segueix el mapa!</p>
     <button class="gimcana-calibra-btn gimcana-btn-seguretat" id="btn-tornada-seguretat" onclick="confirmaTornadaSeguretat()" style="display:none">🚨 Torna cap al cotxe</button>
 
     <div id="gimcana-pista-card" style="display:none">
@@ -5155,15 +5009,6 @@ header {
       <p class="gimcana-pista-text" id="gimcana-pista-text"></p>
       <button class="btn-principal" onclick="tancarGimcana(false); iniciarEscaner(true)">📷 Escanejar el Capó</button>
     </div>
-  </div>
-
-  <div id="gimcana-mapa" class="gimcana-secc" style="display:none">
-    <p class="gimcana-progres">On ets ara mateix</p>
-    <div class="gimcana-mapa-zona">
-      <img src="rutes/mapa-capons.jpg" alt="Mapa del recorregut">
-      <div id="gimcana-mapa-punt"></div>
-    </div>
-    <button class="btn-principal" onclick="tancarMapaGimcana()">🧭 Tornar al radar</button>
   </div>
 
   <!-- Panell de proves — només visible per a admin -->

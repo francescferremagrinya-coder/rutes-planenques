@@ -1774,7 +1774,7 @@ async function validarIAtorgarMedalla(balisa, verificarGPS, coordsPrecaptades) {
   // A la gimcana dels Capons, el QR només és vàlid si és el Capó que toca ara
   // (evita que escanejar per error un QR d'un altre Capó el desbloquegi fora d'ordre)
   if (balisa.gimcana) {
-    const proper = await properCapoGimcana();
+    const proper = properCapoDeLlista(dades.caponsTrobats);
     if (!proper || proper.id !== balisa.id) {
       mostrarToast('Aquest no és el Capó que estàs buscant ara. Segueix la pista!', true);
       return false;
@@ -1830,14 +1830,21 @@ async function validarIAtorgarMedalla(balisa, verificarGPS, coordsPrecaptades) {
 
   trackEvent('medalla_aconseguida', { balisa_id: balisa.id, balisa_nom: balisa.nom, punts: balisa.punts });
   let gimcanaCompletadaAra = false;
-  if (balisa.gimcana && !(await properCapoGimcana())) {
-    trackEvent('gimcana_completada');
-    await atorgarMedallaFinalGimcana();
-    gimcanaCompletadaAra = true;
-    // Ja no hi ha cap Capó més a buscar: aturem el GPS de fons que havíem
-    // deixat actiu en escanejar (si no, seguiria avisant de sortir del
-    // track encara que la gimcana ja estigui acabada).
-    aturaSeguimentGimcanaGPS();
+  let properSeguent = null;
+  if (balisa.gimcana) {
+    // El Capó que acabem d'atorgar encara no és a "dades" (és l'estat d'abans
+    // d'aquest updateDoc), així que l'incloem a mà enlloc de tornar a llegir
+    // de Firestore: evita un altre viatge de xarxa just abans de la celebració.
+    properSeguent = properCapoDeLlista([...(dades.caponsTrobats || []), { id: balisa.id }]);
+    if (!properSeguent) {
+      trackEvent('gimcana_completada');
+      await atorgarMedallaFinalGimcana();
+      gimcanaCompletadaAra = true;
+      // Ja no hi ha cap Capó més a buscar: aturem el GPS de fons que havíem
+      // deixat actiu en escanejar (si no, seguiria avisant de sortir del
+      // track encara que la gimcana ja estigui acabada).
+      aturaSeguimentGimcanaGPS();
+    }
   }
 
   // Si aquesta medalla (o, en completar la gimcana, la medalla final "Capó
@@ -1853,7 +1860,7 @@ async function validarIAtorgarMedalla(balisa, verificarGPS, coordsPrecaptades) {
     if (nivellDespres && nivellDespres.nom !== nivellAbans?.nom) nouNivell = nivellDespres;
   }
 
-  mostrarCelebracio(balisa, nouNivell);
+  mostrarCelebracio(balisa, nouNivell, properSeguent);
   return true;
 }
 
@@ -2119,7 +2126,7 @@ window.tancarCartesCapons = tancarCartesCapons;
 // ════════════════════════════════════════════════════════
 //  CELEBRACIÓ — pantalla d'enhorabona en obtenir una medalla
 // ════════════════════════════════════════════════════════
-async function mostrarCelebracio(balisa, nouNivell) {
+async function mostrarCelebracio(balisa, nouNivell, properSeguent) {
   tocarSoCelebracio();
   document.getElementById('celebracio-sub').textContent = balisa.gimcana ? 'Has trobat una carta nova' : 'Has aconseguit una medalla';
   document.getElementById('celebracio-nom').textContent = balisa.nom;
@@ -2163,8 +2170,7 @@ async function mostrarCelebracio(balisa, nouNivell) {
   conteEl.textContent = balisa.conte || '';
   conteEl.style.display = balisa.conte ? 'block' : 'none';
   if (balisa.gimcana) {
-    const proper = await properCapoGimcana();
-    if (proper) {
+    if (properSeguent) {
       btnEl.textContent = 'Segueix buscant';
       btnEl.onclick = () => { tancarCelebracio(); mostrarPantalla('gimcana'); comencaRadarGimcana(); };
     } else {
@@ -2582,11 +2588,19 @@ function tocarSoForaCami() {
   } catch {}
 }
 
+// Calcula, a partir d'una llista de capons trobats ja en memòria, quin és el
+// proper per buscar — separat de properCapoGimcana() perquè en alguns punts
+// calents (en desbloquejar un Capó) ja tenim aquesta llista d'una lectura
+// anterior i no cal tornar a demanar-la a Firestore (cada getDoc és un viatge
+// de xarxa, i encadenar-ne diversos és el que feia trigar la carta a aparèixer).
+function properCapoDeLlista(trobats) {
+  return gimcanaCapons().find(c => !(trobats || []).some(m => m.id === c.id)) || null;
+}
+
 async function properCapoGimcana() {
   if (!usuariActual) return null;
   const snap = await getDoc(doc(db, 'usuaris', usuariActual.uid));
-  const trobats = snap.data()?.caponsTrobats || [];
-  return gimcanaCapons().find(c => !trobats.some(m => m.id === c.id)) || null;
+  return properCapoDeLlista(snap.data()?.caponsTrobats);
 }
 
 function gimcanaMissatgeHost(d) {
@@ -4665,27 +4679,27 @@ header {
 .gimcana-pista-titol { color: var(--or); font-weight: 700; font-size: 1.1rem; margin-bottom: 0.6rem; }
 .gimcana-pista-text { font-style: italic; font-size: 1.1rem; line-height: 1.6; margin-bottom: 1rem; white-space: pre-line; }
 
-/* ── Binocles: foto 360 orientativa, emmarcada com si es mirés per uns
-   binocles — només l'ull esquerre mostra la panoràmica real (el dret és
-   decoratiu), però la silueta de les dues lents ja dona la sensació. ── */
+/* ── Binocles: foto 360 orientativa, a pantalla completa (arrossegable en
+   totes direccions) amb una vinyeta fosca molt suau a les vores com a únic
+   toc "binocles" — sense retallar la imatge en cercles petits. ── */
 #binocles-modal {
-  display: none; position: fixed; inset: 0; z-index: 500;
-  background: #0b0d08; flex-direction: column; align-items: center; justify-content: center;
+  display: none; position: fixed; inset: 0; z-index: 500; background: #0b0d08;
 }
-#binocles-cos { display: flex; align-items: center; justify-content: center; width: 100%; }
-.binocles-ull {
-  width: 42vw; height: 42vw; max-width: 230px; max-height: 230px;
-  border-radius: 50%; overflow: hidden; position: relative;
-  background: #1a1410; border: 4px solid #2b2319; box-shadow: 0 0 0 2px #000 inset, 0 6px 18px rgba(0,0,0,0.5);
-}
-#binocles-ull-dta { background: radial-gradient(circle at 40% 35%, #2b2319, #0b0d08 75%); }
-#binocles-pont { width: 7vw; max-width: 36px; height: 20vw; max-height: 100px; background: #2b2319; margin: 0 -6px; border-radius: 6px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
 #binocles-pano { position: absolute; inset: 0; }
-#binocles-etiqueta { color: var(--crema); font-weight: 700; margin-top: 1.6rem; text-align: center; padding: 0 1.5rem; }
+#binocles-vinyeta {
+  position: absolute; inset: 0; pointer-events: none;
+  box-shadow: inset 0 0 16vw 3vw rgba(0,0,0,0.5);
+}
+#binocles-capcalera {
+  position: absolute; top: 0; left: 0; right: 0; z-index: 2;
+  display: flex; flex-direction: column; align-items: flex-start; gap: 0.7rem;
+  padding: 1rem 1.2rem 1.6rem; background: linear-gradient(180deg, rgba(0,0,0,0.55), transparent);
+}
+#binocles-etiqueta { color: var(--crema); font-weight: 700; margin: 0; }
 #binocles-tancar {
-  margin-top: 1.4rem; background: rgba(212,168,67,0.12); color: var(--crema);
+  background: rgba(0,0,0,0.45); color: var(--crema);
   border: 2px solid var(--or); border-radius: 14px; font-family: 'Space Grotesk', sans-serif;
-  font-size: 1rem; font-weight: 700; padding: 0.7rem 1.4rem; cursor: pointer;
+  font-size: 1rem; font-weight: 700; padding: 0.6rem 1.2rem; cursor: pointer;
 }
 .binocles-hotspot {
   background: none !important; width: auto !important; height: auto !important;
@@ -5176,15 +5190,12 @@ header {
 
   <!-- Binocles: foto 360 orientativa de l'objectiu actual -->
   <div id="binocles-modal" style="display:none">
-    <div id="binocles-cos">
-      <div id="binocles-ull-esq" class="binocles-ull">
-        <div id="binocles-pano"></div>
-      </div>
-      <div id="binocles-pont"></div>
-      <div id="binocles-ull-dta" class="binocles-ull"></div>
+    <div id="binocles-pano"></div>
+    <div id="binocles-vinyeta"></div>
+    <div id="binocles-capcalera">
+      <button id="binocles-tancar" onclick="tancarBinocles()">‹ Tornar al mapa</button>
+      <p id="binocles-etiqueta">👀 Mira cap on és el proper Capó</p>
     </div>
-    <p id="binocles-etiqueta">👀 Mira cap on és el proper Capó</p>
-    <button id="binocles-tancar" onclick="tancarBinocles()">‹ Tornar al mapa</button>
   </div>
 
   <!-- Panell de proves — només visible per a admin -->

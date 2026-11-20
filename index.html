@@ -2440,21 +2440,84 @@ function actualitzaZoomMapa() {
   const midX = p2 ? (p1.x + p2.x) / 2 : p1.x;
   const midY = p2 ? (p1.y + p2.y) / 2 : p1.y;
 
+  // Distància real (no només horitzontal/vertical) entre els dos punts: com
+  // que el mapa ara es pot girar amb els dits, un càlcul només d'eixos x/y
+  // deixaria de ser vàlid en girar-se (els dos punts ja no quedarien alineats
+  // amb els costats de la caixa). Tractant l'espai necessari com un cercle
+  // (que cap sempre dins el requadre, es giri com es giri), el zoom és
+  // vàlid a qualsevol angle de rotació.
   let zoom = GIMCANA_ZOOM_MAX;
   const rect = zona.getBoundingClientRect();
   if (p2 && rect.width && rect.height) {
-    const halfDxPx = Math.abs(p1.x - p2.x) / 100 * rect.width / 2;
-    const halfDyPx = Math.abs(p1.y - p2.y) / 100 * rect.height / 2;
-    const marge = Math.min(rect.width, rect.height) * GIMCANA_ZOOM_MARGE;
-    const zoomX = halfDxPx > 1 ? (rect.width / 2 - marge) / halfDxPx : GIMCANA_ZOOM_MAX;
-    const zoomY = halfDyPx > 1 ? (rect.height / 2 - marge) / halfDyPx : GIMCANA_ZOOM_MAX;
-    zoom = Math.min(GIMCANA_ZOOM_MAX, zoomX, zoomY);
+    const dxPx = Math.abs(p1.x - p2.x) / 100 * rect.width;
+    const dyPx = Math.abs(p1.y - p2.y) / 100 * rect.height;
+    const radiNecessari = Math.sqrt(dxPx * dxPx + dyPx * dyPx) / 2;
+    const costatMenor = Math.min(rect.width, rect.height);
+    const radiDisponible = costatMenor / 2 - costatMenor * GIMCANA_ZOOM_MARGE;
+    zoom = radiNecessari > 1 ? radiDisponible / radiNecessari : GIMCANA_ZOOM_MAX;
+    zoom = Math.min(GIMCANA_ZOOM_MAX, zoom);
   }
   zoom = Math.max(1, zoom);
 
   contingut.style.transformOrigin = `${midX}% ${midY}%`;
-  contingut.style.transform = `scale(${zoom.toFixed(2)})`;
+  contingut.style.transform = `rotate(${gimcanaMapaRotacio.toFixed(1)}deg) scale(${zoom.toFixed(2)})`;
 }
+
+// Girar el mapa amb dos dits, com un mapa de paper de veritat — un gest
+// manual de l'usuari, no lligat a cap sensor (per tant sense els problemes
+// de fiabilitat que ens van fer treure la bruixola). Gira al voltant del
+// mateix punt que el zoom (el punt mig entre tu i l'objectiu).
+let gimcanaMapaRotacio = 0; // graus acumulats
+let gimcanaGirAngleAnterior = null; // angle dels dits en l'últim touchstart/touchmove
+
+function angleEntreDits(touches) {
+  const dx = touches[1].clientX - touches[0].clientX;
+  const dy = touches[1].clientY - touches[0].clientY;
+  return Math.atan2(dy, dx) * 180 / Math.PI;
+}
+
+// Diferència angular normalitzada a (-180, 180] — necessari perquè atan2 fa
+// un salt brusc de +180° a -180° (o al revés) quan els dits creuen aquest
+// punt mentre giren; sense normalitzar, un gest suau de pocs graus es podria
+// interpretar com un gir sobtat de gairebé 360°.
+function diferenciaAngular(actual, anterior) {
+  let d = actual - anterior;
+  return ((d + 180) % 360 + 360) % 360 - 180;
+}
+
+function configuraGirMapa() {
+  const zona = document.querySelector('.gimcana-mapa-zona');
+  const contingut = document.getElementById('gimcana-mapa-contingut');
+  if (!zona || !contingut) return;
+
+  zona.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2) {
+      gimcanaGirAngleAnterior = angleEntreDits(e.touches);
+      contingut.style.transition = 'none'; // seguiment directe del dit, sense retard
+    }
+  }, { passive: true });
+
+  zona.addEventListener('touchmove', (e) => {
+    if (e.touches.length === 2 && gimcanaGirAngleAnterior !== null) {
+      e.preventDefault(); // evita que el navegador interpreti el gest com a zoom de pàgina
+      const angleActual = angleEntreDits(e.touches);
+      // Acumulem la diferència respecte al fotograma anterior (no respecte a
+      // l'inici del gest), perquè un gir llarg i continu no quedi limitat a
+      // ±180° ni afectat pel salt de atan2.
+      gimcanaMapaRotacio += diferenciaAngular(angleActual, gimcanaGirAngleAnterior);
+      gimcanaGirAngleAnterior = angleActual;
+      actualitzaZoomMapa();
+    }
+  }, { passive: false });
+
+  zona.addEventListener('touchend', (e) => {
+    if (e.touches.length < 2) {
+      gimcanaGirAngleAnterior = null;
+      contingut.style.transition = '';
+    }
+  }, { passive: true });
+}
+configuraGirMapa();
 
 
 // Distància (en metres) d'un punt al segment A-B més proper, amb una projecció
@@ -2665,6 +2728,7 @@ async function iniciarGimcana() {
   gimcanaAvisPrecisioMostrat = false;
   gimcanaPropiPct = null;
   gimcanaObjectiuPct = null;
+  gimcanaMapaRotacio = 0;
   mostrarToast('🔊 Activa el volum del mòbil per sentir els avisos del joc!');
   document.getElementById('gimcana-debug').style.display = esAdmin ? 'block' : 'none';
   document.getElementById('gimcana-parking').style.display = 'block';
@@ -4664,6 +4728,7 @@ header {
 .gimcana-mapa-zona {
   position: relative; width: 100%; border-radius: 14px; overflow: hidden;
   margin-bottom: 1rem; border: 1px solid rgba(212,168,67,0.3);
+  touch-action: none; /* el gest de dos dits gira el mapa, no fa zoom de la pàgina */
 }
 /* Contenidor que s'escala (zoom) centrat entre on ets i l'objectiu — separat
    de .gimcana-mapa-zona perquè aquesta mantingui overflow:hidden i retalli

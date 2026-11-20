@@ -223,6 +223,11 @@ const BALISES = [
     descripcio: "El constructor: aixecava les barraques sense morter ni ciment",
     imatge: "medalles/capo-margeter.jpg",
     lat: 41.3606242, lng: 1.3459154,
+    // Posició exacta del número "①" dibuixat al Mapa del Tresor (en % de la
+    // imatge), mesurada directament sobre rutes/mapa-capons.jpg — no es
+    // calcula a partir del lat/lng perquè el dibuix no és un plànol
+    // geogràfic precís (vegeu GIMCANA_MAPA_ANCORATGES).
+    posicioMapa: { xPct: 87.04, yPct: 28.27 },
     radi: 300, // ampliat per marge de precisió del GPS
     token: "mrgtr7q2",
     codi: "MARG",
@@ -241,6 +246,7 @@ const BALISES = [
     descripcio: "Viu entre bolets i penombra, endinsat en una de les barraques",
     imatge: "medalles/capo-boletaire.jpg",
     lat: 41.3593772, lng: 1.345733,
+    posicioMapa: { xPct: 79.35, yPct: 46.12 }, // número "②" al mapa
     radi: 300, // ampliat per marge de precisió del GPS
     token: "blttr4k9",
     codi: "BOLE",
@@ -259,6 +265,7 @@ const BALISES = [
     descripcio: "El collidor de raïm, sempre a punt per celebrar la verema",
     imatge: "medalles/capo-veremador.jpg",
     lat: 41.3581383, lng: 1.3462121,
+    posicioMapa: { xPct: 86.49, yPct: 62.72 }, // número "③" al mapa
     radi: 300, // ampliat per marge de precisió del GPS
     token: "vrmdr8h3",
     codi: "VERE",
@@ -277,6 +284,7 @@ const BALISES = [
     descripcio: "Cuida les abelles des d'un forat del marge de pedra",
     imatge: "medalles/capo-apicultor.jpg",
     lat: 41.3568665, lng: 1.3458091,
+    posicioMapa: { xPct: 81.01, yPct: 78.05 }, // número "④" al mapa
     radi: 300, // ampliat per marge de precisió del GPS
     token: "apctr2m6",
     codi: "APIC",
@@ -295,6 +303,7 @@ const BALISES = [
     descripcio: "Vetlla pel bestiar des del corral de pedra seca",
     imatge: "medalles/capo-pastor.jpg",
     lat: 41.3565886, lng: 1.3429254,
+    posicioMapa: { xPct: 21.24, yPct: 82.70 }, // número "⑤" al mapa
     radi: 300, // ampliat per marge de precisió del GPS
     token: "pstr9x14",
     codi: "PAST",
@@ -313,6 +322,7 @@ const BALISES = [
     descripcio: "Sempre amb la boca plena de dolços, amagat a l'ombra",
     imatge: "medalles/capo-llepol.jpg",
     lat: 41.3568843, lng: 1.3433455,
+    posicioMapa: { xPct: 31.01, yPct: 77.84 }, // número "⑥" al mapa
     radi: 300, // ampliat per marge de precisió del GPS
     token: "llpl5w28",
     codi: "LLEP",
@@ -331,6 +341,7 @@ const BALISES = [
     descripcio: "Sempre té set, viu on es recollia l'aigua de pluja",
     imatge: "medalles/capo-assedegat.jpg",
     lat: 41.3581776, lng: 1.3432194,
+    posicioMapa: { xPct: 27.68, yPct: 61.82 }, // número "⑦" al mapa
     radi: 300, // ampliat per marge de precisió del GPS
     token: "assdg6t7",
     codi: "ASSE",
@@ -349,6 +360,7 @@ const BALISES = [
     descripcio: "El darrer i més endormiscat de tots els Capons",
     imatge: "medalles/capo-dormilega.jpg",
     lat: 41.3600875, lng: 1.3453906,
+    posicioMapa: { xPct: 71.07, yPct: 35.48 }, // número "⑧" al mapa
     radi: 300, // ampliat per marge de precisió del GPS
     token: "drmlg3n5",
     codi: "DORM",
@@ -2201,7 +2213,10 @@ function tancarCelebracio() {
 // ════════════════════════════════════════════════════════
 //  GIMCANA DELS CAPONS — radar i pistes
 // ════════════════════════════════════════════════════════
-const GIMCANA_PARKING = { lat: 41.3613185, lng: 1.3458540, radi: 20 };
+const GIMCANA_PARKING = {
+  lat: 41.3613185, lng: 1.3458540, radi: 20,
+  posicioMapa: { xPct: 92.52, yPct: 18.10 } // icona del cotxe al mapa
+};
 let gimcanaWatchId = null;
 let gimcanaUltimesCoords = null;
 let gimcanaObjectiuActual = null;
@@ -2349,35 +2364,62 @@ function gimcanaTrajecte() {
 
 // ─────────────────────────────────────────────────────────────
 // Mapa del recorregut amb punt GPS en viu, sobre la imatge estàtica
-// rutes/mapa-capons.jpg. Els límits següents són exactament els que es
-// van fer servir per generar aquella imatge (1600×2050 px), així que
-// la conversió lat/lng -> % reprodueix on queda dibuixat cada tram.
-// ─────────────────────────────────────────────────────────────
-const GIMCANA_MAPA = {
-  latMin: 41.355946, latMax: 41.3613185,
-  lngMin: 1.342389, lngMax: 1.3463305,
-  imgW: 1600, imgH: 2050,
-  drawLeft: 180, drawRight: 1420, drawTop: 240, drawBottom: 1890
-};
+// rutes/mapa-capons.jpg — un dibuix artístic, no un plànol geogràfic, així
+// que una única conversió lineal lat/lng→% (com es feia abans) no queda mai
+// ben alineada amb el traçat dibuixat a mà: només encaixa de mitjana, però
+// no exactament en cap punt concret.
+//
+// En comptes d'això, fem servir ANCORATGES: punts on sabem amb certesa
+// absoluta on cauen al dibuix (el número de cada Capó i la icona del cotxe
+// al pàrquing, mesurats a mà sobre la imatge) i a quina distància queden
+// al llarg del track GPX real (GIMCANA_TRAJECTE_GPX), fent servir
+// projeccioATrajecte(). Per a qualsevol lectura GPS en viu, calculem primer
+// a quina distància del track equival (idx + fracció del tram), i després
+// interpolem la posició al mapa entre els DOS ancoratges més propers —
+// així el punt cau exacte a cada ancoratge, i l'error enmig queda limitat
+// a un sol tram en comptes d'arrossegar-se per tot el mapa.
+// Els contIdx s'han calculat passant les coordenades reals de cada Capó per
+// la mateixa funció projeccioATrajecte() que fa servir el punt en viu (amb
+// el seu marge d'histèresi de 15m), en ordre seqüencial des del pàrquing,
+// perquè quedin exactament calibrats amb el que calcularà en joc real —
+// no amb una simple distància mínima global, que podria no coincidir.
+const GIMCANA_MAPA_ANCORATGES = [
+  { contIdx: 0,     xPct: 92.52, yPct: 18.10 }, // Pàrquing (sortida)
+  { contIdx: 4,     xPct: 87.04, yPct: 28.27 }, // Capó 1
+  { contIdx: 10.71, xPct: 79.35, yPct: 46.12 }, // Capó 2
+  { contIdx: 15,    xPct: 86.49, yPct: 62.72 }, // Capó 3
+  { contIdx: 23.48, xPct: 81.01, yPct: 78.05 }, // Capó 4
+  { contIdx: 36.66, xPct: 21.24, yPct: 82.70 }, // Capó 5
+  { contIdx: 40,    xPct: 31.01, yPct: 77.84 }, // Capó 6
+  { contIdx: 49,    xPct: 27.68, yPct: 61.82 }, // Capó 7
+  { contIdx: 58.87, xPct: 71.07, yPct: 35.48 }, // Capó 8
+  { contIdx: 66,    xPct: 92.52, yPct: 18.10 }, // Pàrquing (tornada)
+];
 
 // Posicions (en % de la imatge) del punt propi i de l'objectiu, per poder-les
 // fer servir totes dues alhora quan calculem el zoom del mapa.
 let gimcanaPropiPct = null;
 let gimcanaObjectiuPct = null;
 
-function llatlngAPercentMapa(lat, lng) {
-  const m = GIMCANA_MAPA;
-  const xFrac = (lng - m.lngMin) / (m.lngMax - m.lngMin);
-  const yFrac = (lat - m.latMax) / (m.latMin - m.latMax);
-  const px = (m.drawLeft + xFrac * (m.drawRight - m.drawLeft)) / m.imgW * 100;
-  const py = (m.drawTop + yFrac * (m.drawBottom - m.drawTop)) / m.imgH * 100;
-  return { x: px, y: py };
+// Només per al punt EN VIU (gimcanaUltimIdxTrajecte avança amb cada lectura
+// GPS, via projeccioATrajecte). Per a un objectiu fix (Capó o pàrquing), fem
+// servir directament el seu posicioMapa — vegeu marcaObjectiuMapa.
+function llatlngAPercentMapaEnViu(lat, lng) {
+  const proj = projeccioATrajecte(lat, lng, gimcanaTrajecte());
+  const contIdx = proj.idx + proj.t;
+  const ancoratges = GIMCANA_MAPA_ANCORATGES;
+  let i = 0;
+  while (i < ancoratges.length - 2 && ancoratges[i + 1].contIdx < contIdx) i++;
+  const a = ancoratges[i], b = ancoratges[i + 1];
+  const span = b.contIdx - a.contIdx;
+  const f = span > 0 ? Math.max(0, Math.min(1, (contIdx - a.contIdx) / span)) : 0;
+  return { x: a.xPct + (b.xPct - a.xPct) * f, y: a.yPct + (b.yPct - a.yPct) * f };
 }
 
 function actualitzaPuntMapa(coords) {
   const punt = document.getElementById('gimcana-mapa-punt');
   if (!punt) return;
-  gimcanaPropiPct = llatlngAPercentMapa(coords.latitude, coords.longitude);
+  gimcanaPropiPct = llatlngAPercentMapaEnViu(coords.latitude, coords.longitude);
   punt.style.left = gimcanaPropiPct.x + '%';
   punt.style.top = gimcanaPropiPct.y + '%';
   actualitzaZoomMapa();
@@ -2484,19 +2526,20 @@ function projeccioATrajecte(lat, lng, trajecte) {
   return millor;
 }
 
-// Marca al mapa, amb un senyal daurat pulsant, on queda l'objectiu actual
-// (el proper Capó, o el pàrquing en la tornada) — sense pretendre dibuixar
-// el camí exacte fins allà: el mapa és una il·lustració artística, no un
-// plànol geogràfic, així que una línia "de veritat" calculada amb GPS mai
-// encaixa bé amb el traçat dibuixat a mà.
-function marcaObjectiuMapa(lat, lng, foto360) {
+// Marca al mapa, amb un senyal pulsant, on queda l'objectiu actual (el
+// proper Capó, o el pàrquing en la tornada) — sense pretendre dibuixar el
+// camí exacte fins allà: el mapa és una il·lustració artística, no un
+// plànol geogràfic. A diferència del punt en viu, l'objectiu sempre és un
+// dels ancoratges coneguts, així que fem servir directament el seu
+// posicioMapa (mesurat a mà) en comptes de projectar-lo al track.
+function marcaObjectiuMapa(objectiu) {
   const senyal = document.getElementById('gimcana-mapa-objectiu');
-  if (!senyal) return;
-  gimcanaObjectiuPct = llatlngAPercentMapa(lat, lng);
+  if (!senyal || !objectiu.posicioMapa) return;
+  gimcanaObjectiuPct = { x: objectiu.posicioMapa.xPct, y: objectiu.posicioMapa.yPct };
   senyal.style.left = gimcanaObjectiuPct.x + '%';
   senyal.style.top = gimcanaObjectiuPct.y + '%';
   senyal.style.display = 'block';
-  gimcanaObjectiuFoto360 = foto360 || null;
+  gimcanaObjectiuFoto360 = objectiu.foto360 || null;
   senyal.classList.toggle('gimcana-mapa-objectiu-clicable', !!gimcanaObjectiuFoto360);
   actualitzaZoomMapa();
 }
@@ -2684,7 +2727,7 @@ async function comencaRadarGimcana() {
 
   const idx = gimcanaCapons().findIndex(c => c.id === proper.id);
   document.getElementById('gimcana-progres').textContent = `Estàs buscant el ${GIMCANA_ORDINALS[idx]} Capó`;
-  marcaObjectiuMapa(proper.lat, proper.lng, proper.foto360);
+  marcaObjectiuMapa(proper);
   if (gimcanaUltimesCoords) actualitzaPuntMapa(gimcanaUltimesCoords);
 }
 
@@ -2715,7 +2758,7 @@ function iniciaTornadaParking() {
   document.getElementById('gimcana-progres').textContent = '🚗 Tornada cap al cotxe';
   document.getElementById('gimcana-radar-dist').textContent = '—';
   document.getElementById('gimcana-bafarada').textContent = 'Segueix el mapa cap al pàrquing!';
-  marcaObjectiuMapa(GIMCANA_PARKING.lat, GIMCANA_PARKING.lng);
+  marcaObjectiuMapa(GIMCANA_PARKING);
   if (gimcanaUltimesCoords) actualitzaPuntMapa(gimcanaUltimesCoords);
 
   activarSeguimentGimcana();
@@ -4639,19 +4682,22 @@ header {
   z-index: 2;
 }
 /* Senyal de l'objectiu (proper Capó, o el pàrquing en la tornada): un pols
-   daurat sobre el punt del mapa on cal arribar, sense pretendre dibuixar-hi
-   el camí exacte (el mapa és una il·lustració, no un plànol geogràfic). */
+   blau viu sobre el punt del mapa on cal arribar, sense pretendre dibuixar-hi
+   el camí exacte (el mapa és una il·lustració, no un plànol geogràfic). Un
+   blau clarament diferent (i més saturat) que el del teu propi punt, perquè
+   no es confonguin: aquest, a més, és l'únic que fa pols.
+   El daurat es reserva pels números ja impresos al mapa (①-⑧). */
 #gimcana-mapa-objectiu {
   position: absolute; width: 22px; height: 22px; border-radius: 50%;
-  background: var(--or); border: 3px solid var(--crema);
+  background: #2D6CDF; border: 3px solid var(--crema);
   transform: translate(-50%, -50%);
   animation: gimcana-objectiu-pols 1.6s ease-out infinite;
   z-index: 1;
 }
 @keyframes gimcana-objectiu-pols {
-  0% { box-shadow: 0 0 0 0 rgba(212,168,67,0.6); }
-  70% { box-shadow: 0 0 0 20px rgba(212,168,67,0); }
-  100% { box-shadow: 0 0 0 0 rgba(212,168,67,0); }
+  0% { box-shadow: 0 0 0 0 rgba(45,108,223,0.65); }
+  70% { box-shadow: 0 0 0 20px rgba(45,108,223,0); }
+  100% { box-shadow: 0 0 0 0 rgba(45,108,223,0); }
 }
 /* Quan l'objectiu actual té foto 360, el senyal es pot clicar per obrir els
    binocles — una petita insígnia ho indica perquè es noti que és interactiu. */

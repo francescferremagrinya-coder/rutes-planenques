@@ -226,7 +226,8 @@ const BALISES = [
     // Posició exacta del número "①" dibuixat al Mapa del Tresor (en % de la
     // imatge), mesurada directament sobre rutes/mapa-capons.jpg — no es
     // calcula a partir del lat/lng perquè el dibuix no és un plànol
-    // geogràfic precís (vegeu GIMCANA_MAPA_ANCORATGES).
+    // geogràfic precís (vegeu GIMCANA_MAPA_REF / GIMCANA_MAPA_COEF_X/Y,
+    // que fan servir aquests 9 punts per calibrar el punt en viu).
     posicioMapa: { xPct: 87.04, yPct: 28.27 },
     radi: 300, // ampliat per marge de precisió del GPS
     token: "mrgtr7q2",
@@ -2214,7 +2215,7 @@ function tancarCelebracio() {
 //  GIMCANA DELS CAPONS — radar i pistes
 // ════════════════════════════════════════════════════════
 const GIMCANA_PARKING = {
-  lat: 41.3613185, lng: 1.3458540, radi: 20,
+  lat: 41.3613185, lng: 1.3458540, radi: 20, icon: '🚗',
   posicioMapa: { xPct: 92.52, yPct: 18.10 } // icona del cotxe al mapa
 };
 let gimcanaWatchId = null;
@@ -2235,9 +2236,6 @@ const GIMCANA_AVIS_FORA_INTERVAL_M = 10;
 // servir el mateix 300m per revelar la pista, sortiria massa d'hora, abans
 // d'arribar de debò al Capó.
 const GIMCANA_RADI_REVELAR_PISTA_M = 20;
-// Índex del tram del trajecte on es va trobar l'usuari l'última vegada —
-// es reinicia a null en començar la gimcana de nou (iniciarGimcana()).
-let gimcanaUltimIdxTrajecte = null;
 let gimcanaWakeLock = null;
 
 // Evita que la pantalla s'apagui sola mentre es fa la gimcana, perquè els
@@ -2365,55 +2363,39 @@ function gimcanaTrajecte() {
 // ─────────────────────────────────────────────────────────────
 // Mapa del recorregut amb punt GPS en viu, sobre la imatge estàtica
 // rutes/mapa-capons.jpg — un dibuix artístic, no un plànol geogràfic, així
-// que una única conversió lineal lat/lng→% (com es feia abans) no queda mai
-// ben alineada amb el traçat dibuixat a mà: només encaixa de mitjana, però
-// no exactament en cap punt concret.
+// que una única conversió lineal lat/lng→% ingènua no queda mai ben
+// alineada amb el traçat dibuixat a mà.
 //
-// En comptes d'això, fem servir ANCORATGES: punts on sabem amb certesa
-// absoluta on cauen al dibuix (el número de cada Capó i la icona del cotxe
-// al pàrquing, mesurats a mà sobre la imatge) i a quina distància queden
-// al llarg del track GPX real (GIMCANA_TRAJECTE_GPX), fent servir
-// projeccioATrajecte(). Per a qualsevol lectura GPS en viu, calculem primer
-// a quina distància del track equival (idx + fracció del tram), i després
-// interpolem la posició al mapa entre els DOS ancoratges més propers —
-// així el punt cau exacte a cada ancoratge, i l'error enmig queda limitat
-// a un sol tram en comptes d'arrossegar-se per tot el mapa.
-// Els contIdx s'han calculat passant les coordenades reals de cada Capó per
-// la mateixa funció projeccioATrajecte() que fa servir el punt en viu (amb
-// el seu marge d'histèresi de 15m), en ordre seqüencial des del pàrquing,
-// perquè quedin exactament calibrats amb el que calcularà en joc real —
-// no amb una simple distància mínima global, que podria no coincidir.
-const GIMCANA_MAPA_ANCORATGES = [
-  { contIdx: 0,     xPct: 92.52, yPct: 18.10 }, // Pàrquing (sortida)
-  { contIdx: 4,     xPct: 87.04, yPct: 28.27 }, // Capó 1
-  { contIdx: 10.71, xPct: 79.35, yPct: 46.12 }, // Capó 2
-  { contIdx: 15,    xPct: 86.49, yPct: 62.72 }, // Capó 3
-  { contIdx: 23.48, xPct: 81.01, yPct: 78.05 }, // Capó 4
-  { contIdx: 36.66, xPct: 21.24, yPct: 82.70 }, // Capó 5
-  { contIdx: 40,    xPct: 31.01, yPct: 77.84 }, // Capó 6
-  { contIdx: 49,    xPct: 27.68, yPct: 61.82 }, // Capó 7
-  { contIdx: 58.87, xPct: 71.07, yPct: 35.48 }, // Capó 8
-  { contIdx: 66,    xPct: 92.52, yPct: 18.10 }, // Pàrquing (tornada)
-];
+// Es va provar de projectar la posició sobre el track GPX i interpolar per
+// "distància recorreguda", però això trenca en sortir del camí marcat (que
+// és exactament el que cal fer per buscar un Capó pel bosc): la posició
+// quedava "enganxada" al punt del camí més proper i gairebé no es movia.
+//
+// Ara fem servir una transformació 2D de debò (com es georeferencia un mapa
+// escanejat en un SIG), ajustada per mínims quadrats amb els 9 punts que
+// coneixem amb certesa (el pàrquing i cada Capó: lat/lng real aparellat amb
+// la posició mesurada a mà del seu símbol al dibuix — vegeu posicioMapa a
+// cada balisa). És vàlida per a QUALSEVOL lat/lng, estiguis al camí o no.
+const GIMCANA_MAPA_REF = { lat0: 41.3586736, lng0: 1.3449338 };
+const GIMCANA_MAPA_COEF_X = [1.70598262, 19.93080064, -0.90981752, 1.48248712, 0.99415906, 59.61861208];
+const GIMCANA_MAPA_COEF_Y = [-13.32133353, 0.47638094, 0.17454760, -0.36745133, 0.46977026, 54.59687224];
 
 // Posicions (en % de la imatge) del punt propi i de l'objectiu, per poder-les
 // fer servir totes dues alhora quan calculem el zoom del mapa.
 let gimcanaPropiPct = null;
 let gimcanaObjectiuPct = null;
 
-// Només per al punt EN VIU (gimcanaUltimIdxTrajecte avança amb cada lectura
-// GPS, via projeccioATrajecte). Per a un objectiu fix (Capó o pàrquing), fem
+// Només per al punt EN VIU. Per a un objectiu fix (Capó o pàrquing), fem
 // servir directament el seu posicioMapa — vegeu marcaObjectiuMapa.
 function llatlngAPercentMapaEnViu(lat, lng) {
-  const proj = projeccioATrajecte(lat, lng, gimcanaTrajecte());
-  const contIdx = proj.idx + proj.t;
-  const ancoratges = GIMCANA_MAPA_ANCORATGES;
-  let i = 0;
-  while (i < ancoratges.length - 2 && ancoratges[i + 1].contIdx < contIdx) i++;
-  const a = ancoratges[i], b = ancoratges[i + 1];
-  const span = b.contIdx - a.contIdx;
-  const f = span > 0 ? Math.max(0, Math.min(1, (contIdx - a.contIdx) / span)) : 0;
-  return { x: a.xPct + (b.xPct - a.xPct) * f, y: a.yPct + (b.yPct - a.yPct) * f };
+  const la = (lat - GIMCANA_MAPA_REF.lat0) * 1000;
+  const ln = (lng - GIMCANA_MAPA_REF.lng0) * 1000;
+  const [ax, bx, cx, dx, ex, fx] = GIMCANA_MAPA_COEF_X;
+  const [ay, by, cy, dy, ey, fy] = GIMCANA_MAPA_COEF_Y;
+  return {
+    x: ax * la + bx * ln + cx * la * ln + dx * la * la + ex * ln * ln + fx,
+    y: ay * la + by * ln + cy * la * ln + dy * la * la + ey * ln * ln + fy,
+  };
 }
 
 function actualitzaPuntMapa(coords) {
@@ -2460,13 +2442,16 @@ function actualitzaZoomMapa() {
   zoom = Math.max(1, zoom);
 
   contingut.style.transformOrigin = `${midX}% ${midY}%`;
-  contingut.style.transform = `rotate(${gimcanaMapaRotacio.toFixed(1)}deg) scale(${zoom.toFixed(2)})`;
+  contingut.style.transform = `scale(${zoom.toFixed(2)})`;
 }
 
 // Girar el mapa amb dos dits, com un mapa de paper de veritat — un gest
 // manual de l'usuari, no lligat a cap sensor (per tant sense els problemes
-// de fiabilitat que ens van fer treure la bruixola). Gira al voltant del
-// mateix punt que el zoom (el punt mig entre tu i l'objectiu).
+// de fiabilitat que ens van fer treure la bruixola). A diferència del zoom,
+// gira sempre al voltant del CENTRE DE LA PANTALLA (#gimcana-mapa-rotacio té
+// el seu propi transform-origin: 50% 50%), no del punt mig entre tu i
+// l'objectiu — si no, en girar sembla que ho fa al voltant del teu punt GPS
+// enlloc de girar el mapa sencer en el seu lloc.
 let gimcanaMapaRotacio = 0; // graus acumulats
 let gimcanaGirAngleAnterior = null; // angle dels dits en l'últim touchstart/touchmove
 
@@ -2487,13 +2472,13 @@ function diferenciaAngular(actual, anterior) {
 
 function configuraGirMapa() {
   const zona = document.querySelector('.gimcana-mapa-zona');
-  const contingut = document.getElementById('gimcana-mapa-contingut');
-  if (!zona || !contingut) return;
+  const rotacio = document.getElementById('gimcana-mapa-rotacio');
+  if (!zona || !rotacio) return;
 
   zona.addEventListener('touchstart', (e) => {
     if (e.touches.length === 2) {
       gimcanaGirAngleAnterior = angleEntreDits(e.touches);
-      contingut.style.transition = 'none'; // seguiment directe del dit, sense retard
+      rotacio.style.transition = 'none'; // seguiment directe del dit, sense retard
     }
   }, { passive: true });
 
@@ -2506,14 +2491,14 @@ function configuraGirMapa() {
       // ±180° ni afectat pel salt de atan2.
       gimcanaMapaRotacio += diferenciaAngular(angleActual, gimcanaGirAngleAnterior);
       gimcanaGirAngleAnterior = angleActual;
-      actualitzaZoomMapa();
+      rotacio.style.transform = `rotate(${gimcanaMapaRotacio.toFixed(1)}deg)`;
     }
   }, { passive: false });
 
   zona.addEventListener('touchend', (e) => {
     if (e.touches.length < 2) {
       gimcanaGirAngleAnterior = null;
-      contingut.style.transition = '';
+      rotacio.style.transition = '';
     }
   }, { passive: true });
 }
@@ -2544,51 +2529,6 @@ function distanciaAlTrajecte(lat, lng, trajecte) {
   return minDist;
 }
 
-// Igual que distanciaPuntASegment, però també retorna a quin punt exacte del
-// segment (0=A, 1=B) queda la projecció — ho necessitem per "enganxar" la
-// posició de l'usuari al trajecte i després avançar-hi a sobre.
-function projeccioASegment(lat, lng, lat1, lng1, lat2, lng2) {
-  const M_PER_GRAU_LAT = 111320;
-  const mPerGrauLng = 111320 * Math.cos(lat1 * Math.PI / 180);
-  const px = (lng - lng1) * mPerGrauLng, py = (lat - lat1) * M_PER_GRAU_LAT;
-  const bx = (lng2 - lng1) * mPerGrauLng, by = (lat2 - lat1) * M_PER_GRAU_LAT;
-  const bLenSq = bx * bx + by * by;
-  let t = bLenSq === 0 ? 0 : (px * bx + py * by) / bLenSq;
-  t = Math.max(0, Math.min(1, t));
-  const dx = px - t * bx, dy = py - t * by;
-  return { dist: Math.sqrt(dx * dx + dy * dy), t };
-}
-
-// Troba a quin segment del trajecte (índex + fracció t) queda més a prop la
-// posició de l'usuari.
-//
-// En alguns trams (p. ex. just abans del Capó Dormilega, un carreró sense
-// sortida) el camí de tornada passa a només uns 20m del camí d'anada: buscar
-// el punt més proper de TOT el recorregut, sense tenir en compte l'ordre, pot
-// confondre's i agafar el tram de tornada en comptes del d'anada (o
-// al revés), fent que la fletxa assenyali cap a un tram ja superat.
-//
-// Per evitar-ho: un cop ja sabem per on anàvem (gimcanaUltimIdxTrajecte), només
-// es consideren els trams propers cap endavant (amb un petit marge enrere per
-// soroll del GPS); i quan dos trams queden a una distància molt semblant
-// (dins 15m), es prefereix sempre el de índex més petit — és a dir, el tram
-// encara no superat — en comptes del que resulti unes poques passes més a prop.
-function projeccioATrajecte(lat, lng, trajecte) {
-  let desDe = 0, fins = trajecte.length - 1;
-  if (gimcanaUltimIdxTrajecte !== null) {
-    desDe = Math.max(0, gimcanaUltimIdxTrajecte - 3);
-    fins = Math.min(trajecte.length - 1, gimcanaUltimIdxTrajecte + 15);
-  }
-  let millor = { idx: desDe, t: 0, dist: Infinity };
-  for (let i = desDe; i < fins; i++) {
-    const a = trajecte[i], b = trajecte[i + 1];
-    const { dist, t } = projeccioASegment(lat, lng, a.lat, a.lng, b.lat, b.lng);
-    if (dist < millor.dist - 15) millor = { idx: i, t, dist };
-  }
-  gimcanaUltimIdxTrajecte = millor.idx;
-  return millor;
-}
-
 // Marca al mapa, amb un senyal pulsant, on queda l'objectiu actual (el
 // proper Capó, o el pàrquing en la tornada) — sense pretendre dibuixar el
 // camí exacte fins allà: el mapa és una il·lustració artística, no un
@@ -2597,11 +2537,15 @@ function projeccioATrajecte(lat, lng, trajecte) {
 // posicioMapa (mesurat a mà) en comptes de projectar-lo al track.
 function marcaObjectiuMapa(objectiu) {
   const senyal = document.getElementById('gimcana-mapa-objectiu');
+  const icona = document.getElementById('gimcana-mapa-objectiu-icona');
   if (!senyal || !objectiu.posicioMapa) return;
   gimcanaObjectiuPct = { x: objectiu.posicioMapa.xPct, y: objectiu.posicioMapa.yPct };
   senyal.style.left = gimcanaObjectiuPct.x + '%';
   senyal.style.top = gimcanaObjectiuPct.y + '%';
-  senyal.style.display = 'block';
+  senyal.style.display = 'flex';
+  // La cara/icona del propi Capó (o el cotxe, en la tornada) enlloc d'un punt
+  // de color abstracte — es confonia amb el teu propi punt al mapa.
+  if (icona) icona.textContent = objectiu.icon || '📍';
   gimcanaObjectiuFoto360 = objectiu.foto360 || null;
   senyal.classList.toggle('gimcana-mapa-objectiu-clicable', !!gimcanaObjectiuFoto360);
   actualitzaZoomMapa();
@@ -2724,7 +2668,6 @@ function gimcanaMissatgeTornada(d) {
 async function iniciarGimcana() {
   mostrarPantalla('gimcana');
   trackEvent('gimcana_iniciada');
-  gimcanaUltimIdxTrajecte = null;
   gimcanaAvisPrecisioMostrat = false;
   gimcanaPropiPct = null;
   gimcanaObjectiuPct = null;
@@ -4733,6 +4676,14 @@ header {
 /* Contenidor que s'escala (zoom) centrat entre on ets i l'objectiu — separat
    de .gimcana-mapa-zona perquè aquesta mantingui overflow:hidden i retalli
    la part ampliada en comptes de desbordar la targeta. */
+/* Capa de rotació (gest de dos dits), separada de la de zoom perquè cadascuna
+   giri/escali al voltant del seu propi punt: aquesta sempre pivota al centre
+   de la pantalla (com un mapa de paper real), independentment d'on siguis o
+   on sigui l'objectiu. */
+#gimcana-mapa-rotacio {
+  transform-origin: 50% 50%;
+  transition: transform 0.3s ease-out;
+}
 #gimcana-mapa-contingut {
   position: relative;
   transition: transform 0.6s ease-out;
@@ -4753,8 +4704,10 @@ header {
    no es confonguin: aquest, a més, és l'únic que fa pols.
    El daurat es reserva pels números ja impresos al mapa (①-⑧). */
 #gimcana-mapa-objectiu {
-  position: absolute; width: 22px; height: 22px; border-radius: 50%;
-  background: #2D6CDF; border: 3px solid var(--crema);
+  position: absolute; width: 36px; height: 36px; border-radius: 50%;
+  background: var(--crema); border: 3px solid #2D6CDF;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; line-height: 1;
   transform: translate(-50%, -50%);
   animation: gimcana-objectiu-pols 1.6s ease-out infinite;
   z-index: 1;
@@ -5281,10 +5234,12 @@ header {
   <div id="gimcana-radar" class="gimcana-secc" style="display:none">
     <p class="gimcana-progres" id="gimcana-progres">Buscant un Capó…</p>
     <div class="gimcana-mapa-zona">
-      <div id="gimcana-mapa-contingut">
-        <img src="rutes/mapa-capons.jpg" alt="Mapa del recorregut">
-        <div id="gimcana-mapa-objectiu" style="display:none" onclick="obreBinoclesObjectiu()"></div>
-        <div id="gimcana-mapa-punt"></div>
+      <div id="gimcana-mapa-rotacio">
+        <div id="gimcana-mapa-contingut">
+          <img src="rutes/mapa-capons.jpg" alt="Mapa del recorregut">
+          <div id="gimcana-mapa-objectiu" style="display:none" onclick="obreBinoclesObjectiu()"><span id="gimcana-mapa-objectiu-icona"></span></div>
+          <div id="gimcana-mapa-punt"></div>
+        </div>
       </div>
     </div>
     <p class="gimcana-dist"><span id="gimcana-radar-dist">—</span> m</p>

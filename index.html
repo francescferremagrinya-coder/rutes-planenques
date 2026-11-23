@@ -2804,12 +2804,19 @@ function actualitzaRadarGimcana(coords) {
       return;
     }
   } else if (dFinal <= GIMCANA_RADI_REVELAR_PISTA_M) {
-    if (!gimcanaPistaMostrada) {
+    const pistaCard = document.getElementById('gimcana-pista-card');
+    const esPrimeraVegada = !gimcanaPistaMostrada;
+    if (esPrimeraVegada) {
       gimcanaPistaMostrada = true;
       tocarSoPista();
     }
     document.getElementById('gimcana-pista-text').textContent = c.pista || '';
-    document.getElementById('gimcana-pista-card').style.display = 'block';
+    pistaCard.style.display = 'block';
+    // La targeta ja està just sota el mapa, però en pantalles petites encara
+    // pot quedar fora de vista — hi desplacem la pantalla sola (un cop
+    // visible, display:block) perquè ningú hagi d'endevinar que cal baixar
+    // a buscar-la.
+    if (esPrimeraVegada) pistaCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   } else {
     gimcanaPistaMostrada = false;
     document.getElementById('gimcana-pista-card').style.display = 'none';
@@ -4729,7 +4736,7 @@ header {
   transform: translateX(-50%); font-size: 15px; line-height: 1;
 }
 #gimcana-pista-card {
-  margin-top: 1.5rem;
+  margin: 1.5rem 0;
   background: linear-gradient(180deg, rgba(212,168,67,0.2), rgba(212,168,67,0.07));
   border: 2px solid var(--or);
   border-radius: 16px;
@@ -5246,16 +5253,16 @@ header {
         </div>
       </div>
     </div>
-    <p class="gimcana-dist"><span id="gimcana-radar-dist">—</span> m</p>
-    <p class="gimcana-bafarada" id="gimcana-bafarada">Segueix el mapa!</p>
-    <button class="gimcana-calibra-btn" onclick="tancarGimcana(false); iniciarEscaner(true)">📷 Ja el veig, escanejar</button>
-    <button class="gimcana-calibra-btn gimcana-btn-seguretat" id="btn-tornada-seguretat" onclick="confirmaTornadaSeguretat()" style="display:none">🚨 Torna cap al cotxe</button>
-
     <div id="gimcana-pista-card" style="display:none">
       <p class="gimcana-pista-titol">🔍 Ets a prop!</p>
       <p class="gimcana-pista-text" id="gimcana-pista-text"></p>
       <button class="btn-principal" onclick="tancarGimcana(false); iniciarEscaner(true)">📷 Escanejar el Capó</button>
     </div>
+
+    <p class="gimcana-dist"><span id="gimcana-radar-dist">—</span> m</p>
+    <p class="gimcana-bafarada" id="gimcana-bafarada">Segueix el mapa!</p>
+    <button class="gimcana-calibra-btn" onclick="tancarGimcana(false); iniciarEscaner(true)">📷 Ja el veig, escanejar</button>
+    <button class="gimcana-calibra-btn gimcana-btn-seguretat" id="btn-tornada-seguretat" onclick="confirmaTornadaSeguretat()" style="display:none">🚨 Torna cap al cotxe</button>
   </div>
 
   <!-- Binocles: foto 360 orientativa de l'objectiu actual -->
